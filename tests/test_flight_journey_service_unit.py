@@ -175,7 +175,15 @@ def test_multi_city_sends_all_slices(mock_create):
         passengers=[FlightSearchPassengerRequest(type="adult")],
         maximum_connections=1,
     )
-    with patch.object(settings, "duffel_api_key", "test-key"):
+    from app.services.flight_providers.duffel_provider import DuffelFlightProvider
+
+    with (
+        patch.object(settings, "duffel_api_key", "test-key"),
+        patch(
+            "app.services.flight_providers.coordinator._enabled_providers",
+            return_value=[DuffelFlightProvider()],
+        ),
+    ):
         FlightJourneyService.clear_cache()
         FlightJourneyService.search(body)
     slices = mock_create.call_args.kwargs["slices"]
@@ -194,7 +202,15 @@ def test_search_unconfigured_duffel_returns_503():
         ],
         passengers=[FlightSearchPassengerRequest(type="adult")],
     )
-    with patch.object(settings, "duffel_api_key", ""):
+    from app.services.flight_providers.duffel_provider import DuffelFlightProvider
+
+    with (
+        patch.object(settings, "duffel_api_key", ""),
+        patch(
+            "app.services.flight_providers.coordinator._enabled_providers",
+            return_value=[DuffelFlightProvider()],
+        ),
+    ):
         with pytest.raises(HTTPException) as exc:
             FlightJourneyService.search(body)
         assert exc.value.status_code == 503

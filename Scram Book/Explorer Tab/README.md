@@ -2,6 +2,621 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-09-26 — Eventbrite total and no-geographic-cutoff clarification
+
+- User clarified there should be no geographic cutoff for the requested total. Read-only Supabase counts: `public.events` has 33 rows total; all 33 are Scaper/Eventbrite rows from the sole enabled Eventbrite source, organizer `84855780433`. A read-only official organizer API request returned HTTP 200 with `pagination.object_count=33`, `page_count=1`, and `page_size=50`; this is the complete total for that configured organizer/query, not a count of every Eventbrite event.
+- Current connector `max_pages` defaults to 10 and permits at most 50. At the observed 50-event page size, that caps a run at roughly 500 events by default or 2,500 when configured to 50 pages, per source; neither is a provider-wide event cap. Eventbrite's public geographic event-search API is deprecated, so no platform-wide or citywide total is available through this connector without a defined organizer/venue source list.
+- Product distinction: `/api/v2/explorer/events` still requires coordinates, defaults to a 50 km radius and 8 rows, and caps responses at 100; removing a geographic cutoff from ingest or an inventory count does not change that reader. Main `/explore` remains on its separate v1 path.
+- Provider policy review: Eventbrite developer rate-limit documentation currently says 2,000 calls/hour and 48,000/day, while its API Terms page says 1,000 calls/hour per OAuth token. Plan against the stricter 1,000/hour pending confirmation from Eventbrite or token-specific limits. The Terms also restrict retaining content for past events; Scaper currently purges past `public.events` rows but leaves `ingest.raw_records.payload` behind. Review permission and add a raw-payload retention policy before broadening ingestion. No legal conclusion or new ingestion was made in this review.
+
+## 2026-09-26 — CTO verification after Scaper live handoff
+
+- Independently reran the Eventbrite and pipeline unit suites: 31 passed. Read-only Supabase SELECTs confirmed source `eventbrite:org:84855780433`, 33 current event rows, 33 visible within 5 km of downtown Orlando, 10 Eventbrite venue links with `geo_name` matching, and `ingest.runs.purged`. The three most recent run counters match insert 33, purge 1, and reinsert 1. The separate Postgres test run (6/6), migration deployment, and in-progress event API response were reported by the Scaper worker; this review did not rerun those operations. At review time, the 5 km query found 0 events currently in progress, which does not invalidate an earlier time-dependent observation.
+- Decision: Eventbrite step 4 is credible and the live row counts are independently confirmed. Before a second connector, scope `purge_past_events()` to its source or move global purge into an explicit maintenance job; it currently deletes past rows across all Scaper sources and attributes the total to the source run that triggered it. Prioritize scheduling `run-due` and reading `public.events` in main `/explore` so the verified feed reaches the product. Ticketmaster can follow without replacing the existing v1 source until parity and deduplication are verified.
+
+## 2026-09-27 — Events API keyset pagination; Chicago ingest live; dedup chaining issue found
+
+- Context: user approved (1) pushing 8e474f1/2cee77c/c237550, (2) keyset pagination on `/api/v2/explorer/events` (`after_id` + `limit`, default 50, max 200, no response-shape change, frontend passes `after_id`), then (3) Chicago (41.8781, -87.6298, 25 km, Eventbrite + Ticketmaster).
+- Push: remote had moved (`d73c59c`, flight CI tests only). This checkout holds other sessions' uncommitted edits to those same test files, so the merge was done in a temp worktree (`7c01854`). CI-equivalent suite there: 959 passed. The user pushed `7c01854` (this deploys: `production-ci.yml` runs `deploy` on Production-main). `c237550` also contained another session's Scaper edits (per-source purge, `run-due --city-slug`, `set-city-interval`); these were re-verified before the push (86 unit + 9/9 rolled-back PG).
+- Pagination: ordered by `(start_time, id)` with keyset `(start_time, id) > cursor`. The body stays a list; the cursor goes in the `X-Next-Cursor` header, which is added to CORS `expose_headers`. An unknown cursor returns 400. `/explore-v2` gets a "Load more events" button. Commit `a5a6424` (local) was cherry-picked onto origin as `0f9f73d` (branch `scaper-pagination-push`); CI-equivalent suite there: **967 passed**. **Not pushed.** Tests: 7 new + 23 existing v2 = 30 passed; tsc 0 errors. Live on Supabase, Orlando 15 km: pages 50/50/23 = 123, all unique, ordered, equal to the SQL count. Not browser-verified.
+- Chicago sources: `ticketmaster:chicago` (25 km) plus 5 Eventbrite organizers mined from existing Chicago event IDs: Japanese Culture Center, Skyline Yacht Cruises, ChicAfrik, Chicago Twenty Something, I Love House Music. **Excluded:** ORLOVE (29/38 events >25 km away), Nightlife Functions (23/23 outside), and Windy City Market (2/4 outside). Organizer sources can list events in other cities, and every event would be stamped `city_slug=chicago`.
+- Chicago runs: all 6 succeeded, 0 failed. Ticketmaster: 861 fetched, 840 inserted, 21 rejected (no start time). The listing was complete but is **near the 1000 deep-paging cap**. Eventbrite: 59 inserted, 9 rejected (online). Links: 81 matched (71 `geo_name`, 8 `geo_name_wide`, 2 `geo_address`), 52 created. API pagination at limit 200: 200/200/108 = **508**, equal to the SQL visible count. Orlando was untouched. Cross-provider duplicates: 0.
+- **Issue: 378 events hidden by dedup.** 2 are real duplicates (JAY B; Punchis Banda Rave at Navy Pier). **376 are Balloon Museum timed-entry slots** (Ticketmaster lists each 30-min slot as its own event), collapsed to one card per day. Cause: the clustering is transitive (union-find), so slots chain up to 10 h apart (348 hidden rows are more than 30 min from their canonical). That deviates from the approved pairwise ±30 min rule. A resulting bug: when the canonical (early slot) expires, later slots stay hidden until the next dedup run (up to the 6 h interval).
+- Next action: user decides how to treat timed-entry series (see chat), then fix and re-verify Chicago. Push `0f9f73d` when ready (production deploy).
+
+## 2026-09-26 — Scaper tier-A3 venue rule; Orlando dedup gate passed; 009 committed
+
+- Context: user approved tier A3 (normalized name equal + street address equal + postcode equal, within 500 m). Gate: created places 11 → exactly 10. Commit 009 only if the gate passes.
+- Built: `norm_street` (direction/suffix abbreviations, unit and suite dropped), `norm_postcode` (ZIP+4 → ZIP5) and `same_venue_address` in `scaper/dedup.py`. The A3 tier runs after A2 in `_match_place`. It is used by live resolution and by `relink-venues`, which now passes each created place's stored address. 009 was updated in place (it was uncommitted) to add the `geo_address` method and re-applied live; it is idempotent.
+- Verification: unit 85 passed (A3 cases use the real Abbey address strings); rolled-back Supabase suite **9/9** (new: an A3 match at ~400 m wins while a same-name, different-street decoy at ~300 m is rejected); pyright clean.
+- Live gate: relink matched 1 venue (`The Abbey-Orlando` → Overture `The Abbey`, `geo_address`). **Created places 11 → 10 ✅. Visible 140 → 139 (drop 1) ✅.** 0 orphan places. Both sources re-ran successfully with no changes. The API returned 200 with 0 hidden IDs.
+- Result: migration 009 and the dedup code were committed.
+- Risks: the API row cap of 100 is still binding (139 visible in Orlando). Dedup counts are attributed to whichever source's run reclustered the city.
+- Next action: the 100-row cap task. Chicago only when the user confirms.
+
+## 2026-09-26 — Scaper dedup (migration 009) applied; Orlando gate 1 of 2 passed
+
+- Context: user approved the dedup spec with these rules. Venues: 250 m + name match after stripping. Events: same venue ±30 min + headliner containment. Winner: completeness score, with Ticketmaster winning ties. Cancelled and scheduled rows show independently. API filter: `duplicate_of IS NULL`. Gate: Orlando visible count drops by exactly 1, and created places drop from 13 to ≤ 10. Chicago stays blocked until the gate passes.
+- Built:
+  - `migrations/009_scaper_dedup.sql`: `events.duplicate_of` FK with `ON DELETE SET NULL`, a no-self-duplicate check, `runs.deduped`, and the `geo_name_wide` link method.
+  - `scaper/dedup.py`: pure rules — `norm_venue`, `norm_title`, headliner containment, union-find clusters, canonical by completeness then Ticketmaster then first seen.
+  - Venue matching: tier A1 (100 m trigram), then tier A2 (250 m + normalized name; containment needs 2+ words). Overture rows win.
+  - `python -m scaper relink-venues [--city-slug]` backfill: moves links and events, then deletes orphaned created places.
+  - The pipeline dedupes the source's city after purge.
+  - The reader adds `duplicate_of IS NULL`.
+- Verification:
+  - Unit tests: 82 passed (10 new dedup cases built from the real Orlando pairs).
+  - Rolled-back Postgres suite on Supabase with 008 + 009: **8/8 passed**. It covers hide/keep, idempotent re-dedup, a purged canonical resurfacing its duplicate, and the wide-match relink.
+  - 009 applied live; the column, checks and FK are confirmed.
+- Orlando gate:
+  - **Visible drop = 1 ✅**: 140 → 139. Only `Joey Cash in Orlando` is hidden, under `Joey Cash "Poser Tour"`. The OMRI/MashBit pair stays visible. The API returned 200 with 0 hidden IDs.
+  - **Created places 13 → 11 ❌** (target ≤ 10). The relink matched Conduit and The Abbey (`geo_name_wide`); 0 orphan places remain.
+  - `The Abbey-Orlando` is unresolved. Ticketmaster has **3 venue IDs** for the same address (100 S Eola Dr, 32801), with coordinates up to 315 m from Overture's `The Abbey` (same address). A 250 m radius cannot reach it.
+- Status: migration 009 is live; the code is uncommitted pending the gate decision. **Chicago remains blocked.**
+- Next action: user decides on a proposed tier A2b (normalized name equal + same normalized street address + postcode, ≤ 500 m). It would resolve Abbey-Orlando (11 → 10) and would be re-verified in Orlando.
+
+## 2026-09-26 — Scaper Ticketmaster live on Supabase; dedup spec drafted
+
+- Context: user approved the live Ticketmaster run, the commit, then a dedup spec. **No second city until dedup is designed and approved.**
+- Live result (`ticketmaster:orlando`, 28.5417,-81.3776, 15 km): run 1 inserted 108 (107 scheduled, 1 cancelled) with 0 failed. Run 2 found 108 unchanged, so stripping `distance` works. Run 3 purged one backdated row (`runs.purged=1`); the 33 Eventbrite rows were untouched. Run 4 restored the row (108 total). Venues: 18 linked (5 `geo_name`, 13 `created`); 0 events lack a place.
+- API: `/api/v2/explorer/events` (15 km, limit 100) returned 200 with 100 rows (94 Ticketmaster). The cancelled row was not visible. The 100-row cap is now binding: 141 events are in range.
+- Commits (local, not pushed): `8e474f1` (Scaper + 008 + Eventbrite), `2cee77c` (Ticketmaster).
+- Dedup evidence: 0 cross-provider duplicates. 1 same-provider duplicate (Joey Cash, two TicketWeb IDs). 1 same-place, same-hour pair that are different shows (OMRI vs MashBit). 3 venue-match misses (Conduit at 102 m, The Abbey at 188 m, The Abbey-Orlando created twice). Raw title similarity scored the true duplicate 0.31 and the false pair 0.43, so the spec uses normalized titles.
+- Spec: `Scaper_Dedup_Spec.md` (draft). Tiered venue matching; a `duplicate_of` hide-don't-delete event dedup; migration 009; acceptance tests; 4 open questions.
+- Next action: user decides the spec's open questions → implement 009 + dedup → re-verify in Orlando → only then Chicago.
+
+## 2026-09-26 — Scaper Ticketmaster connector (built; superseded by live entry above)
+
+- Context: user confirmed Eventbrite end-to-end and approved Ticketmaster under the same rules: `source_id` scoping, purge after a successful fetch, `runs.purged`, venue linking within 100 m, and new places only when nothing matches. Scaper + 008 + Eventbrite were committed first as `8e474f1` (local, not pushed). The Explore v1 hub path is untouched.
+- Built: `scaper/connectors/ticketmaster.py` (Discovery v2 geo source; config is lat, lng, `radius_km`, `days_ahead`, optional `segment_id`). The query window runs from now − 6 h to now + `days_ahead`, so in-progress events are included. Paging uses size 200. A listing counts as complete only if `totalElements` ≤ 1000 (the Discovery deep-paging cap); otherwise vanished events are not expired. The query-relative `distance`, `units` and `_links` fields are stripped before hashing, so an unchanged event isn't re-extracted on every run. Status mapping: onsale, offsale and rescheduled → scheduled; postponed → postponed; cancelled → cancelled. Missing `priceRanges` means an unknown price, never free. The CLI raises the httpx logger to WARNING because the API key travels in the query string.
+- Verification: `pytest tests/test_scaper_ticketmaster.py tests/test_scaper_eventbrite.py tests/test_scaper_pipeline.py`: 50 passed. Pyright clean on `scaper/`. The live read-only preview (Orlando, 15 km, 14 days) accepted 108/108 events with a complete fetch; the key was not present in the CLI output. No Ticketmaster rows have been written to Supabase.
+- Risks: there is no cross-provider dedup, so the same show listed on Eventbrite and Ticketmaster produces two rows. Overlapping geo sources would flip `source_id` between them. Keep sources non-overlapping per city.
+- Next action: with approval, register `ticketmaster:orlando`, run it live, and verify API rows, purge and linking. Then commit the Ticketmaster work.
+
+## 2026-09-26 — Scaper live: migration 008 applied, purge job, Eventbrite end-to-end verified
+
+- Context: user approved (1) the rolled-back Postgres suite on Supabase, (2) applying 008, (3) a purge job, and (4) live end-to-end verification. Ticketmaster stays blocked until this entry is confirmed.
+- Purge: `PostgresStore.purge_past_events()` deletes `public.events` rows where `source_id IS NOT NULL` (only Scaper sets it; the table has no `source` column) and `COALESCE(end_time, start_time + 6h) < now()`. It runs only after a successful fetch, never after a failed one. The count is stored in the new column `ingest.runs.purged`, which was folded into 008 before 008 was applied.
+- (1) `tests/test_scaper_postgres.py` against Supabase: **6/6 passed**. This includes a purge-scoping test, where a non-Scaper past row survives. After the run: no `ingest` schema, 0 events, 0 stray test places. The rollback left no trace.
+- (2) 008 applied and committed. Confirmed present: `ingest.{place_links,raw_records,runs,sources}`, 13 new `events` columns, `events_status_chk`, FKs to places, sources and raw_records, the unique index on `(provider, external_id)`, and `runs.purged`.
+- (4) Live: source `eventbrite:org:84855780433` (Orlando), run 1 fetched 33 and inserted 33, with 0 failed. Place linking: 10 venues matched existing Overture places (`geo_name`), 0 created. `GET /api/v2/explorer/events` (TestClient against Supabase, auth overridden) at downtown Orlando with a 5 km radius returned **33 real rows**, including an event already in progress. Purge proof: one real row was backdated; run 2 reported purged=1 (also logged in `ingest.runs`); the row was deleted; the API returned 32. To restore, its raw record was set to `failed`; run 3 re-inserted it, for 33 total. Non-Scaper events: 0 touched.
+- Unit suites: 31 passed (Eventbrite + pipeline, including purge-after-success and no-purge-after-failed-fetch).
+- Risks: the source is registered, but no scheduler runs `python -m scaper run-due` yet. The main `/explore` hub still doesn't read `public.events`. Purged events keep their `ingest.raw_records` rows, so the payload history remains.
+- Next action: user confirmation of step 4, then schedule `run-due` and build the Ticketmaster connector.
+
+## 2026-09-26 — Scaper connector system: Eventbrite proof of concept (built, not deployed)
+
+- Context: the brief asked for a separate Scaper ingest service feeding Explorer, with Eventbrite first. Design record: `Scaper_Connector_Architecture.md` (this folder).
+- Goals addressed: `scaper/` package with a connector contract, retrying HTTP, the Eventbrite connector, the pipeline, a Postgres store, and a CLI. `migrations/008_scaper_ingest.sql` adds `ingest.{sources,runs,raw_records,place_links}` and additive `public.events` columns. The existing `places` table is reused; no second places table was created. The `/api/v2/explorer/events` reader now hides cancelled, completed and expired rows and keeps in-progress events visible.
+- Evidence gathered on the live systems (read-only): Supabase already has an empty `public.events` table (read by `/explore-v2`) and 1.88M `places` rows. The `ingest` schema is absent, and `place_ingest_runs` (006) is not applied. Eventbrite `/v3/events/search/` returns 404. `/v3/organizers/{id}/events/` returns 200, and `python -m scaper preview` against one organizer fetched and extracted 33/33 live events with no DB writes.
+- Verification: `pytest tests/test_scaper_eventbrite.py tests/test_scaper_pipeline.py tests/test_scaper_postgres.py tests/test_explorer_v2.py tests/test_migrations_unique.py`: 52 passed, 5 skipped. The skipped tests are the opt-in Postgres suite (`SCAPER_PG_TEST_URL`), which runs the migration and pipeline inside a rolled-back transaction. It has **not been run**. Pyright is clean on `scaper/` and the new tests.
+- Not done / risks: 008 not applied, so no Scaper rows exist in Supabase. The main `/explore` hub does not read `public.events`. No curated Eventbrite organizer list exists. Meetup, Yelp and Google Places cost and terms need re-verification. The Instagram scraper is blocked by `data-spine.md`.
+- Next action: run the rolled-back Postgres suite, then apply 008 with explicit approval. Seed a small organizer list for one launch city and run `scaper run-due` on a schedule. Then build the Ticketmaster connector and map `public.events` into `/api/v1/explore/events`.
+
+## 2026-09-26 — CTO review of Scaper Eventbrite work in progress
+
+- Follow-up after Claude X handoff: independently reran the stated five-file test command: 52 passed, 5 skipped. The five skipped tests require `SCAPER_PG_TEST_URL`; therefore migration idempotence, real Postgres writes, venue matching, and rollback behavior remain unverified. The new `Scaper_Connector_Architecture.md` and `/api/v2/explorer/events` filter change are present. The handoff reports a live 33-event Eventbrite preview, but this review did not rerun that provider call.
+- Production test gate: do not point `tests/test_scaper_postgres.py` at live Supabase. Its fixture executes migration 008 twice inside each outer transaction; rollback prevents persistence but not temporary DDL locks on `events` and referenced `places`. Its 5-second `lock_timeout` limits waiting to acquire locks, not how long acquired locks are held. First run on a disposable Postgres/PostGIS staging database with the relevant schema. After that, review the migration and apply it separately before deploying the v2 reader change, which currently swallows pre-migration query errors as an empty list.
+- Context: reviewed the proposed separate Scaper service and the untracked `scaper/` package, `migrations/008_scaper_ingest.sql`, and focused tests against the locked Explore data spine. This was a review, not a deployment or provider run.
+- Fit: the implementation keeps the existing Overture `places` table, links provider venues to it where possible, and stores event provenance and run history. Eventbrite extraction is deterministic in this proof of concept; no Claude extraction stage or other proposed connectors are implemented.
+- Verification: `python -m pytest -q tests/test_scaper_eventbrite.py tests/test_scaper_pipeline.py` via `.venv/Scripts/python.exe` passed 29 tests. Tests use mocked HTTP and an in-memory Store; Postgres migration, live provider token/endpoint, and `public.events` writes were not verified.
+- Integration gap: main `GET /api/v1/explore/events` still calls `search_events_extended` / the Ticketmaster and `explore_contents` path. No Scaper-to-main-hub read mapping or event-detail lookup was found. Scaper rows should not be described as visible in Explore yet.
+- Decision/risk: retain Overture as the place inventory source. Do not treat Google Places or Yelp as free bulk-ingest sources without current terms and cost review. The proposed background Instagram scraper conflicts with `data-spine.md`'s explicit no-crawler boundary. Next action is a Postgres migration/upsert integration test, then a gated `public.events` reader for the hub and event detail before claiming an end-to-end proof of concept.
+
+## 2026-09-26 — Automatic narrow-screen Explore layout
+
+- Goal: make the Explore feed and lower sections usable in the narrow Codex side view and Android-sized layouts through automatic CSS breakpoints. No user-facing mode switch or new provider API.
+- At widths below 768px, listing cards without a verified photo show a compact 64px source/unknown strip instead of a tall striped image placeholder. Cards with photos keep their normal media height. The destination tabs and reel stay horizontally scrollable without visible scrollbar tracks; the arrow controls remain available.
+- The saved picks bar now defaults to a compact summary above the shared bottom navigation. Its toggle expands party-size, provider-link, and Clear controls. The page reserves more scroll space while expanded. The global Wayra launcher uses the mobile navigation height and safe-area inset, and stays above the saved bar when present. Stored dragged positions are visually clamped to the viewport and bottom controls.
+- Verified in the local 518px in-app browser: compact unknown-photo cards, mobile saved-bar expand/collapse, lower destination carousel, and the bottom controls. Measured rectangles after collapse: Profile top 666px, saved bar bottom 666px, Wayra bottom 578px, so those controls do not overlap at that viewport. `scrollbar-width` computed as `none` for the mobile destination tabs after fixing selector specificity.
+- Explore Vitest: 116 passed across 21 files. `npx tsc --noEmit`: 0 errors. `git diff --check` found no whitespace errors in touched UI files. Physical Android device and wide desktop visual QA remain open; responsive CSS targets <=767px, with extra saved-bar spacing <=400px. F34 remains Partial for its separate account-isolation and Collection Retry gates.
+
+## 2026-09-26 — F34 signed-in browser restore; saved-price loading state
+
+- In a signed-in local Explore session, saved Griffith Park from its drawer. The card changed to Saved. Reloaded `/explore`; Collection restored one saved selection, and after the listing feed loaded the Griffith Park card and drawer both showed Saved. This verifies the save/reload portion for one account and listing. A browser cache-bypass reload was not performed.
+- During restore, the saved bar briefly showed `$0 each` while its listing record was unresolved. Updated `ExploreSavedBar` to treat unresolved saved IDs as unknown-price, preserving the saved selection without implying a free listing.
+- A focused server-rendering regression test checks the unresolved-listing state. Related save tests: 7 passed across 3 files; `npx tsc --noEmit`: 0 errors. `graphify update .` completed.
+- F34 remains Partial in product and workbook row 60 is unchanged. Account A/B isolation, forced Collection GET failure and Retry, and Explore unsave are not browser-verified or complete. No second account was available in this session. The listing feed intermittently took long enough to show a partial source failure before Retry recovered; this is a separate inventory reliability issue.
+- Next action: perform the remaining F34 browser gates with a second test account and a controlled Collection GET failure, then decide the Explore unsave acceptance requirement.
+
+## 2026-09-26 — Remove unsupported rain prompt metrics; F34 browser gate
+
+- Replaced the Explore masonry `ask-rain` prompt and subtitle with neutral indoor-discovery copy. The prior fixed “70% chance at 2 PM · 12 indoor swaps” had no live weather or inventory basis.
+- Verified the new text in a local `/explore` browser session. The hub showed 24 of 96 loaded listings, Overture slot cards, and an opening detail drawer.
+- The browser session was signed out: pressing the drawer’s Save to Collection button routed to `/login?next=%2Fexplore`. Therefore save → refresh, account isolation, and Collection failure → Retry remain unverified. F34 remains Partial in product and workbook row 60 is unchanged.
+- Focused Vitest: 9 passed across the unsupported-group-fixtures and no-AI-inventory suites. `npx tsc --noEmit`: 0 errors. `graphify update .` completed.
+- Next action: sign in on the local login page, then execute the F34 browser checklist already recorded below. Do not infer save persistence from the signed-out redirect.
+
+## 2026-09-25 — F34 persistent saved listings (Partial in product)
+
+### Context
+
+Explore hub saves must use the existing **My Space / Collection** API (`GET`/`POST `/collection/items`), restore after refresh for signed-in users, and stay idempotent via stable `saved_from` keys (Overture place `id` = GERS id).
+
+### Goals addressed
+
+- **`explore-hub-save.ts`**: `explore:listing:place:{id}` / `explore:listing:event:{id}` keys, restore helpers, POST body builder.
+- **`use-explore-hub-saves.ts`**: load collection on login, merge into saved bar + card/drawer state; save with saving/saved/error + Retry; signed-out → `/login?next=/explore` (no localStorage).
+- **`collection_service.py`**: `find_item_by_saved_from` + idempotent `create_item` when `saved_from` repeats.
+- **UI**: `ExploreDetailDrawer` save affordance + error row; `ExploreSlotCard` “Saved” mark; saved bar **Clear** drops session picks only (no Collection DELETE).
+
+### Verification
+
+- Vitest Explore: **112 passed** (19 files), including **`explore-hub-save.test.ts`** (5).
+- Backend: **`tests/test_collection_idempotent_save.py`** + **`tests/test_collection.py`**: **6 passed**.
+- `npx tsc --noEmit`: **0 errors**.
+- **Not run in this pass:** manual browser save → refresh → still saved; account A/B switch in browser. Agent debug ingest logs in `use-explore-hub-saves.ts` (remove after browser QA).
+
+### Status
+
+- **F34 — Partial in product** (workbook row 60): persistence path is wired to Collections; remaining gaps: no Explore **unsave**, save payload often lacks lat/lng when hub slots omit coordinates, saved bar clear vs persisted “Saved” badge on cards (by design: clear ≠ delete Collection).
+
+### 2026-09-25 follow-up — restore, reload retry UI
+
+- **Fix:** `useExploreHubSaves` waits for dashboard auth **`loading === false`** and **`isLoggedIn()`** before `GET /collection/items`. **`saveUiState`** derives **saved** from persisted `saved_from` keys so drawer/card stay aligned after reload.
+- **Reload failure:** Amber **alert banner** on `/explore` when Collection reload fails, with **Retry** (keeps message visible while retrying; clears only on success). Drawer save still has per-listing error + Retry.
+- **Debug ingest:** removed (temporary F34 instrumentation).
+- **Verification (automated):** Explore Vitest **113 passed** (20 files); collection pytest **6 passed**; `tsc` **0 errors**.
+- **Verification (manual — required for F34 Complete):** save from drawer → hard refresh → card + drawer **Saved**; account A/B isolation; reload banner + Retry when Collection GET fails. **Not verified in Cursor browser automation** (local `/explore` did not render in MCP snapshot — blank shell only).
+
+### F34 completion gate (status stays **Partial in product** until all pass)
+
+**Required manual checks (not replaceable by Vitest/tsc):**
+
+1. Save a listing from the **drawer** (signed in).
+2. **Hard refresh** `/explore` — same listing shows **Saved** on **card and drawer**.
+3. **Sign out** → sign in as **another user** — first user’s saves must **not** appear.
+4. Sign back in as the **original user** — saves **return**.
+5. **Failure → Retry:** force or simulate failed **Collection reload** (`GET /collection/items`) — amber **saved-listings banner** appears with **Retry**; after backend recovery, Retry restores saved marks. (Per-listing save failure still uses drawer error + Retry.)
+
+**What blocks “Complete” even if 1–5 pass:**
+
+- **Explore unsave** is not implemented (items remain in My Space only) — if product acceptance requires unsave from the hub, F34 stays **Partial**.
+- Missing **lat/lng** on save body is **not** a gate unless acceptance requires coordinates for this flow.
+
+**No further save-feature code** until a specific failure shows up in checks 1–5.
+
+### Zero slot cards diagnosis (2026-09-25)
+
+**Symptoms:** Hub UI loads but masonry shows **0 slot cards**; pulse bar may say partial failure for **Attractions · Restaurants**.
+
+**Root causes (confirmed locally):**
+
+1. **Places (`GET /explore/places`)** — Overture hot index SQL is **PostgreSQL/PostGIS only**. With **`DATABASE_URL` = sqlite** (default local `.env`), the route returns **503** (spine unavailable) so the hub marks attractions/restaurants as **failed**, not **empty**. Successful Postgres queries with zero rows return **200 + `places: []` + `source_status: "empty"`**; rows return **`source_status: "ready"`**. Freshness lookup failures must not drop already-fetched `places`. **Real Overture rows still require Postgres** with migrations **006/007** and ingest/resync — not sqlite.
+2. **Events (`GET /explore/events`)** — **HTTP 200 does not imply inventory.** Empty `events: []` can mean cold cache before Ticketmaster fetch, or date/geo filters with no matches. After cache warm, Chicago + 14-day window + geo returned **50+ verified events** in TestClient while places stayed **[]** on sqlite.
+3. **Hub card pipeline** — `fetchExploreHub` builds slots from verified events + Overture places; `filterSlotsByTimeScope` keeps **places** on calendar/day filters but scopes **events** to the active When/day. Zero cards = **both** failed/empty sources or filters removed all events.
+
+**Verification (2026-09-26):** `tests/test_explore_place_spine.py` (sqlite **503** unavailable vs mocked Postgres **200 empty/ready**); Explore Vitest `explore-hub-fetch-state.test.ts` (events-only partial + failure line). TestClient on sqlite: places **503**, events **200** when TM cache warm. Hard refresh `/explore` — expect **event cards + partial banner** (Attractions · Restaurants) when places spine unavailable. **F34** remains **Partial in product**.
+
+### Unblocking `/explore` for manual QA (2026-09-25)
+
+- **UI renders** at `http://localhost:3000/explore` (hero, When row, destinations). Cursor MCP screenshots can look blank while DOM text is present.
+- **Listing cards** require hub inventory: local probe showed `GET /api/v1/explore/events?city=Chicago` **200** on `:8000`, but the hub reported **partial failure** for **Attractions · Restaurants** and **0 masonry slot cards** until places spine/data is available.
+- **Before F34 manual QA:** ensure FastAPI on the URL in `frontend/.env.local` (`NEXT_PUBLIC_*`), run hub **Retry** if partial banner shows, confirm at least one **slot card** opens a **drawer**. If only events load, save an **event** listing for the checklist.
+- **Dev shell issues:** stale Next dev can throw `ChunkLoadError` (blank client) — restart the single `next dev` on port **3000** and hard refresh.
+
+### Next action
+
+- Operator: fix hub inventory (places spine / env) until slot cards appear, then run checks 1–5. Update workbook **F34** only after all pass; keep **Partial** if unsave remains out of scope but required by product.
+
+## 2026-09-24 — Workbook status + UI availability row
+
+- **Tasks tracked:** **76** (18 gates G01–G18 + 58 capabilities F01–F58), rows 9–84 on sheet **Explorer Tasks**.
+- **Status (column D, as of 24 Sep 2026):** **33** Complete in code · **23** Partial · **15** Pending · **5** Not started (row 5 COUNTIF formulas on D9:D84).
+- **New summary row 4 — UI availability:** **G08** unknown-state copy is **working in code** (Vitest); **F15** open-now/capacity remains **Partial in product** (honest unknowns on Overture place rows without spine hours). Evidence column H lists the Explore UI functions wired through `eventToSlot` / `placeToSlot`, drawer, and cards.
+- **Not counted as “Complete”:** production browser QA, live provider inventory, or per-venue hours on Overture until spine supplies them.
+
+## 2026-09-22 — Explorer Scrum task workbook
+
+- Context/goals: user requested one Explorer-specific Excel tracker with every audited capability, task status, importance, difficulty, and color coding. Their review added the locked Overture → Supabase hot index → R2 cold path and the missing-data, trust, identity, and group-truth work.
+- Result: `Rovvy_Explorer_Scrum_Book.xlsx` contains 76 task rows: 18 cross-cutting gates and all 58 capabilities from the feature audit. Status, importance, and difficulty are separate editable columns. Red marks **Very hard** difficulty; yellow marks **Critical** importance and **Partial** status; green marks **Complete in code**. The workbook includes filters and an at-a-glance status count.
+- Verification: source audit parsed to 58 distinct IDs; the exported XLSX opened as a valid ZIP/XML package with 82 worksheet rows, six conditional-format rules, and three dropdown validations. A rendered top-of-sheet preview was inspected for legibility. No application code or production provider was tested for this documentation update.
+- Unresolved risks: “Complete in code” describes a narrow local implementation, not production QA. The source audit predates same-day Critical batch 1; the workbook accounts for the documented fixes where identifiable and leaves data spine, unknown-state design, synthetic-rating removal, provider freshness, and actual group operations open. No full re-audit of all 76 rows was performed.
+- Next action: use the Critical filter to agree the Overture/hot-index contract and unknown-state design acceptance criteria, then update task statuses only after implementation evidence.
+
+## 2026-09-22 — Explore feature priority and completion audit
+
+- Context/goals: user requested a project-informed ranking of every main Explore feature and a completion/pending Venn diagram.
+- Result: [Explore feature priority audit](Explore_Feature_Priority_Audit.md) expands the 12 broad areas into 58 scoped capabilities: 15 complete in code, 22 partial, 21 pending; priority split is 17 Critical, 25 Important, 16 Later. Counts are not engineering-effort or production-readiness percentages.
+- Verification: current TypeScript check passed; 9 Explore helper tests and 16 hero/location/photo tests passed (25 total). Architecture, active call paths, and candidate backend reuse were inspected. No application code changed.
+- Risks: synthetic ratings, unverified availability/fee claims, generated event fallback, incorrect filter zero-state, incomplete location propagation, broken fresh OSM fallback, and label-only success actions remain. Earlier live/OSM wording in this record does not establish that every current listing is verified live inventory.
+- Environment: source and local mocked/unit tests only; no browser, production-provider, or database-write verification in this audit.
+- Next action: address the audit's Critical group before expanding AI/group workflows; update counts only after verification.
+
+## 2026-09-23 — F15 backend pass: OSM hours + Ticketmaster sold out (Partial)
+
+### Context
+
+Second F15 pass: wire **existing** provider fields through `/explore/places` and Explore drawer/cards. No new external APIs, no open-now parsing, no Foursquare detail expansion.
+
+### Goals addressed
+
+- **`explore_city_extended_service.py`**: `opening_hours_from_osm_tags()`; OSM rescue rows include `opening_hours` + `hours_source: "openstreetmap"` when tags are non-empty.
+- **`GET /explore/places`**: passes place dicts through unchanged (includes new fields on OSM fallback).
+- **Frontend**: `ExplorePlaceRow` → `placeToSlot` → `ExploreSlot` / `ExploreSlotDetail` → **`ExploreDetailDrawer`** shows **Hours · OpenStreetMap** + raw string, or **Hours unknown**; place cards use **Hours listed** when OSM hours exist (not open-now).
+- **`explore-availability-copy.ts`**: `sold_out` / `soldout` → **Sold out**; generic **Open** → **Check provider**; `hubListingBadge` normalizes Ticketmaster status for badges.
+- **Tests**: `tests/test_explore_places_hours.py`; extended `explore-availability-copy.test.ts` (sold out, 24/7 drawer path).
+
+### Verification
+
+- `.venv\Scripts\python -m pytest tests/test_explore_places_hours.py -q`: **3 passed**.
+- `npx vitest run app/(dashboard)/explore/__tests__`: **26 passed** (8 files).
+- `npx tsc --noEmit`: **0 errors**.
+
+### Status
+
+- **F15 — Partial in code** (Scrum): Explore surfaces avoid invented open-now, walk-in, bookable, and capacity claims; verified **Ticketmaster sold out** and **OSM weekly hours** flow end-to-end on those rows.
+- **Remaining gap**: Foursquare-primary place listings (when OSM rescue does not run) still have no verified hours string — drawer shows **Hours unknown** until the locked data-spine / Foursquare migration (out of scope for this pass).
+
+### Scrum workbook
+
+- **F15** row **Partial** (verified in workbook): OSM + Ticketmaster path documented in row notes; no separate workbook sidecar file.
+
+### Product decision — verified hours only (Approach A)
+
+- **2026-09-23:** Do **not** add category-default or “typical” standing hours (e.g. subway 7–8, restaurant 8–10). Estimated windows would read as inventory facts and undo F15 trust work.
+- **Completion path for F15:** per-venue verified hours via the locked **Overture → Supabase hot index → R2 cold** data spine (and provider fields already wired). Until then, uncovered listings stay **Hours unknown** / **Check provider**.
+- **Independent re-verification (same day):** backend F15 tests **3 passed**; Explore Vitest **26 passed**; `tsc` **0 errors**; graphify refresh **16,585 nodes / 41,356 edges**.
+- **F15 code/docs:** leave unchanged until data-spine supplies verified per-venue hours.
+
+## 2026-09-23 — G14 listing location display (Complete in code)
+
+### Context
+
+Suppress invalid listing locations and dangling separators (e.g. **· US** when city is missing) on Explore listing surfaces only — not hero, location search, or provider APIs.
+
+### Goals addressed
+
+- **`explore-listing-location.ts`**: `formatListingLocationDisplay`, `joinExploreMetaParts`, `formatEventListingSummary`, `formatEventListingBody`, `formatEventListingDescription`, `formatMapsSearchQuery`, `formatCategoryCardLocation`, `formatSlotListingArea`
+- Applied to hub **`eventToSlot` / `placeToSlot`** (including drawer **`body`** / **`description`**), picks **`buildRanked`**, **`hubSlotToDetail`**, **`ExploreCategoryEventCard`**, **`ExploreDetailDrawer`**, **`/explore/event/[id]`** (maps query disabled when location empty)
+- Raw **`stateLabel` / `countryLabel` / `city`** on slots unchanged for **`explore-location-scope`** filtering
+
+### Verification
+
+- `npx vitest run app/(dashboard)/explore/__tests__`: **42 passed** (10 files), including **`explore-listing-location.test.ts`** (body prose, maps query, regression scan)
+- `npx tsc --noEmit`: **0 errors**
+- `graphify update .` via `graphify-out/.graphify_python`
+
+### Scrum workbook
+
+- **G14** → **Complete in code**
+
+## 2026-09-23 — G09 / F07 hub load states (Complete in code)
+
+### Context
+
+Main `/explore` hub must distinguish loading, true empty inventory, partial provider failure, and full failure without treating failed requests as zero results or mislabeling empty cache as an error.
+
+### Goals addressed
+
+- **`explore-hub-fetch-state.ts`**: per-source `ready` / `empty` / `failed`; hub `ready` / `partial` / `empty` / `failed` (failure not inferred from `freshness.unavailable`).
+- **`fetchExploreHub`**: **`Promise.all`** concurrent per-source wrappers (same timeout); preserve rows from successful sources; failed sources excluded from **`sources`** list.
+- **Partial vs inventory**: masonry/stats/picks only when **`data.slots.length > 0`**; partial warning (with Retry) even when zero slots survive — distinct copy for “Showing available results” vs “Available sources returned no listings”.
+- **`useExploreHub`**: clears stale cards on reload; **`retry()`** uses **`buildExploreHubFetchInput`** (city, scope, coords, Tonight/Weekend date range); no `totalLive === 0` error string.
+- **`page.tsx`**: loading status; partial warning + Retry; true empty copy; full failure alert + Retry; filter-zero and prompt-zero unchanged; removed “feed never comes back empty” copy.
+
+### Verification
+
+- `npx vitest run app/(dashboard)/explore/__tests__`: **61 passed** (12 files), including concurrent-fetch and partial-zero inventory cases in **`explore-hub-fetch-state.test.ts`**.
+- `npx tsc --noEmit`: **0 errors**.
+- `graphify update .` via `graphify-out/.graphify_python`.
+
+### Scrum workbook
+
+- **G09** and **F07** → **Complete in code** (hub only).
+- **Limitation:** browser/provider QA not re-run; mock **`apiFetch`** covers fetch contract tests only.
+
+## 2026-09-23 — G15 / F08 Explore hub count contract (Complete in code)
+
+### Count definitions (main `/explore` hub only)
+
+- **`loadedScopeCount`**: all successfully fetched, mapped listings after selected location and date scope (bounded client pool — not provider-wide totals).
+- **`matchingCount`**: loaded-scope listings matching active category, vibe, and price filters.
+- **`visibleCount`**: listings revealed in the masonry feed (`matchingSlots.slice(0, visibleLimit)`; initial limit **24**).
+- **`pageSize`**: **24**; **`hasMore`**: `visibleCount < matchingCount`.
+- **Pools**: card feed, Explore picks, and Wayra prompt planning use **visible** listings; saved-detail lookup uses the full **loaded-scope** pool.
+- **Category stat counts**: for each stat chip, `filterHubSlotsByChips(loadedScope, activeChips + chip)` (no duplicate if already active). The number beside an inactive chip equals the result count after adding that chip; an active stat chip shows the current filtered count.
+- **Free / Free tonight**: same predicate for stat count and filter (`isExploreFreeInWhenRange` — verified dated free events in the selected when range only; not generic price-free places or editorial rows).
+- **Hero listing count** (`explore-hero-listing-count.ts`): `loading` → “Checking listings”; successful empty → “0 loaded listings”; ready/partial-with-rows → “{n} loaded listings”; failed / unexpected error / partial-with-zero → “Listing count unavailable”.
+
+### Goals addressed
+
+- **`explore-hub-counts.ts`**, **`explore-hub-listing-predicates.ts`**, **`explore-hub-chip-match.ts`**: shared predicates, stats builder, paging/copy helpers, deterministic round-robin merge.
+- **`fetchExploreHub`**: maps full successful responses (no hidden `slice(0,12)` / `slice(0,24)` caps); **`totalLive`** removed.
+- **`page.tsx`**: Load more (+24), pagination reset on city/scope/date/filters/reload; honest pulse/refine/hero copy; partial/G09 behavior unchanged.
+- **`HeroLocationWidget`**: **`listingCountState`** distinguishes “Checking listings”, successful zero or loaded counts, and “Listing count unavailable” when provider coverage failed or partial coverage returned no rows.
+- **Category stats**: Events / Food & drink / Live music / Outdoors / Landmarks / Free (or Free tonight); **Showing now** removed; Landmarks never `|| places.length`.
+
+### Verification
+
+- `npx vitest run app/(dashboard)/explore/__tests__`: **86 passed** (14 files) as of **2026-09-24** (includes calendar-safe date fixtures in **`explore-hub-counts.test.ts`**).
+- `npx tsc --noEmit`: **0 errors**.
+- `graphify update .` via `graphify-out/.graphify_python`.
+
+### Scrum workbook
+
+- **G15** and **F08** → **Complete in code**.
+- **F27** stays **Partial** (client Load more only; no provider/backend pagination).
+- **F09** stays **Partial** (broader date behavior unchanged).
+
+## 2026-09-23 — G07 / F04 no AI in Explore inventory (Complete in code)
+
+### Scope
+
+Main Explore **verified event inventory** only: hub `/explore/events` feed, city `/explore/[city]/events`, and event detail. Editorial seasonal ideas are isolated on `/explore/seasonal-events-ai` and must not merge into provider feeds.
+
+### Backend behavior
+
+- **`search_events_extended`**: **`filter_verified_explore_event_rows`** on `db_events` and aggregated `all_events` **before** `_paginate_events`, `return_all`, and `pool_limit` so generated rows never consume page slots and **`total`** is verified-only across pages.
+- **`GET /api/v1/explore/events`**: route-level defensive filter; **`view=list`** preserves `result["total"]` when nothing removed, otherwise subtracts removed rows (never `len(current_page)`).
+- **`fetchExploreHub`**: **`filterVerifiedExploreApiEventRows`** on the combined events/trending/weekend/popular pool **before** `rawEventCount`, date filter, `eventToSlot`, sources, and event source status (editorial-only API → events source **empty**).
+- **`GET /api/v1/explore/events/{event_id}`**: Ticketmaster/OSM/aggregated cache only; **`ai-ev-*`** and **`mock-*`** without DB rows → **404** (no fabricated “Local Experience”).
+- **`GET /api/v1/explore/seasonal-events-ai`**: editorial only — `kind: "editorial_suggestions"`, `verified_inventory: false`, `suggestions[]` (title/emoji/summary/area_hint/season_hint); no `events` inventory shape.
+
+### Frontend behavior
+
+- **`explore/[city]/events/page.tsx`**: Ticketmaster + Google Events + Eventbrite only; honest empty when sparse/zero.
+- **`explore-editorial-inventory.ts`**: single allowlisted helper for `ai_fallback` / `ai-ev-*` detection; hub maps editorial rows out of verified Events/Free counts via existing `editorial` flag + source/id guards.
+
+### Verification
+
+- `DATABASE_URL=sqlite:///./test.db pytest tests/test_explore_events_endpoint.py -q`: **16 passed** (pagination 45/20, pre-pagination strip, hub list totals)
+- `npx vitest run app/(dashboard)/explore/__tests__`: **86 passed** (14 files), including **`fetchExploreHub`** editorial rejection tests and calendar-aligned date fixtures (**2026-09-24**)
+- `npx tsc --noEmit`: **0 errors**
+- `graphify update .` via `graphify-out/.graphify_python`
+
+### 2026-09-25 — Explore Overture `lng` mapping fix
+
+- **Bug:** `SPATIAL_PLACES_SQL` / `CITY_PLACES_SQL` selected `ST_X(...) AS lon` while `map_spine_row_to_explore_place()` read `lng`, so `/explore/places` returned `lng: null`.
+- **Fix:** SQL aliases longitude as **`lng`**; mapper accepts `lng` with fallback **`lon`** for legacy rows.
+- **Verification:** `pytest tests/test_explore_place_spine.py -q` (includes SQL-row regression for **-87.63** on city + spatial paths). **G18 / F02 not marked complete.**
+
+### 2026-09-25 — Explore hub calendar strip (Phase A, F09 partial)
+
+- **UI:** 14-day **Calendar** under the When row on main `/explore`; only days with **dated events** in the loaded pool appear; tap a day to filter the feed (events on that day + Overture places). Category stat chips hide when count is 0.
+- **Data:** Same **3 hub APIs**; events fetch window widened client-side via `mergeWithCalendarFetchRange` (no new backend route).
+- Verification: Explore Vitest **107 passed** (18 files), including `explore-hub-calendar.test.ts`.
+
+### 2026-09-24 — G01 / G02 operational hardening (bounded SQL, ingest truth, R2 fail-closed)
+
+- **Hot queries:** `explore_place_spine_service.py` applies `LIMIT :lim` and deterministic `ORDER BY` in SQL (no Python slice / `ROW_NUMBER` dedupe). Index: `migrations/007_places_city_category_explore_idx.sql`.
+- **Migrations:** ingest metadata moved to `migrations/006_place_ingest_runs.sql` (replaces conflicting `003_*` number); `tests/test_migrations_unique.py` guards numeric prefixes.
+- **Ingest:** `begin_ingest_run` before load/resync; failures mark run failed and exit **1**; succeeded-scope idempotency; `place_ingest_run_cities` for freshness coverage.
+- **R2:** `06_publish_places_r2.py` validates Parquet via DuckDB, fail-closed remote checks, manifest uploaded last.
+- Verification: focused backend pytest **43 passed**, **1 skipped** (`test_places_resync` DB); Explore Vitest **103/17**; `tsc` **0**.
+
+### 2026-09-24 — G01 / G02 Overture places hot index + R2 contract
+
+- **G01**: `GET /api/v1/explore/places` reads the Overture `places` Postgres hot index via `explore_place_spine_service.py` (city_slug or `ST_DWithin` on `geog`). No Foursquare/OSM fallback on this route. Hub frontend sends `lat`/`lon`/`radius_m`/`limit`; `gers_id` is slot identity and dedupe key; source label **Overture**.
+- **G02**: `migrations/006_place_ingest_runs.sql` + `place_ingest_run_cities`; truthful ingest in `04_load.py` / `05_resync.py` (begin before mutate, fail closed); city-scoped freshness; `scripts/06_publish_places_r2.py` fail-closed R2 contract + DuckDB parquet row-count verify (no live upload in CI).
+- Verification: `pytest tests/test_explore_place_spine.py tests/test_publish_places_r2.py tests/test_publish_places_r2_unit.py tests/test_place_spine.py tests/test_explore_places_hours.py -q` **23 passed**; Explore Vitest **103 passed** (17 files); `tsc --noEmit` **0 errors**.
+- `05_resync.py` records ingest runs (start → resync → complete/fail). R2 publish skips upload when manifest sha256 matches (idempotent); conflicting remote hash exits **2**.
+- Workbook **G01** row **9** and **G02** row **10** → **Complete in code**. **F15** / **F27** remain **Partial**. No production R2 upload performed in CI/tests.
+
+### 2026-09-24 — G08 unified unknown states + F14 Explore ratings
+
+- Context: inventory cards used generic Unsplash fallbacks and inconsistent missing-field copy (Listing photo, See pricing, dash ratings).
+- Result: **`explore-listing-field-state.ts`** — shared price/photo/rating/hours/availability helpers; **`ExploreCardImage`** `fallbackMode="unknown"` for inventory; hub cards, drawer, category pages, event detail, and picks table aligned.
+- Unknown copy: **Price unknown**, **Photo unavailable**, **Hours unknown**, **Check provider**, **Sold out**; drawer **View provider** when price unknown + verified URL.
+- F14: removed **`pseudoRating`** from **`frontend/lib/explore-events.ts`** for Explore; **`frontend/app/(dashboard)/events`** unchanged (documented boundary).
+- Verification: Explore Vitest **101 passed** (16 files), including **`explore-card-image-lifecycle.test.tsx`** (resets `loadFailed` on `imageUrl` / `placeId` / `fallbackMode` change); `npx tsc --noEmit` **0 errors**; no new API.
+- Scrum workbook: **G08** row **16** D16/H16, **F14** row **40** D40/H40 → **Complete in code** (Explore scope). **F11**, **F13**, **F15** remain **Partial**.
+
+### 2026-09-24 — Explore Vitest date fixtures (calendar-safe)
+
+- Context: hub count, v6 map, and G07 fetch tests had hard-coded **2026-09-23** / fixed clocks while production **`dateRangeForWhen`** uses the real calendar → failures when the date rolled forward.
+- Result: **`explore-test-date-fixtures.ts`** — `dateInWhenRange(when, offsetDays)` from live **`dateRangeForWhen(when).dateFrom`**; regression test **`expectFixturesAlignedWithTonightRange`**; verified Free events stay dated, **`priceKnown`**, non-editorial, **`exploreListingKind: "event"`**.
+- Verification (2026-09-24): Explore Vitest **86 passed** (14 files); `tsc --noEmit` **0 errors**; `pytest tests/test_explore_events_endpoint.py -q` **16 passed**; graphify update **16834 nodes / 42093 edges**.
+- Scrum workbook: **G07** row **H15** and **F04** row **H30** evidence updated; **D15** / **D30** remain **Complete in code**.
+
+### Risks
+
+- Editorial endpoint still calls Gemini when invoked directly; no Explore inventory page consumes it after this pass.
+- Provider-empty UX is intentionally sparse until real inventory or editorial product surfaces are designed separately.
+
+### Scrum workbook
+
+- **G07** (row 15) and **F04** (row 30) → **Complete in code**
+
+### 2026-09-23 follow-up — count contract alignment
+
+- **Free filter parity**: `Free` / `Free tonight` use `slotMatchesCategoryStatChip`, not generic price-free matching.
+- **Category stats**: counts use `chipsForCategoryStatCount` + `filterHubSlotsByChips` (full active filter set per chip).
+- **Hero counts**: `ExploreHeroListingCountState` — unavailable vs true empty vs loaded count.
+
+## 2026-09-23 — G16 unsupported group fixtures hidden (Complete in code)
+
+### Context
+
+Keep production Explore honest while invitations, friend attendance, group-chat delivery, and expense splitting are not connected from the hub.
+
+### Verified result
+
+- Removed the hub invite sheet and every entry point to it from the saved bar and detail drawer.
+- Removed the disabled split placeholder, friend-attendance pill/copy, friend-search prompt, and invitation masonry card.
+- Removed the related fixture types and guest arrays; provider deposit copy no longer claims Rovvy splits it.
+- Preserved local Save, provider-link handoff, and the event-detail poll/share flows because those perform real API or browser operations and report success only after completion.
+- Added `explore-no-unsupported-group-fixtures.test.ts` to keep unsupported controls and attendance copy out of the production hub.
+
+### Verification
+
+- `npx vitest run app/(dashboard)/explore/__tests__`: **44 passed** (11 files).
+- `npx tsc --noEmit`: **0 errors**.
+- `graphify update .` via `graphify-out/.graphify_python`.
+
+### Scrum workbook
+
+- **G16** → **Complete in code**.
+- **F37–F39** remain **Pending**: hiding unsupported UI does not implement invitations or group-message delivery.
+- **F17** remains **Partial** pending the wider product-claim audit.
+
+## 2026-09-23 — G17 / F6 cache freshness on `/explore` hub (Complete in code)
+
+### Context
+
+Replace browser-load “updated just now” with Postgres cache **`fetched_at`** metadata for hub events and place lists. F15 hours logic untouched.
+
+### Goals addressed
+
+- **`explore_cache_freshness.py`** + **`_get_cached_list_with_meta`** / **`get_places_cached_with_meta`**
+- **`search_events_extended`** returns **`freshness`** (fresh cache, provider refresh, stale fallback, empty, unavailable)
+- **`GET /explore/events`** and **`GET /explore/places`** include **`freshness`** in JSON
+- **`fetchExploreHub`**: **`sourceFreshness`** `{ events, attractions, restaurants }`; **`loadedAt`** diagnostic only
+- **`explore-freshness-copy.ts`** + pulse bar: **Explore listings**, **Listing sources**, **Cache refreshed …** / **Data age · …** / **Older cached data · events … · attractions …** / unavailable
+- Removed **Live inventory**, **`fetchedAt`** display, and hard-coded **Ticketmaster · OpenStreetMap** source fallback (**Sources unavailable** when empty)
+
+### Verification
+
+- `.venv\Scripts\python -m pytest tests/test_explore_cache_freshness.py -q`: **4 passed**
+- `npx vitest run app/(dashboard)/explore/__tests__`: **34 passed** (9 files)
+- `npx tsc --noEmit`: **0 errors**
+- `graphify update .` via `graphify-out/.graphify_python`
+
+### Scrum workbook
+
+- **G17** and **F06** → **Complete in code** (same evidence string in row notes)
+
+### Follow-up (not blocking G17/F6)
+
+- Category pages and non-hub Explore routes may still omit freshness metadata
+- Mock/test Ticketmaster path on `/explore/events` returns **`unavailable`** freshness
+
+## 2026-09-23 — Next Explore task: G17 / F6 (freshness, not hours) — superseded
+
+### Context
+
+Product agreed **Approach A** for hours (F15 Partial, frozen). Next independent work is **G17** (gate) and **F6** (capability audit ID 6): **Freshness and live status** — same acceptance criteria.
+
+### Problem (current)
+
+- Hub sets `fetchedAt: new Date().toISOString()` in `explore-hub-data.ts` after parallel fetches; UI `formatFetchedAgo(data?.fetchedAt)` on `/explore` reflects **browser fetch time**, not provider/cache age.
+- Backend Explore caches already store **`fetched_at`** and TTL in `explore_city_extended_service.py` (`_get_cached_list` / `ExploreContent` rows) but that metadata is **not** returned on `/explore/events`, `/explore/places`, or aggregated hub responses.
+
+### Intended scope (when implemented)
+
+- Propagate **last provider refresh** (and optionally cache hit vs live fetch, stale vs within TTL) from backend → API → hub mapper → chrome copy.
+- **Out of scope for this task:** F15 hours/open-now, category-default hours, Overture spine (G01–G02) except reusing existing Postgres cache timestamps where available.
+
+### Workbook
+
+- **G17** / **F6** remain **Not started** / **Partial** until implementation evidence; do not conflate with F15.
+
+## 2026-09-22 — F15 availability & hours copy (frontend baseline)
+
+### Context
+
+Audit hours/availability strings under `app/(dashboard)/explore` without new APIs.
+
+### Goals addressed
+
+- **`explore-availability-copy.ts`**: `categoryCardScheduleLine`, `normalizeListingAvailability`, `hubListingBadge`.
+- **`ExploreCategoryEventCard`**: **Hours unknown** / event datetime from `date`/`start_date`; previews → **Preview · hours unknown** and **Preview · coming soon**.
+- **Hub**: places/events default to **Check provider**; card badges only for explicit provider status (not “Open”); neutral badge styling; **Bookable now** / **Walk-in OK** filters removed from refine panel.
+- **Fixtures**: dropped fake capacity/walk-in badges and “slots match right now” ask copy.
+
+### Verification (superseded by 2026-09-23 entry for F15 status)
+
+- Prior run: **24 passed** Explore Vitest; **0** tsc errors.
+
+## 2026-09-22 — G10 remove synthetic ratings across `/explore`
+
+### Context
+
+Complete scrum **G10** for the Explore tab only: drop `pseudoRating` stars/review counts on all category listing cards, fix event detail hard-coded scores and “highly rated” copy, and stop popularity-implying sorts/headings on Events / Activities / Sports.
+
+### Goals addressed
+
+- Shared **`ExploreCategoryEventCard`** (no star row) on Events, Activities, Sports, Food, Parks, Shopping, Landmarks, Gaming, Nightlife, Amusement, Trekking.
+- **`stableEventFeed`** preserves provider/filter order; section titles → **Local listings** / **National listings** (no “Trending / most popular”).
+- **`/explore/event/[id]`**: removed star rating UI, fake 4.5 snapshot score, similar-event stars, and “highly rated / premium … star” recommendation block.
+- Main hub cards already hide `—` via **`cardRatingDisplay`**; design fixtures neutralized to `—`.
+- Regression: **`explore-no-synthetic-ratings.test.ts`** (no `pseudoRating` imports under `app/(dashboard)/explore`).
+
+### Verification
+
+- `npx vitest run app/(dashboard)/explore/__tests__`: **19 passed** (6 files).
+- `npx tsc --noEmit`: **0 errors**.
+- Scrum **G10** → **Complete in code** in `Rovvy_Explorer_Scrum_Book.xlsx`.
+
+### Follow-up (out of scope)
+
+- Global dashboard **`/events`** (`frontend/app/(dashboard)/events/page.tsx`) still defines its own **`pseudoRating`** — not part of this Explore-tab task.
+
+## 2026-09-22 — G13 card title dedupe + hide unverified card ratings
+
+### Context
+
+Verify G13 (“listing name appears twice”) on `/explore` cards with/without photos; remove visible `—` rating on main feed cards when no verified score exists.
+
+### Findings
+
+- `ExploreSlotCard` renders the listing title in **either** the photo overlay **or** the body, not both (mutually exclusive branches).
+- Duplicate copy came from **data**: when `event.venue` equals `event.name`, the name appeared in meta/summary and again as the title. Fixed in `eventToSlot` plus `normalizeCardSummary` in `hubSlotToCard`.
+- Local browser check: `http://localhost:3000/explore?city=Chicago` remained on “Loading listings…” during spot-check (API/inventory), so live card screenshot verification was not obtained; regression coverage is via unit tests below.
+
+### Goals addressed
+
+- **G13** → Scrum **Complete in code** (workbook row updated).
+- Main cards: `cardRatingDisplay` + conditional footer — no em-dash rating placeholder when providers supply no score (see **G10** entry above for full Explore-tab rating removal).
+
+### Verification
+
+- `npx vitest run app/(dashboard)/explore/__tests__`: **16 passed** (5 files), including `explore-card-copy.test.ts`.
+- `npx tsc --noEmit`: **0 errors**.
+
+## 2026-09-22 — Explore picks table (audit F32 / G11, UI only)
+
+### Context
+
+User asked to fix the main `/explore` ranking table without API or provider changes: remove highest-rated copy, rating/distance columns, all-in heading, and browser-fetch “updated” line; show six feed-order rows as **Explore picks in [city]**.
+
+### Goals addressed
+
+- `hubSlotsToRanking`: first six `feedSlots` in existing order; place, price, neutral availability (`Check provider` when unknown/editorial/generic).
+- `ExploreRankingRow` + `explore.module.css`: three-column layout; row click unchanged; mobile hides price column only.
+- `page.tsx`: title **Explore picks in {displayCity}**; no rank numbers or verification claims in this block.
+- Scrum book: **G11** → Complete in code (heading); **F32** → Partial (honest table UI; verified relevance ranking and site-wide ratings still open).
+
+### Verification
+
+- `npx vitest run app/(dashboard)/explore/__tests__`: **13 passed** (4 files), including new `hubSlotsToRanking` / `rankingAvailabilityLabel` test.
+- `npx tsc --noEmit`: **0 errors**.
+
+### Risks / next action
+
+- **G10** (remove pseudoRating on category pages) and full data-spine ranking remain **not** marked complete.
+- Optional: align legacy `explore-hub-data.ts` `buildRanked` payload if any consumer still reads `ranked` tuples.
+
+## 2026-09-22 — Critical batch 1 (truth + discovery wiring)
+
+### Context
+
+Implement first audit Critical items: hide fake success/social fixtures, honest filters/prices, provider handoff, OSM fallback repair, `when` → API dates, zero-match filters, stale-request guard (already in hook).
+
+### Goals addressed
+
+- Truth: removed drawer social fixtures, fake invite/share/split/plan success; invite sheet is explicit “coming soon”; hero pill copy softened; live shortcut no longer claims “starting soon”.
+- Discovery: `useExploreHub(when)` passes date range; price chips use numeric `priceKnown` + amount; zero filter match shows empty state (no silent fallback to all slots); ranking by distance not synthetic stars.
+- Handoff: `sourceUrl` on places/events → drawer/saved bar `openExploreListingUrl`.
+- Backend: `_fetch_osm_places` fixed Overpass tag + httpx client scope; Foursquare/OSM rows include `source` + `url`.
+
+### Verified result
+
+- `npx vitest run app/(dashboard)/explore/__tests__`: 12 passed.
+- `npx tsc --noEmit`: 0 errors (post batch).
+
+### Risks / still open (Critical)
+
+- Collection persistence for saves; GPS vs `CITY_COORDS` distance; partial provider failure surfacing; cache timestamp on UI; practical keyword filters; Wayra real planning; keyboard traps on drawer/invite.
+
+### Next action
+
+Critical batch 2: pass hero GPS into fetch scope, propagate cache age, wire Collection save, improve empty/partial error states.
+
+### Later same-day clarification: selected city and remembered location
+
+The working tree gained scoped location selection and a request-sequence guard for hub results after the audit snapshot. [The audit's follow-up section](Explore_Feature_Priority_Audit.md#2026-09-22-follow-up--selected-location-discussion) corrects feature 1 and defines selection precedence, persistence/privacy, URL behavior, hero/feed consistency, and acceptance scenarios. This was read-only analysis plus documentation; the other feature statuses were not re-audited.
+
 ## 2026-09-11 — Explore v6 HTML port + global forest-green tokens
 
 ### Context
@@ -29,6 +644,47 @@ User approved porting `Rovvy Explore v6.dc.html` into production code with globa
 ### Next action
 
 When DB caches populate, merge fixture shapes with live API responses while preserving empty/loading honesty.
+
+## 2026-09-22 — Explore v6 hub wired to live events + places APIs
+
+### Context
+
+User requested real data on `/explore` instead of Chicago fixture inventory only (hero location was already live via `/api/hero`).
+
+### Goals addressed
+
+- Reconnect `useExploreHub` + `fetchExploreHub` to the v6 page layout.
+- Feed, stats, ranking, Wayra plan matches, and location slot counts from `/explore/events` + `/explore/places` (Ticketmaster cache + OSM venues).
+- Remove fake social pulse/friend/broadcast copy; show honest inventory + provider source line.
+- Preserve v6 ask/live/invite masonry inserts; destination reel remains editorial until city-scores API is merged.
+
+### Verified result
+
+- `explore-hub-v6-map.ts` maps API slots → v6 cards, ranking rows, Wayra plans, chip filters.
+- `page.tsx` uses live payload; `ExploreSavedBar` resolves saved rows from hub lookup.
+- `ExploreSlotCard` renders provider `imageUrl` when present.
+- `npx tsc --noEmit`: 0 errors.
+- `npx vitest run app/(dashboard)/explore/__tests__`: 7 passed.
+
+### Risks / next action
+
+- Friend activity and invite sheet remain UX stubs until social APIs exist.
+- Wire destination reel to `nearby_cities` / city-scores; optional auth merge from `/api/v2/explorer/*`.
+- Drawer checkout should deep-link to `ticket_url` from event detail endpoint.
+
+## 2026-09-22 — Destination regions (Americas, Europe, Oceania)
+
+### Context
+
+User requested European and Australian/Oceania destinations on the Explore hub, working region pills, carousel scroll arrows, and an all-countries page.
+
+### Verified result
+
+- `explore-destinations.ts` — USA, Canada, Mexico, Europe (10 cities), Oceania (6 cities incl. Australia & NZ).
+- `ExploreDestinationsSection` — region tabs, left/right reel controls, Surprise me per region.
+- `/explore/destinations` — full directory; city picks navigate to `/explore?city=…`.
+- Hub reads `?city=` query to reload inventory; `CITY_COORDS` extended for geo event search.
+- Tests: `explore-destinations.test.ts` (2) + existing Explore suite (9 total).
 
 ## 2026-09-11 — Explorer v6 design implementation
 
@@ -117,6 +773,31 @@ At narrow viewport widths, the Explorer-specific top header and the shared dashb
 
 Responsive switching follows the effective CSS viewport, so browser zoom or operating-system scaling can cause a physically large window to use the mobile layout. This is expected responsive-browser behavior.
 
+## 2026-09-15 — Explore auto-location + zip/PIN/city override
+
+### Context
+
+User reported the Explore location sheet felt like it required manual city entry. They wanted automatic exact location on load, with optional worldwide postal code or alternate city search (not limited to US/India).
+
+### Goals addressed
+
+- Auto-request browser geolocation on Explore hero mount; fall back to IP `/api/hero` when GPS is denied or unavailable.
+- Replace hardcoded city picker with worldwide backend geocoding search (postcode, city, neighbourhood).
+- Global address formatting (state/region/province/country) and search bias from current GPS when available.
+- Remove sign-in gate for manual location override; keep optional remember copy for signed-in users.
+
+### Verified result
+
+- `HeroLocationWidget.tsx`: auto GPS → hero, geocoding search via `liveGeocodingSearch`, updated sheet copy/placeholder.
+- `explore-hero-location.ts` + vitest (3 tests).
+- `npx vitest run app/(dashboard)/explore/__tests__/explore-hero-location.test.ts`: passed.
+- `npx tsc --noEmit`: 0 errors.
+
+### Risks / next action
+
+- Geocoding search requires backend on `/api/v1/geocoding/search` (same as Live tab).
+- Browser must grant location permission for exact auto-pick; otherwise IP approximate remains.
+
 ## 2026-09-11 — Live location hero
 
 ### Context
@@ -152,3 +833,39 @@ The Explore hero needed location-aware presentation without retaining a user's c
 - IP location is approximate and, in local development, reflects the outward-facing development network address.
 - Wikimedia quality varies even after geographic, dimension, aspect, and title filtering. Configure Flickr when higher-volume neighbourhood imagery is needed.
 - The location card currently receives the Explore page's existing slot count. Replace that input when the broader feed gains a radius-aware live-count contract using `suggestedRadiusMiles`.
+
+
+## 2026-09-25 — Workbook/code reconciliation audit
+
+Read-only product/code audit requested by the user; no application code or workbook statuses changed.
+
+Workbook snapshot: 76 task rows = 18 gates + 58 capabilities. Complete in code 33, Partial 23, Pending 15, Not started 5 (43 unfinished). Gates: 12 complete / 1 partial / 5 not started. Capabilities: 21 complete / 22 partial / 15 pending. Gate and capability rows overlap; these are task counts, not unique-feature or engineering-effort percentages.
+
+Recorded complete gates: G01 G02 G07 G08 G09 G10 G11 G13 G14 G15 G16 G17.
+Recorded complete capabilities: F04 F06 F07 F08 F12 F14 F18 F19 F20 F21 F22 F26 F30 F31 F33 F35 F42 F43 F44 F45 F54.
+Partial: G18; F01 F02 F03 F05 F09 F10 F11 F13 F15 F16 F17 F23 F24 F27 F28 F32 F34 F36 F41 F46 F55 F56.
+Pending: F25 F29 F37 F38 F39 F40 F47 F48 F49 F50 F51 F52 F53 F57 F58.
+Not started: G03 G04 G05 G06 G12.
+
+Reconciliation findings:
+- G04 and G05 are stale for the main hub: app/routes/explore.py /places uses ExplorePlaceSpineService, and Overture gers_id reaches slot/card identity through explore-hub-places-overture.ts. These support Complete in code for that scope, not a claim that all other discovery services removed Foursquare.
+- F47 is stale: hubSlotToDetail passes imageUrl and ExploreDetailDrawer displays it. Missing URLs show Photo unavailable. Broken remote image handling/browser QA remain distinct checks. This supports code completion for the row's image-URL mapping criterion.
+- Counting those three narrow reconciliations gives 36 complete / 40 remaining, a proposed code-review count; workbook remains 33 / 43 until statuses are reconciled. This is not full production certification.
+- G06 has GERS-based deduplication implemented; cross-provider crosswalk coverage is not established, so Not started is stale but complete is not established.
+- F03/F05 and F15 evidence still refers to the old Foursquare-primary/absent-spine path. Update evidence to Overture hot-index coverage. F15 remains Partial: the current spine mapper does not supply verified hours.
+
+Confirmed defect: both spine SQL SELECTs alias longitude as lon, while map_spine_row_to_explore_place reads lng. A direct mapper reproduction with lat=41.88 and lon=-87.63 returns lng=None. Existing mocked mapping test supplies lng and misses the SQL-to-mapper mismatch. Fix alias/mapping and add a service-result contract regression. Database-computed distance_m is separate and this finding does not imply that distance_m itself is lost.
+
+Other review findings: places query always requests a 100 km radius when coordinates exist; drawer map remains area text plus a dot; drawer dialog has no focus-trap/Escape implementation; savedIds is component state. Drawer uses a CSS background image without load-error fallback. Remaining priorities include location scope/persistence and units (G18/F01/F02/F41), price/currency/group-total semantics (F11/F13/F36), provider paging (F27), verified hours (F15), cold R2 consumer path (G03), z17 map fallback (G12), saved collections/day plans (F34/F25), structured practical filters (F29), and real group functions (F37-F39/F49-F53). Hiding group fixtures does not implement those functions.
+
+Verification this audit: Explore Vitest 107 passed in 18 files; npx tsc --noEmit exited 0. Focused backend invocation covering test_explore_place_spine.py, test_explore_places_hours.py, test_explore_events_endpoint.py and test_explore_cache_freshness.py: 23 passed, 11 failed; failed cases are in the event endpoint file and encountered blocked Supabase access. These are unresolved verification failures, not proven product regressions. No live browser/provider, deployed migration, populated hot index, or R2 runtime verification in this audit. Next action: fix longitude contract first, reconcile stale workbook rows, then complete live location/price/save QA before taking on group features.
+
+## 2026-09-26 — Independent places availability / editorial review
+
+Checked the places route, source-state classification, event inventory filters, masonry mapping and rendered ask-card copy. No application changes or workbook promotion.
+
+Verified in code: unsupported database and spine query failures raise 503; successful queries expose ready/empty; freshness exceptions preserve fetched places. Events survive places failure. Invalid category uses AppException.bad_request (400, not the previously reported 422).
+
+Editorial finding: known generated event markers are filtered before hub mapping/counts; fixture slot rows are replaced with real slots by buildMasonryFeed. Non-slot ask/live templates still enter the masonry. A confirmed misleading fixture remains: ask-rain subtitle is hardcoded to "70% chance at 2 PM · 12 indoor swaps" and ExploreAskCard renders it verbatim. Replace with neutral prompt copy or verified data. This is unsupported promotional copy, not proof of generated event inventory leakage. The reported browser phrase "Overture + editorial cards" cannot itself establish inventory contamination.
+
+Independent checks: tests/test_explore_place_spine.py: 17 passed, 1 skipped (sqlite-only route regression skipped on current Postgres configuration). Frontend explore-hub-fetch-state and explore-g07-f04-no-ai-inventory: 26 passed across 2 files. No live browser proof, full-suite rerun or TypeScript rerun in this review. F34 remains Partial pending its save/refresh/account-isolation/failure-retry browser gates. Next action: remove unsupported ask-rain metrics, then run F34 browser QA.

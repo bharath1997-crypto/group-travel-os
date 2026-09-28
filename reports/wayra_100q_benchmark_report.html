@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Wayra 100Q Benchmark — Red Square Moscow</title>
+<style>
+  :root { font-family: Inter, system-ui, sans-serif; color: #0f172a; }
+  body { margin: 0; background: #f8fafc; }
+  header { background: #0f766e; color: white; padding: 2rem; }
+  header h1 { margin: 0 0 .5rem; font-size: 1.75rem; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 1rem; margin: 1rem 0 2rem; }
+  .card { background: white; border-radius: 12px; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .card h3 { margin: 0 0 .5rem; font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; color: #64748b; }
+  .card .big { font-size: 1.5rem; font-weight: 700; color: #0f766e; }
+  table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.08); font-size: .82rem; }
+  th, td { border-bottom: 1px solid #e2e8f0; padding: .6rem .75rem; vertical-align: top; text-align: left; }
+  th { background: #0f172a; color: white; position: sticky; top: 0; z-index: 1; }
+  tr.diff { background: #fffbeb; }
+  tr.same { background: #f0fdf4; }
+  .cat { background: #ecfeff; color: #0f766e; padding: .15rem .45rem; border-radius: 6px; font-size: .75rem; }
+  .prov { font-weight: 600; font-size: .78rem; }
+  .prov.prev { color: #7c3aed; }
+  .prov.curr { color: #0f766e; }
+  .q { max-width: 200px; font-weight: 500; }
+  .ans { max-width: 320px; line-height: 1.45; white-space: pre-wrap; }
+  section { margin-bottom: 2.5rem; }
+  h2 { color: #0f172a; border-bottom: 2px solid #0f766e; padding-bottom: .35rem; }
+  .note { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 1rem 1.25rem; border-radius: 0 8px 8px 0; margin: 1rem 0; }
+  .legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .85rem; }
+  .legend span { padding: .25rem .5rem; border-radius: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Wayra 100-Question Benchmark Report</h1>
+  <p>Location: Red Square, Moscow, Russia (Google Maps pin 55.7539307, 37.6207953) · User GPS: New York · Generated 2026-07-29 09:31 UTC</p>
+</header>
+<div class="wrap">
+  <div class="note">
+    <strong>Case PREVIOUS</strong> = Gemini-first on route-hard, no live-pin travel routing, no free local distance.<br/>
+    <strong>Case CURRENT</strong> = Cost-quality tiers: local GPS/distance, DeepSeek discovery, Gemini route-hard fallback.
+  </div>
+
+  <div class="cards">
+    <div class="card"><h3>Case PREVIOUS tokens</h3><div class="big">48,396</div></div>
+    <div class="card"><h3>Case CURRENT tokens</h3><div class="big">26,962</div></div>
+    <div class="card"><h3>Token savings</h3><div class="big">21,434 (44.3%)</div></div>
+    <div class="card"><h3>CURRENT avg quality score</h3><div class="big">3.41/5</div></div>
+    <div class="card"><h3>PREVIOUS providers</h3><div class="big" style="font-size:.95rem">{&quot;local&quot;: 50, &quot;gemini&quot;: 24, &quot;deepseek&quot;: 26}</div></div>
+    <div class="card"><h3>CURRENT providers</h3><div class="big" style="font-size:.95rem">{&quot;local&quot;: 54, &quot;deepseek&quot;: 46}</div></div>
+  </div>
+
+  <section>
+    <h2>Category summary</h2>
+    <table>
+      <thead><tr><th>Category</th><th>Q</th><th>PREVIOUS providers</th><th>PREVIOUS tokens</th><th>CURRENT providers</th><th>CURRENT tokens</th></tr></thead>
+      <tbody><tr>
+              <td>clothing</td>
+              <td>8</td>
+              <td>{&quot;gemini&quot;: 3, &quot;deepseek&quot;: 2, &quot;local&quot;: 3}</td>
+              <td>5,254</td>
+              <td>{&quot;deepseek&quot;: 5, &quot;local&quot;: 3}</td>
+              <td>2,859</td>
+            </tr><tr>
+              <td>conversation</td>
+              <td>6</td>
+              <td>{&quot;local&quot;: 6}</td>
+              <td>0</td>
+              <td>{&quot;local&quot;: 6}</td>
+              <td>0</td>
+            </tr><tr>
+              <td>crime_safety</td>
+              <td>8</td>
+              <td>{&quot;gemini&quot;: 4, &quot;deepseek&quot;: 4}</td>
+              <td>7,858</td>
+              <td>{&quot;deepseek&quot;: 8}</td>
+              <td>4,498</td>
+            </tr><tr>
+              <td>cultural</td>
+              <td>10</td>
+              <td>{&quot;deepseek&quot;: 8, &quot;gemini&quot;: 2}</td>
+              <td>8,092</td>
+              <td>{&quot;deepseek&quot;: 10}</td>
+              <td>6,263</td>
+            </tr><tr>
+              <td>food</td>
+              <td>10</td>
+              <td>{&quot;deepseek&quot;: 4, &quot;gemini&quot;: 6}</td>
+              <td>10,888</td>
+              <td>{&quot;deepseek&quot;: 10}</td>
+              <td>6,205</td>
+            </tr><tr>
+              <td>future</td>
+              <td>8</td>
+              <td>{&quot;local&quot;: 3, &quot;gemini&quot;: 5}</td>
+              <td>7,074</td>
+              <td>{&quot;local&quot;: 6, &quot;deepseek&quot;: 2}</td>
+              <td>1,131</td>
+            </tr><tr>
+              <td>gps_location</td>
+              <td>10</td>
+              <td>{&quot;local&quot;: 3, &quot;deepseek&quot;: 6, &quot;gemini&quot;: 1}</td>
+              <td>4,619</td>
+              <td>{&quot;local&quot;: 3, &quot;deepseek&quot;: 7}</td>
+              <td>3,747</td>
+            </tr><tr>
+              <td>language</td>
+              <td>6</td>
+              <td>{&quot;local&quot;: 4, &quot;deepseek&quot;: 2}</td>
+              <td>1,116</td>
+              <td>{&quot;local&quot;: 4, &quot;deepseek&quot;: 2}</td>
+              <td>1,146</td>
+            </tr><tr>
+              <td>meta_ai</td>
+              <td>8</td>
+              <td>{&quot;local&quot;: 8}</td>
+              <td>0</td>
+              <td>{&quot;local&quot;: 8}</td>
+              <td>0</td>
+            </tr><tr>
+              <td>travel</td>
+              <td>12</td>
+              <td>{&quot;gemini&quot;: 3, &quot;local&quot;: 9}</td>
+              <td>3,495</td>
+              <td>{&quot;local&quot;: 10, &quot;deepseek&quot;: 2}</td>
+              <td>1,113</td>
+            </tr><tr>
+              <td>user_interaction</td>
+              <td>6</td>
+              <td>{&quot;local&quot;: 6}</td>
+              <td>0</td>
+              <td>{&quot;local&quot;: 6}</td>
+              <td>0</td>
+            </tr><tr>
+              <td>weather</td>
+              <td>8</td>
+              <td>{&quot;local&quot;: 8}</td>
+              <td>0</td>
+              <td>{&quot;local&quot;: 8}</td>
+              <td>0</td>
+            </tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>All 100 questions — side by side</h2>
+    <div class="legend">
+      <span style="background:#fffbeb">Different answers</span>
+      <span style="background:#f0fdf4">Same answers</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Category</th><th>Question</th>
+        <th>PREVIOUS meta</th><th>PREVIOUS answer</th>
+        <th>CURRENT meta</th><th>CURRENT answer</th><th>Quality grades</th></tr>
+      </thead>
+      <tbody>
+            <tr class="same">
+              <td>1</td>
+              <td><span class="cat">meta_ai</span></td>
+              <td class="q">Are you using Gemini or DeepSeek?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 5ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant. I focus on places, routes, and trip prep. Rovvy handles provider choices internally — you don&#x27;t need to pick a model.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant. I focus on places, routes, and trip prep. Rovvy handles provider choices internally — you don&#x27;t need to pick a model.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>2</td>
+              <td><span class="cat">meta_ai</span></td>
+              <td class="q">How does Wayra AI work behind the scenes?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s travel assistant. Rovvy may use different systems depending on the task, while keeping the experience and privacy controls within Rovvy.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">I&#x27;m Wayra, Rovvy&#x27;s travel assistant. Rovvy may use different systems depending on the task, while keeping the experience and privacy controls within Rovvy.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>3</td>
+              <td><span class="cat">meta_ai</span></td>
+              <td class="q">What model powers your answers?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant. I focus on places, routes, and trip prep. Rovvy handles provider choices internally — you don&#x27;t need to pick a model.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant. I focus on places, routes, and trip prep. Rovvy handles provider choices internally — you don&#x27;t need to pick a model.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>4</td>
+              <td><span class="cat">meta_ai</span></td>
+              <td class="q">Is this Google AI or something else?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant. I focus on places, routes, and trip prep. Rovvy handles provider choices internally — you don&#x27;t need to pick a model.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant. I focus on places, routes, and trip prep. Rovvy handles provider choices internally — you don&#x27;t need to pick a model.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>5</td>
+              <td><span class="cat">meta_ai</span></td>
+              <td class="q">Do you use OpenAI?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant. I focus on places, routes, and trip prep. Rovvy handles provider choices internally — you don&#x27;t need to pick a model.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant. I focus on places, routes, and trip prep. Rovvy handles provider choices internally — you don&#x27;t need to pick a model.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>6</td>
+              <td><span class="cat">meta_ai</span></td>
+              <td class="q">Who built Wayra?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">Wayra is Rovvy&#x27;s built-in travel assistant — part of the Rovvy app you are using. I help with places, routes, food, culture, and trip prep on the map.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Wayra is Rovvy&#x27;s built-in travel assistant — part of the Rovvy app you are using. I help with places, routes, food, culture, and trip prep on the map.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>7</td>
+              <td><span class="cat">meta_ai</span></td>
+              <td class="q">Are you a real person or AI?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s AI travel assistant built into the app. I&#x27;m not a human, but I can help with the place you picked on the map.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">I&#x27;m Wayra, Rovvy&#x27;s AI travel assistant built into the app. I&#x27;m not a human, but I can help with the place you picked on the map.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>8</td>
+              <td><span class="cat">meta_ai</span></td>
+              <td class="q">How do you choose which AI to use?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s travel assistant. Rovvy may use different systems depending on the task, while keeping the experience and privacy controls within Rovvy.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>meta_ai</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">I&#x27;m Wayra, Rovvy&#x27;s travel assistant. Rovvy may use different systems depending on the task, while keeping the experience and privacy controls within Rovvy.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>9</td>
+              <td><span class="cat">future</span></td>
+              <td class="q">What cultural event is going to happen here soon?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>future_events</small><br/>
+                  <small>0 tok · 1042ms</small></td>
+              <td class="ans prev">Upcoming events in Moscow from Rovvy&#x27;s event feed:
+• Idaho Vandals Football vs. Lamar University Cardinals Football — 2026-09-12 at Kibbie Dome
+• Idaho Vandals Football vs. Abilene Christian Wildcats Football — 2026-09-19 at Kibbie Dome
+• Idaho Vandals Football vs. Montana State Bobcats Football — 2026-10-03 at Kibbie Dome
+• Idaho Vandals Football vs. Southern Utah Thunderbirds Football — 2026-10-24 at Kibbie Dome
+• Idaho Vandals Football vs. Eastern Washington Eagles Football — 2026-11-07 at Kibbie Dome
+These listings are near Red Square. Dates can change — open an event link to confirm.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>future_events</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Upcoming events in Moscow from Rovvy&#x27;s event feed:
+• Idaho Vandals Football vs. Lamar University Cardinals Football — 2026-09-12 at Kibbie Dome
+• Idaho Vandals Football vs. Abilene Christian Wildcats Football — 2026-09-19 at Kibbie Dome
+• Idaho Vandals Football vs. Montana State Bobcats Football — 2026-10-03 at Kibbie Dome
+• Idaho Vandals Football vs. Southern Utah Thunderbirds Football — 2026-10-24 at Kibbie Dome
+• Idaho Vandals Football vs. Eastern Washington Eagles Football — 2026-11-07 at Kibbie Dome
+These listings are near Red Square. Dates can change — open an event link to confirm.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>10</td>
+              <td><span class="cat">future</span></td>
+              <td class="q">Will there be a parade at Red Square this month?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1391 tok · 3140ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant! I can help you with features within the app, but I don&#x27;t have information about specific events like parades. Is there something in Rovvy I can help you with?</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>future_events</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">Upcoming events in Moscow from Rovvy&#x27;s event feed:
+• Idaho Vandals Football vs. Lamar University Cardinals Football — 2026-09-12 at Kibbie Dome
+• Idaho Vandals Football vs. Abilene Christian Wildcats Football — 2026-09-19 at Kibbie Dome
+• Idaho Vandals Football vs. Montana State Bobcats Football — 2026-10-03 at Kibbie Dome
+• Idaho Vandals Football vs. Southern Utah Thunderbirds Football — 2026-10-24 at Kibbie Dome
+• Idaho Vandals Football vs. Eastern Washington Eagles Football — 2026-11-07 at Kibbie Dome
+These listings are near Red Square. Dates can change — open an event link to confirm.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>11</td>
+              <td><span class="cat">future</span></td>
+              <td class="q">What is the future of tourism in Moscow?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1383 tok · 1307ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant! I can help you navigate the app and use its features. If you have a question about how to do something in Rovvy, just ask!</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>564 tok · 1539ms</small></td>
+              <td class="ans curr">The future of tourism in Moscow will continue to center around iconic landmarks like Red Square, a UNESCO World Heritage Site featuring Saint Basil&#x27;s Cathedral and the Kremlin. Visitors can explore Russian culture through traditional cuisine such as borscht and blini, and enjoy the city&#x27;s historic architecture and vibrant public spaces.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>12</td>
+              <td><span class="cat">future</span></td>
+              <td class="q">Are there upcoming festivals near Red Square?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1412 tok · 3535ms</small></td>
+              <td class="ans prev">Rovvy doesn&#x27;t have a specific feature to search for upcoming festivals. You can explore general activities for a destination on the Plan page under the Activities tab.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>future_events</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Upcoming events in Moscow from Rovvy&#x27;s event feed:
+• Idaho Vandals Football vs. Lamar University Cardinals Football — 2026-09-12 at Kibbie Dome
+• Idaho Vandals Football vs. Abilene Christian Wildcats Football — 2026-09-19 at Kibbie Dome
+• Idaho Vandals Football vs. Montana State Bobcats Football — 2026-10-03 at Kibbie Dome
+• Idaho Vandals Football vs. Southern Utah Thunderbirds Football — 2026-10-24 at Kibbie Dome
+• Idaho Vandals Football vs. Eastern Washington Eagles Football — 2026-11-07 at Kibbie Dome
+These listings are near Red Square. Dates can change — open an event link to confirm.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>13</td>
+              <td><span class="cat">future</span></td>
+              <td class="q">Will this place be crowded next weekend?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>future_events</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">Upcoming events in Moscow from Rovvy&#x27;s event feed:
+• Idaho Vandals Football vs. Lamar University Cardinals Football — 2026-09-12 at Kibbie Dome
+• Idaho Vandals Football vs. Abilene Christian Wildcats Football — 2026-09-19 at Kibbie Dome
+• Idaho Vandals Football vs. Montana State Bobcats Football — 2026-10-03 at Kibbie Dome
+• Idaho Vandals Football vs. Southern Utah Thunderbirds Football — 2026-10-24 at Kibbie Dome
+• Idaho Vandals Football vs. Eastern Washington Eagles Football — 2026-11-07 at Kibbie Dome
+These listings are near Red Square. Dates can change — open an event link to confirm.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>future_events</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Upcoming events in Moscow from Rovvy&#x27;s event feed:
+• Idaho Vandals Football vs. Lamar University Cardinals Football — 2026-09-12 at Kibbie Dome
+• Idaho Vandals Football vs. Abilene Christian Wildcats Football — 2026-09-19 at Kibbie Dome
+• Idaho Vandals Football vs. Montana State Bobcats Football — 2026-10-03 at Kibbie Dome
+• Idaho Vandals Football vs. Southern Utah Thunderbirds Football — 2026-10-24 at Kibbie Dome
+• Idaho Vandals Football vs. Eastern Washington Eagles Football — 2026-11-07 at Kibbie Dome
+These listings are near Red Square. Dates can change — open an event link to confirm.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>14</td>
+              <td><span class="cat">future</span></td>
+              <td class="q">What events are planned at the Kremlin?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1436 tok · 1494ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant! I can help you with features within the app, but I don&#x27;t have information about specific events at locations outside of Rovvy. You can use the Plan tab to search for activities in a destination.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>future_events</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">Upcoming events in Moscow from Rovvy&#x27;s event feed:
+• Idaho Vandals Football vs. Lamar University Cardinals Football — 2026-09-12 at Kibbie Dome
+• Idaho Vandals Football vs. Abilene Christian Wildcats Football — 2026-09-19 at Kibbie Dome
+• Idaho Vandals Football vs. Montana State Bobcats Football — 2026-10-03 at Kibbie Dome
+• Idaho Vandals Football vs. Southern Utah Thunderbirds Football — 2026-10-24 at Kibbie Dome
+• Idaho Vandals Football vs. Eastern Washington Eagles Football — 2026-11-07 at Kibbie Dome
+These listings are near Red Square. Dates can change — open an event link to confirm.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>15</td>
+              <td><span class="cat">future</span></td>
+              <td class="q">Is Victory Day celebration happening here?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>future_events</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">Upcoming events in Moscow from Rovvy&#x27;s event feed:
+• Idaho Vandals Football vs. Lamar University Cardinals Football — 2026-09-12 at Kibbie Dome
+• Idaho Vandals Football vs. Abilene Christian Wildcats Football — 2026-09-19 at Kibbie Dome
+• Idaho Vandals Football vs. Montana State Bobcats Football — 2026-10-03 at Kibbie Dome
+• Idaho Vandals Football vs. Southern Utah Thunderbirds Football — 2026-10-24 at Kibbie Dome
+• Idaho Vandals Football vs. Eastern Washington Eagles Football — 2026-11-07 at Kibbie Dome
+These listings are near Red Square. Dates can change — open an event link to confirm.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>future_events</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Upcoming events in Moscow from Rovvy&#x27;s event feed:
+• Idaho Vandals Football vs. Lamar University Cardinals Football — 2026-09-12 at Kibbie Dome
+• Idaho Vandals Football vs. Abilene Christian Wildcats Football — 2026-09-19 at Kibbie Dome
+• Idaho Vandals Football vs. Montana State Bobcats Football — 2026-10-03 at Kibbie Dome
+• Idaho Vandals Football vs. Southern Utah Thunderbirds Football — 2026-10-24 at Kibbie Dome
+• Idaho Vandals Football vs. Eastern Washington Eagles Football — 2026-11-07 at Kibbie Dome
+These listings are near Red Square. Dates can change — open an event link to confirm.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>16</td>
+              <td><span class="cat">future</span></td>
+              <td class="q">What will Moscow look like for visitors in 2027?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1452 tok · 3510ms</small></td>
+              <td class="ans prev">As Wayra, Rovvy&#x27;s built-in travel assistant, I can help you plan your current and future trips, but I can&#x27;t predict what Moscow will be like for visitors in 2027. I can help you start planning a trip to Moscow today!</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>567 tok · 1766ms</small></td>
+              <td class="ans curr">By 2027, Moscow&#x27;s Red Square will likely remain a vibrant UNESCO World Heritage site, featuring iconic landmarks like Saint Basil&#x27;s Cathedral and the Kremlin. Visitors can expect a mix of historic architecture, cultural events, and traditional Russian cuisine such as borscht and blini in the surrounding area.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>17</td>
+              <td><span class="cat">food</span></td>
+              <td class="q">How is the food here?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>597 tok · 2503ms</small></td>
+              <td class="ans prev">Red Square is a historic landmark in Moscow, Russia, with no dedicated dining on the square itself. However, the surrounding city offers traditional Russian cuisine such as borscht, pelmeni, and blini. You can explore nearby streets for restaurants serving these regional dishes.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>590 tok · 1325ms</small></td>
+              <td class="ans curr">Red Square is a historic landmark in Moscow, Russia, with no dedicated dining on the square itself. The surrounding city offers Russian cuisine, including dishes like borscht, pelmeni, and blini, reflecting the region&#x27;s culinary traditions.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>18</td>
+              <td><span class="cat">food</span></td>
+              <td class="q">What is the must-try food near Red Square?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>635 tok · 37098ms</small></td>
+              <td class="ans prev">Near Red Square in Moscow, you can try traditional Russian cuisine such as borscht (beet soup), pelmeni (dumplings), blini (pancakes), and beef stroganoff. The area is also known for its historic cafes and restaurants serving regional dishes. For a local experience, sample kvass (fermented rye drink) or enjoy a meal at one of the many eateries in the surrounding streets.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>788 tok · 1863ms</small></td>
+              <td class="ans curr">Near Red Square, must-try foods include traditional Russian dishes like borscht (beet soup), pelmeni (dumplings), and blini (pancakes). The area is in Moscow, where hearty, savory cuisine reflects the country&#x27;s cold climate. For specific dining options, check the nearby eateries listed in OpenStreetMap.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>19</td>
+              <td><span class="cat">food</span></td>
+              <td class="q">What kind of foods like beef, pepperoni, or chicken are available?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1447 tok · 1729ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant. I can help you with questions about how to use the app&#x27;s features, but I don&#x27;t have information about specific food availability in locations. You can use the Plan page to search for activities and restaurants in your destination!</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>599 tok · 2044ms</small></td>
+              <td class="ans curr">Red Square is a historic landmark in Moscow, Russia, with no dedicated dining directly on the square. In Moscow, you can find Russian cuisine featuring beef dishes like beef stroganoff, as well as pepperoni and chicken options in local restaurants.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>20</td>
+              <td><span class="cat">food</span></td>
+              <td class="q">How many vegetarian options are available?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1399 tok · 1559ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant. I can help you navigate the app&#x27;s features, but I don&#x27;t have information about specific menu options like vegetarian dishes at locations. You might try searching for restaurants near Red Square using a web browser or a dedicated food app.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>608 tok · 1789ms</small></td>
+              <td class="ans curr">Red Square is a historic public square and landmark in Moscow, Russia, with no dedicated dining options directly on the square. Vegetarian options are not specified for this location. For dining, you would need to explore the surrounding streets of Moscow, where regional Russian cuisine typically includes dishes like soups, salads, and vegetable-based options.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>21</td>
+              <td><span class="cat">food</span></td>
+              <td class="q">What do locals eat in Moscow?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1479 tok · 7733ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant, and I can help you navigate the app! While I don&#x27;t have information on local cuisine, I can show you how to explore destinations or find activities within Rovvy.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>618 tok · 1963ms</small></td>
+              <td class="ans curr">In Moscow, locals enjoy hearty Russian cuisine such as borscht (beet soup), pelmeni (dumplings), blini (pancakes), and shchi (cabbage soup). The region&#x27;s cold climate influences dishes rich in meat, potatoes, and sour cream. Red Square itself is a historic landmark without dining, but nearby streets offer traditional eateries.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>22</td>
+              <td><span class="cat">food</span></td>
+              <td class="q">Any street food around here?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>757 tok · 26658ms</small></td>
+              <td class="ans prev">Red Square itself is a historic landmark with no street food stalls directly on the square. Nearby streets in central Moscow offer Russian cuisine like pelmeni, blini, and shchi. Check the surrounding area for casual dining options.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>777 tok · 2028ms</small></td>
+              <td class="ans curr">Red Square itself is a historic landmark with no street food stalls directly on the square. However, the surrounding streets in central Moscow offer many dining options, including cafes and restaurants serving Russian cuisine like pelmeni, blini, and borscht. You can find places like Bosco Café and Столовая №57 nearby.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>23</td>
+              <td><span class="cat">food</span></td>
+              <td class="q">Is there good coffee near Red Square?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1375 tok · 3408ms</small></td>
+              <td class="ans prev">I&#x27;m currently in app guide mode, so I can only help you with how to use Rovvy&#x27;s features. I can&#x27;t search for coffee shops for you right now.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>nearby</small><br/>
+                  <small>447 tok · 3596ms</small></td>
+              <td class="ans curr">Yes, there are several coffee spots near Red Square, including Пушкинъ, Фестивальное 2, and Kurnik, all within a short walk.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>24</td>
+              <td><span class="cat">food</span></td>
+              <td class="q">What is the local specialty dish?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1383 tok · 1548ms</small></td>
+              <td class="ans prev">I&#x27;m sorry, Wayra can only help with questions about how to use the Rovvy app in this mode. I can&#x27;t provide information about local specialty dishes. Would you like to know how to use a specific feature?</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>738 tok · 2358ms</small></td>
+              <td class="ans curr">In Moscow, local specialties include hearty dishes like borscht (beet soup), pelmeni (dumplings), and blini (pancakes). The region is known for its rich, warming cuisine, often featuring sour cream, cabbage, and root vegetables. These traditional foods reflect Russia&#x27;s cold climate and cultural heritage.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>25</td>
+              <td><span class="cat">food</span></td>
+              <td class="q">Where can I grab a bite near here?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>nearby</small><br/>
+                  <small>441 tok · 36249ms</small></td>
+              <td class="ans prev">Near Red Square, you&#x27;ll find dining options like Пушкинъ and Bosco within a short walk. These are located along nearby streets. For more choices, consider exploring the surrounding area.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>nearby</small><br/>
+                  <small>444 tok · 1832ms</small></td>
+              <td class="ans curr">Near Red Square, you&#x27;ll find dining options like Bosco and Пушкинъ within a short walk. These are located in the GUM department store area, offering a range of Russian and European cuisine.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>26</td>
+              <td><span class="cat">food</span></td>
+              <td class="q">Is Russian cuisine spicy?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1375 tok · 1102ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant! I can help you navigate the app and use its features. Is there anything about Rovvy you&#x27;d like to know?</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>596 tok · 2112ms</small></td>
+              <td class="ans curr">Russian cuisine is generally not spicy. It features hearty dishes like borscht, pelmeni, and blini, often seasoned with dill, sour cream, or garlic rather than chili or hot spices. The climate and local ingredients shape a mild, savory flavor profile.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>27</td>
+              <td><span class="cat">clothing</span></td>
+              <td class="q">What kind of clothes should I wear?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1373 tok · 1360ms</small></td>
+              <td class="ans prev">I can help you with features within the Rovvy app! For general travel advice like what to wear, you might want to check a weather forecast or a travel guide for Moscow.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>584 tok · 1891ms</small></td>
+              <td class="ans curr">Moscow has a continental climate with cold winters and mild summers. In winter (Dec–Feb), wear heavy coats, hats, gloves, and insulated boots; temperatures often drop below -10°C. In summer (Jun–Aug), light layers and comfortable walking shoes are suitable, but bring a jacket for cooler evenings. Spring and autumn require a warm coat and waterproof footwear due to rain and variable temperatures.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>28</td>
+              <td><span class="cat">clothing</span></td>
+              <td class="q">What should I pack for Red Square?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>573 tok · 1843ms</small></td>
+              <td class="ans prev">Moscow has a cold continental climate, so pack warm layers, a heavy coat, hat, gloves, and scarf, especially in winter. In summer, bring light clothing but also a jacket for cool evenings. Comfortable walking shoes are essential for exploring the square&#x27;s cobblestones. Don&#x27;t forget a camera for Saint Basil&#x27;s Cathedral and other landmarks.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>578 tok · 2026ms</small></td>
+              <td class="ans curr">For visiting Red Square in Moscow, Russia, pack warm layers and a heavy winter coat if traveling between November and March, as temperatures can drop below freezing. Comfortable walking shoes are essential for exploring the cobblestone square and nearby attractions like Saint Basil&#x27;s Cathedral and the Kremlin. In summer, bring light clothing and a hat for sun protection, as the square is exposed.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>29</td>
+              <td><span class="cat">clothing</span></td>
+              <td class="q">Do I need a heavy coat in Moscow?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1393 tok · 1374ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant, and I can help you with features and navigation within the app! I can&#x27;t provide real-time weather advice. Is there anything I can help you with regarding Rovvy&#x27;s features?</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>552 tok · 1482ms</small></td>
+              <td class="ans curr">Yes, you will need a heavy coat in Moscow. The city experiences cold winters with average temperatures well below freezing, especially from December to February, so a warm winter coat, hat, gloves, and scarf are essential for visiting Red Square.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>30</td>
+              <td><span class="cat">clothing</span></td>
+              <td class="q">Is it too hot or cold here right now?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>weather_clothing</small><br/>
+                  <small>0 tok · 853ms</small></td>
+              <td class="ans prev">For current conditions near Red Square (overcast, about 18°C (64.9°F)): Layer a light jacket you can remove if it warms up.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>weather_clothing</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">For current conditions near Red Square (overcast, about 18°C (64.9°F)): Layer a light jacket you can remove if it warms up.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>31</td>
+              <td><span class="cat">clothing</span></td>
+              <td class="q">What shoes should I wear for walking here?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>544 tok · 1449ms</small></td>
+              <td class="ans prev">Red Square is a large, historic cobblestone square in Moscow, Russia. For walking on uneven cobblestones, wear comfortable, sturdy shoes with good grip, especially in wet or icy weather.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>564 tok · 1710ms</small></td>
+              <td class="ans curr">Red Square is a large, historic cobblestone square in Moscow, Russia. For walking here, wear comfortable, sturdy shoes with good grip, as the cobblestones can be uneven, especially in wet or icy weather. The area is often crowded, so supportive footwear is recommended for extended sightseeing.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>32</td>
+              <td><span class="cat">clothing</span></td>
+              <td class="q">Do I need formal clothes to visit Red Square?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1371 tok · 3497ms</small></td>
+              <td class="ans prev">I can help you with how to use Rovvy&#x27;s features! If you have a question about planning your trip within the app, just let me know.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>581 tok · 2139ms</small></td>
+              <td class="ans curr">Red Square is an outdoor public square in Moscow, Russia. There is no official dress code for visiting the square itself, but if you plan to enter nearby sites like Saint Basil&#x27;s Cathedral or Lenin&#x27;s Mausoleum, modest attire (covering shoulders and knees) is recommended. For general sightseeing, casual clothing is fine, though many visitors dress smart-casual for photos.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>33</td>
+              <td><span class="cat">clothing</span></td>
+              <td class="q">What season is best to visit?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>weather_season</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">Based on climate patterns near Red Square: late spring and early autumn are often comfortable for sightseeing; winter can be cold and summer warm. Right now it is overcast, about 18°C (64.9°F).</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>weather_season</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Based on climate patterns near Red Square: late spring and early autumn are often comfortable for sightseeing; winter can be cold and summer warm. Right now it is overcast, about 18°C (64.9°F).</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>34</td>
+              <td><span class="cat">clothing</span></td>
+              <td class="q">Should I bring an umbrella?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>weather_clothing</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">For current conditions near Red Square (overcast, about 18°C (64.9°F)): Layer a light jacket you can remove if it warms up.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>weather_clothing</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">For current conditions near Red Square (overcast, about 18°C (64.9°F)): Layer a light jacket you can remove if it warms up.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>35</td>
+              <td><span class="cat">weather</span></td>
+              <td class="q">What&#x27;s the weather like here?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>weather_current</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">Current weather near Red Square: overcast, about 18°C (64.9°F). Feels like 18°C. Humidity 74%. Wind 7 km/h.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>weather_current</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Current weather near Red Square: overcast, about 18°C (64.9°F). Feels like 18°C. Humidity 74%. Wind 7 km/h.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>36</td>
+              <td><span class="cat">weather</span></td>
+              <td class="q">Any weather warnings for Moscow?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>weather_alerts</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">We do not have official weather alert feeds wired for Red Square yet. Current observed conditions: overcast, about 18°C (64.9°F). Check your national weather service for active warnings.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>weather_alerts</small><br/>
+                  <small>0 tok · 2ms</small></td>
+              <td class="ans curr">We do not have official weather alert feeds wired for Red Square yet. Current observed conditions: overcast, about 18°C (64.9°F). Check your national weather service for active warnings.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>37</td>
+              <td><span class="cat">weather</span></td>
+              <td class="q">Is it snowing in Moscow now?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>weather_precipitation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">No — it is not snowing or raining near Red Square right now. Current conditions: overcast, about 18°C (64.9°F).</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>weather_precipitation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">No — it is not snowing or raining near Red Square right now. Current conditions: overcast, about 18°C (64.9°F).</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>38</td>
+              <td><span class="cat">weather</span></td>
+              <td class="q">Best time of year to visit Red Square?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>weather_season</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">Based on climate patterns near Red Square: late spring and early autumn are often comfortable for sightseeing; winter can be cold and summer warm. Right now it is overcast, about 18°C (64.9°F).</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>weather_season</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Based on climate patterns near Red Square: late spring and early autumn are often comfortable for sightseeing; winter can be cold and summer warm. Right now it is overcast, about 18°C (64.9°F).</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>39</td>
+              <td><span class="cat">weather</span></td>
+              <td class="q">When should I avoid visiting?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>weather_season</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">Based on climate patterns near Red Square: late spring and early autumn are often comfortable for sightseeing; winter can be cold and summer warm. Right now it is overcast, about 18°C (64.9°F).</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>weather_season</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Based on climate patterns near Red Square: late spring and early autumn are often comfortable for sightseeing; winter can be cold and summer warm. Right now it is overcast, about 18°C (64.9°F).</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>40</td>
+              <td><span class="cat">weather</span></td>
+              <td class="q">When is peak season here?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>weather_season</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">Based on climate patterns near Red Square: late spring and early autumn are often comfortable for sightseeing; winter can be cold and summer warm. Right now it is overcast, about 18°C (64.9°F).</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>weather_season</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Based on climate patterns near Red Square: late spring and early autumn are often comfortable for sightseeing; winter can be cold and summer warm. Right now it is overcast, about 18°C (64.9°F).</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>41</td>
+              <td><span class="cat">weather</span></td>
+              <td class="q">Is Moscow good to visit right now?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>weather_season</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">Based on climate patterns near Red Square: late spring and early autumn are often comfortable for sightseeing; winter can be cold and summer warm. Right now it is overcast, about 18°C (64.9°F).</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>weather_season</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">Based on climate patterns near Red Square: late spring and early autumn are often comfortable for sightseeing; winter can be cold and summer warm. Right now it is overcast, about 18°C (64.9°F).</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>42</td>
+              <td><span class="cat">weather</span></td>
+              <td class="q">Does it rain a lot in Moscow?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>weather_precipitation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">No — it is not snowing or raining near Red Square right now. Current conditions: overcast, about 18°C (64.9°F).</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>weather_precipitation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">No — it is not snowing or raining near Red Square right now. Current conditions: overcast, about 18°C (64.9°F).</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>43</td>
+              <td><span class="cat">travel</span></td>
+              <td class="q">How far is it from me?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small>location_hard</small><br/>
+                  <small>602 tok · 1423ms</small></td>
+              <td class="ans prev">{
+  &quot;message&quot;: &quot;Red Square is approximately 4,667 miles (7,509 km) from New York. Located in Moscow, Russia, it is one of the city&#x27;s oldest and largest squares, situated along the eastern walls of the Kremlin. It is a prominent landmark, home to famous buildings</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>location_hard</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">As the crow flies, Red Square is about 4,667 mi (7,509 km) from New York. Set a route on the map for turn-by-turn driving distance.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>44</td>
+              <td><span class="cat">travel</span></td>
+              <td class="q">How long is the drive to Red Square?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">A continuous driving route from New York to Red Square is not available — you are in different countries separated by long distance (4,667 mi as the crow flies). Fly to Moscow, then use Solo Live on the map for local ground navigation.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">A continuous driving route from New York to Red Square is not available — you are in different countries separated by long distance (4,667 mi as the crow flies). Fly to Moscow, then use Solo Live on the map for local ground navigation.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:5/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>45</td>
+              <td><span class="cat">travel</span></td>
+              <td class="q">Best route to Red Square?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">A continuous driving route from New York to Red Square is not available — you are in different countries separated by long distance (4,667 mi as the crow flies). Fly to Moscow, then use Solo Live on the map for local ground navigation.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">A continuous driving route from New York to Red Square is not available — you are in different countries separated by long distance (4,667 mi as the crow flies). Fly to Moscow, then use Solo Live on the map for local ground navigation.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:5/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>46</td>
+              <td><span class="cat">travel</span></td>
+              <td class="q">How do I get to Red Square?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">A continuous driving route from New York to Red Square is not available — you are in different countries separated by long distance (4,667 mi as the crow flies). Fly to Moscow, then use Solo Live on the map for local ground navigation.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">A continuous driving route from New York to Red Square is not available — you are in different countries separated by long distance (4,667 mi as the crow flies). Fly to Moscow, then use Solo Live on the map for local ground navigation.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:5/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>47</td>
+              <td><span class="cat">travel</span></td>
+              <td class="q">Is there parking near Red Square?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 3ms</small></td>
+              <td class="ans prev">Parking near Red Square is limited in the historic center — look for garages around the Kremlin area or use metro. Search the map for parking nearby.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">Parking near Red Square is limited in the historic center — look for garages around the Kremlin area or use metro. Search the map for parking nearby.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>48</td>
+              <td><span class="cat">travel</span></td>
+              <td class="q">Can I walk to Red Square from here?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">You can walk around Red Square once you arrive — the square itself is pedestrian. Set your destination on the Live map for walking or driving directions.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">You can walk around Red Square once you arrive — the square itself is pedestrian. Set your destination on the Live map for walking or driving directions.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>49</td>
+              <td><span class="cat">travel</span></td>
+              <td class="q">Any route warnings to Red Square?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1369 tok · 2319ms</small></td>
+              <td class="ans prev">Wayra doesn&#x27;t currently provide real-time route warnings or traffic updates. Our Live tab is designed for sharing your location with your group and setting meet points.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>543 tok · 1839ms</small></td>
+              <td class="ans curr">Red Square is a major tourist destination in central Moscow, so expect heavy pedestrian traffic and security checks. No specific route warnings are available from the provided sources, but be aware of potential crowds and weather conditions.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>50</td>
+              <td><span class="cat">travel</span></td>
+              <td class="q">How is traffic to Red Square?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">A continuous driving route from New York to Red Square is not available — you are in different countries separated by long distance (4,667 mi as the crow flies). Fly to Moscow, then use Solo Live on the map for local ground navigation.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">A continuous driving route from New York to Red Square is not available — you are in different countries separated by long distance (4,667 mi as the crow flies). Fly to Moscow, then use Solo Live on the map for local ground navigation.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:5/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>51</td>
+              <td><span class="cat">travel</span></td>
+              <td class="q">Is Red Square near a border?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">Red Square is in Russia and is not an international border crossing. It sits in the interior of the country — plan domestic travel and local entry rules.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">Red Square is in Russia and is not an international border crossing. It sits in the interior of the country — plan domestic travel and local entry rules.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>52</td>
+              <td><span class="cat">travel</span></td>
+              <td class="q">What is the last mile like here?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">The last mile is the final walk or short drive after you arrive near Red Square. Zoom in on the map around your pin for footpaths and exact entry points.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">The last mile is the final walk or short drive after you arrive near Red Square. Zoom in on the map around your pin for footpaths and exact entry points.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>53</td>
+              <td><span class="cat">travel</span></td>
+              <td class="q">Is Red Square accessible by car?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">A continuous driving route from New York to Red Square is not available — you are in different countries separated by long distance (4,667 mi as the crow flies). Fly to Moscow, then use Solo Live on the map for local ground navigation.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>navigation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">A continuous driving route from New York to Red Square is not available — you are in different countries separated by long distance (4,667 mi as the crow flies). Fly to Moscow, then use Solo Live on the map for local ground navigation.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:5/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>54</td>
+              <td><span class="cat">travel</span></td>
+              <td class="q">How much time do I need at Red Square?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1524 tok · 5175ms</small></td>
+              <td class="ans prev">I&#x27;m currently in &#x27;app_guide&#x27; mode, which means I can help you with how to use Rovvy&#x27;s features. For travel advice like how much time to spend at Red Square, you&#x27;d want to switch to &#x27;travel_planner&#x27; mode. Would you like me to tell you how to set a meet point on the Live map instead?</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>570 tok · 1703ms</small></td>
+              <td class="ans curr">Red Square is a large, open public square in central Moscow, Russia. Most visitors spend 1 to 2 hours exploring the square and viewing its surrounding landmarks, such as Saint Basil&#x27;s Cathedral and the Kremlin walls. The time needed can vary based on your interest in photography, people-watching, or visiting nearby attractions.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>55</td>
+              <td><span class="cat">cultural</span></td>
+              <td class="q">What&#x27;s the local culture like here?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>728 tok · 1913ms</small></td>
+              <td class="ans prev">Red Square is the historic heart of Moscow, Russia, surrounded by iconic landmarks like Saint Basil&#x27;s Cathedral and the Kremlin. The area reflects Russian culture through its grand architecture, public gatherings, and nearby shops. Local cuisine includes hearty dishes like borscht, pelmeni, and blini, often enjoyed with tea or vodka.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>749 tok · 2012ms</small></td>
+              <td class="ans curr">Red Square is the historic heart of Moscow, Russia, surrounded by iconic landmarks like Saint Basil&#x27;s Cathedral and the Kremlin. The local culture reflects deep Russian traditions, with a language rooted in Slavic heritage. Typical cuisine includes hearty dishes such as borscht, pelmeni, and blini, often enjoyed with tea or vodka. The area is known for its grand parades, festivals, and a blend of Soviet and imperial history.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>56</td>
+              <td><span class="cat">cultural</span></td>
+              <td class="q">What makes Red Square worth visiting?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>556 tok · 1736ms</small></td>
+              <td class="ans prev">Red Square is Moscow&#x27;s historic heart, a UNESCO World Heritage site surrounded by iconic landmarks like Saint Basil&#x27;s Cathedral and the Kremlin. It has been the stage for parades, speeches, and cultural events for centuries, offering a glimpse into Russia&#x27;s rich history and architecture.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>570 tok · 2059ms</small></td>
+              <td class="ans curr">Red Square is Moscow&#x27;s historic heart and a UNESCO World Heritage Site, featuring iconic landmarks like Saint Basil&#x27;s Cathedral, Lenin&#x27;s Mausoleum, and the State Historical Museum. For centuries, it has been the stage for major events, from parades to public gatherings, making it a must-visit for its rich history and architectural grandeur.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>57</td>
+              <td><span class="cat">cultural</span></td>
+              <td class="q">Why is Red Square famous?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1382 tok · 1179ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant! In this mode, I can help you with how to use the app&#x27;s features. Would you like to know how to do something in Rovvy?</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>559 tok · 1749ms</small></td>
+              <td class="ans curr">Red Square is famous as Moscow&#x27;s historic and cultural heart, featuring iconic landmarks like Saint Basil&#x27;s Cathedral, Lenin&#x27;s Mausoleum, and the Kremlin. It has been a UNESCO World Heritage Site since 1990 and has hosted major events, from parades to demonstrations, for centuries.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>58</td>
+              <td><span class="cat">cultural</span></td>
+              <td class="q">Any customs I should know here?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>749 tok · 2120ms</small></td>
+              <td class="ans prev">Red Square is a historic and cultural heart of Moscow, often used for national celebrations and parades. When visiting, dress modestly if entering nearby churches like Saint Basil&#x27;s Cathedral, and be respectful at Lenin&#x27;s Mausoleum. Photography is allowed, but avoid climbing on monuments or blocking pedestrian flow. Local customs include trying Russian cuisine such as borscht, pelmeni, and blini, which are widely available in the area.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>720 tok · 1729ms</small></td>
+              <td class="ans curr">Red Square is a historic and cultural heart of Moscow. When visiting, dress modestly for nearby churches like Saint Basil&#x27;s Cathedral, and be respectful during ceremonies or parades. Russian cuisine features hearty dishes like borscht, pelmeni, and blini, often enjoyed with sour cream.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>59</td>
+              <td><span class="cat">cultural</span></td>
+              <td class="q">What&#x27;s etiquette like in Moscow?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1520 tok · 8632ms</small></td>
+              <td class="ans prev">That&#x27;s an interesting question about Moscow! As Wayra, Rovvy&#x27;s built-in travel assistant, I specialize in helping you navigate and use the app&#x27;s features. How can I help you plan your trip to Moscow using Rovvy?</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>553 tok · 2139ms</small></td>
+              <td class="ans curr">In Moscow, etiquette is formal and reserved. Greetings are typically firm handshakes with direct eye contact. Remove shoes when entering homes, and avoid discussing politics or personal finances. Punctuality is valued, and offering small gifts to hosts is appreciated.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>60</td>
+              <td><span class="cat">cultural</span></td>
+              <td class="q">What&#x27;s special about this place?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>553 tok · 1481ms</small></td>
+              <td class="ans prev">Red Square is a historic UNESCO World Heritage site in Moscow, Russia, known for iconic landmarks like Saint Basil&#x27;s Cathedral and Lenin&#x27;s Mausoleum. It has served as a central gathering place for parades, demonstrations, and cultural events throughout Russian history.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>550 tok · 1601ms</small></td>
+              <td class="ans curr">Red Square is a historic UNESCO World Heritage Site in Moscow, Russia, known for iconic landmarks like Saint Basil&#x27;s Cathedral and Lenin&#x27;s Mausoleum. It has been a central stage for parades, speeches, and public gatherings for centuries.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>61</td>
+              <td><span class="cat">cultural</span></td>
+              <td class="q">Any hidden gems near Red Square?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>nearby</small><br/>
+                  <small>457 tok · 1533ms</small></td>
+              <td class="ans prev">Near Red Square, you&#x27;ll find a viewpoint and shops like La Perla, Lacoste, Pomellato, Bosco, and Пушкинъ. These are upscale boutiques rather than hidden gems. For more unique spots, consider exploring nearby streets or checking local guides.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>nearby</small><br/>
+                  <small>457 tok · 1705ms</small></td>
+              <td class="ans curr">Near Red Square, you&#x27;ll find a viewpoint and several shops like La Perla, Lacoste, Pomellato, Bosco, and Пушкинъ. These are close by but not necessarily hidden gems. For more unique spots, consider exploring nearby streets or consulting local guides.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>62</td>
+              <td><span class="cat">cultural</span></td>
+              <td class="q">What can I do here?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>774 tok · 11763ms</small></td>
+              <td class="ans prev">Red Square is Moscow&#x27;s historic heart, surrounded by iconic landmarks like Saint Basil&#x27;s Cathedral, Lenin&#x27;s Mausoleum, and the State Historical Museum. You can explore the Kremlin walls, visit the GUM department store, and see monuments such as the Minin and Pozharsky statue. The area is rich in Russian culture, with traditional cuisine like borscht and blini available nearby.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>769 tok · 1701ms</small></td>
+              <td class="ans curr">Red Square is a historic UNESCO World Heritage Site in Moscow, Russia. You can see Saint Basil&#x27;s Cathedral, Lenin&#x27;s Mausoleum, the State Historical Museum, and the GUM department store. Nearby attractions include the Kremlin chimes and monuments to Minin and Pozharsky. The square has been a site for parades, demonstrations, and public gatherings.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>63</td>
+              <td><span class="cat">cultural</span></td>
+              <td class="q">What activities are near Red Square?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>800 tok · 2308ms</small></td>
+              <td class="ans prev">Near Red Square in Moscow, you can visit Saint Basil&#x27;s Cathedral, Lenin&#x27;s Mausoleum, the State Historical Museum, and the GUM department store. Nearby landmarks include the Kremlin&#x27;s Spasskaya Tower (Кремлёвские куранты) and monuments like Минину и Пожарскому. The area is a UNESCO World Heritage Site and offers walking tours, parades, and cultural events. Local cuisine includes Russian classics like borscht, pelmeni, and blini.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>780 tok · 1726ms</small></td>
+              <td class="ans curr">Near Red Square, you can visit Saint Basil&#x27;s Cathedral, Lenin&#x27;s Mausoleum, the State Historical Museum, and the GUM department store. Nearby attractions include the Kremlin chimes, monuments to Minin and Pozharsky, and the Artillery Yard. The area is rich in Russian history and culture, with traditional cuisine like borscht, pelmeni, and blini available at local eateries.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>64</td>
+              <td><span class="cat">cultural</span></td>
+              <td class="q">What should I not miss here?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>573 tok · 1907ms</small></td>
+              <td class="ans prev">In Red Square, you shouldn&#x27;t miss Saint Basil&#x27;s Cathedral with its iconic colorful domes, Lenin&#x27;s Mausoleum, the State Historical Museum, and the GUM department store. This UNESCO World Heritage site is Moscow&#x27;s historic heart, surrounded by the Kremlin walls. The square has been a central stage for Russian history, from parades to public gatherings.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>556 tok · 1592ms</small></td>
+              <td class="ans curr">At Red Square, you should not miss Saint Basil&#x27;s Cathedral with its iconic colorful domes, Lenin&#x27;s Mausoleum, the State Historical Museum, and the GUM department store. This UNESCO World Heritage Site is the historic heart of Moscow, surrounded by the Kremlin walls.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>65</td>
+              <td><span class="cat">language</span></td>
+              <td class="q">What language do they speak here?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>language</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">Based on general travel knowledge, they primarily speak Russian here. English is uncommon outside hotels and tourist spots; learn a few Russian phrases. Hello: Привет (Privet). Thank you: Спасибо (Spasibo).</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>language</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Based on general travel knowledge, they primarily speak Russian here. English is uncommon outside hotels and tourist spots; learn a few Russian phrases. Hello: Привет (Privet). Thank you: Спасибо (Spasibo).</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>66</td>
+              <td><span class="cat">language</span></td>
+              <td class="q">Do people speak English in Moscow?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>language</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">Based on general travel knowledge, English is uncommon outside hotels and tourist spots; learn a few Russian phrases. Primary language: Russian.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>language</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">Based on general travel knowledge, English is uncommon outside hotels and tourist spots; learn a few Russian phrases. Primary language: Russian.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>67</td>
+              <td><span class="cat">language</span></td>
+              <td class="q">What should I know about the people here?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>570 tok · 1958ms</small></td>
+              <td class="ans prev">Red Square is in Moscow, Russia, where people primarily speak Russian. Locals are known for their resilience and warmth, often enjoying traditional Russian cuisine like borscht, pelmeni, and blini. The square is a cultural hub for festivals, parades, and gatherings, reflecting Moscow&#x27;s rich history and vibrant city life.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>585 tok · 2140ms</small></td>
+              <td class="ans curr">Red Square is in Moscow, Russia, where the people are predominantly Russian and speak Russian. The culture is deeply rooted in Slavic traditions, with a love for arts, literature, and history. Locals enjoy hearty cuisine like borscht, pelmeni, and blini, and often gather at the square for festivals and parades. The area reflects a mix of Soviet-era history and modern Russian life.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>68</td>
+              <td><span class="cat">language</span></td>
+              <td class="q">Are people friendly here?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>546 tok · 1741ms</small></td>
+              <td class="ans prev">Red Square is a major tourist attraction in Moscow, Russia. While the friendliness of people can vary, locals in Moscow are generally polite but may appear reserved to visitors. It&#x27;s common for Russians to be helpful if approached directly.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>561 tok · 1894ms</small></td>
+              <td class="ans curr">Red Square is a major tourist destination in Moscow, Russia, where locals are generally accustomed to visitors. While friendliness can vary, Muscovites are often polite in public spaces, especially in central areas like this. The square is a bustling landmark, so you&#x27;ll find a mix of locals and tourists.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>69</td>
+              <td><span class="cat">language</span></td>
+              <td class="q">How do I say hello in Russian?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>language</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">Based on general travel knowledge, the primary language is Russian. Hello: Привет (Privet). Thank you: Спасибо (Spasibo). English is uncommon outside hotels and tourist spots; learn a few Russian phrases.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>language</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">Based on general travel knowledge, the primary language is Russian. Hello: Привет (Privet). Thank you: Спасибо (Spasibo). English is uncommon outside hotels and tourist spots; learn a few Russian phrases.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>70</td>
+              <td><span class="cat">language</span></td>
+              <td class="q">Is Russian the main language in Moscow?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>language</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">Based on general travel knowledge, they primarily speak Russian here. English is uncommon outside hotels and tourist spots; learn a few Russian phrases. Hello: Привет (Privet). Thank you: Спасибо (Spasibo).</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>language</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Based on general travel knowledge, they primarily speak Russian here. English is uncommon outside hotels and tourist spots; learn a few Russian phrases. Hello: Привет (Privet). Thank you: Спасибо (Spasibo).</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>71</td>
+              <td><span class="cat">gps_location</span></td>
+              <td class="q">What is this location?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>live_map_context</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">You picked Red Square on the Live map at 55.75393° N, 37.62080° E. Category: landmark. Address: Red Square, Moscow, Russia, 109012. Ask me about the drive, warnings, or what to do here.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>live_map_context</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">You picked Red Square on the Live map at 55.75393° N, 37.62080° E. Category: landmark. Address: Red Square, Moscow, Russia, 109012. Ask me about the drive, warnings, or what to do here.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>72</td>
+              <td><span class="cat">gps_location</span></td>
+              <td class="q">What is this place?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>live_map_context</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">You picked Red Square on the Live map at 55.75393° N, 37.62080° E. Category: landmark. Address: Red Square, Moscow, Russia, 109012. Ask me about the drive, warnings, or what to do here.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>live_map_context</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">You picked Red Square on the Live map at 55.75393° N, 37.62080° E. Category: landmark. Address: Red Square, Moscow, Russia, 109012. Ask me about the drive, warnings, or what to do here.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>73</td>
+              <td><span class="cat">gps_location</span></td>
+              <td class="q">Where exactly is this spot?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>live_map_context</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">You picked Red Square on the Live map at 55.75393° N, 37.62080° E. Category: landmark. Address: Red Square, Moscow, Russia, 109012. Ask me about the drive, warnings, or what to do here.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>live_map_context</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">You picked Red Square on the Live map at 55.75393° N, 37.62080° E. Category: landmark. Address: Red Square, Moscow, Russia, 109012. Ask me about the drive, warnings, or what to do here.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>74</td>
+              <td><span class="cat">gps_location</span></td>
+              <td class="q">What are the coordinates here?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>523 tok · 1235ms</small></td>
+              <td class="ans prev">Red Square is located at coordinates 55.75393, 37.62080 in Moscow, Russia.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>525 tok · 1736ms</small></td>
+              <td class="ans curr">The coordinates for Red Square are 55.75393, 37.62080, located in Moscow, Russia.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>75</td>
+              <td><span class="cat">gps_location</span></td>
+              <td class="q">What am I looking at on the map?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>576 tok · 1588ms</small></td>
+              <td class="ans prev">You are looking at Red Square, a historic UNESCO World Heritage site in Moscow, Russia. It is one of the city&#x27;s most prominent landmarks, featuring Saint Basil&#x27;s Cathedral, Lenin&#x27;s Mausoleum, the State Historical Museum, and the GUM department store. The square has been a central location for parades, demonstrations, and public gatherings throughout Russian history.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>571 tok · 1878ms</small></td>
+              <td class="ans curr">You&#x27;re looking at Red Square, a historic square in Moscow, Russia, bordered by the Kremlin and Saint Basil&#x27;s Cathedral. It&#x27;s a UNESCO World Heritage site known for its role in Russian history, from parades to public gatherings. The area reflects Russian culture with its Orthodox architecture and traditional cuisine like borscht and blini.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>76</td>
+              <td><span class="cat">gps_location</span></td>
+              <td class="q">What county or region is this in?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1358 tok · 7610ms</small></td>
+              <td class="ans prev">Red Square is located in Moscow, Russia. In Russia, Moscow is both a city and a federal subject, which serves as its administrative region.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>524 tok · 1491ms</small></td>
+              <td class="ans curr">Red Square is located in Moscow, Russia. It is in the Moscow region and the country of Russia.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>77</td>
+              <td><span class="cat">gps_location</span></td>
+              <td class="q">What&#x27;s the name of this pin?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>539 tok · 1747ms</small></td>
+              <td class="ans prev">This pin is named Red Square, located in Moscow, Russia. It is a historic square and UNESCO World Heritage Site, known for landmarks like Saint Basil&#x27;s Cathedral and the Kremlin.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>518 tok · 1086ms</small></td>
+              <td class="ans curr">This pin is named Red Square. It is located in Moscow, Russia.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>78</td>
+              <td><span class="cat">gps_location</span></td>
+              <td class="q">Is this a landmark or a city?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>535 tok · 1754ms</small></td>
+              <td class="ans prev">Red Square is a famous landmark located in Moscow, Russia. It is a historic square in the city&#x27;s center, known for its iconic architecture and cultural significance.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>534 tok · 1185ms</small></td>
+              <td class="ans curr">Red Square is a famous landmark in Moscow, Russia. It is a historic square located in the city&#x27;s center, recognized as a UNESCO World Heritage Site.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>79</td>
+              <td><span class="cat">gps_location</span></td>
+              <td class="q">What is the address of this pin?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>520 tok · 1341ms</small></td>
+              <td class="ans prev">The address for Red Square is Red Square, Moscow, Russia, 109012.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>520 tok · 1034ms</small></td>
+              <td class="ans curr">The address for Red Square is Red Square, Moscow, Russia, 109012.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>80</td>
+              <td><span class="cat">gps_location</span></td>
+              <td class="q">Tell me about this picked location.</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>568 tok · 1618ms</small></td>
+              <td class="ans prev">Red Square is a historic central square in Moscow, Russia, adjacent to the Kremlin. It features iconic landmarks like Saint Basil&#x27;s Cathedral and Lenin&#x27;s Mausoleum, and has been a UNESCO World Heritage Site since 1990. The square has served as a site for parades, demonstrations, and public gatherings throughout Russian history.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>555 tok · 1977ms</small></td>
+              <td class="ans curr">Red Square is a historic square in Moscow, Russia, bordered by the Kremlin and featuring landmarks like Saint Basil&#x27;s Cathedral and Lenin&#x27;s Mausoleum. It has been a UNESCO World Heritage Site since 1990 and has hosted parades and public events for centuries.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>81</td>
+              <td><span class="cat">crime_safety</span></td>
+              <td class="q">Any restrictions visiting Red Square?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1436 tok · 1880ms</small></td>
+              <td class="ans prev">I can help you with how to use Rovvy&#x27;s features! For information about travel destinations like Red Square, you&#x27;ll want to switch to Wayra&#x27;s &#x27;travel guide&#x27; mode.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>547 tok · 1551ms</small></td>
+              <td class="ans curr">Red Square is a UNESCO World Heritage Site in Moscow, Russia. There are no general restrictions for visitors, but access may be limited during official events, parades, or construction. It&#x27;s advisable to check local announcements before visiting.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>82</td>
+              <td><span class="cat">crime_safety</span></td>
+              <td class="q">Is Red Square safe?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1390 tok · 1182ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant, and I can help you with features within the app. I can&#x27;t provide real-time safety advice for specific locations. Is there anything I can help you with regarding Rovvy&#x27;s features?</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>570 tok · 1916ms</small></td>
+              <td class="ans curr">Red Square is a major tourist attraction in Moscow, Russia, and is generally considered safe for visitors, especially during the day. However, as with any busy public space, it&#x27;s wise to stay alert for pickpockets and follow standard safety precautions. The area is well-policed and monitored, but avoid large gatherings or protests if they occur.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>83</td>
+              <td><span class="cat">crime_safety</span></td>
+              <td class="q">Any safety concerns here?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>565 tok · 1804ms</small></td>
+              <td class="ans prev">Red Square is generally safe for tourists, but it is a major tourist attraction so watch for pickpockets in crowded areas. The square has been a site for large gatherings and events, so be aware of your surroundings during demonstrations or parades. Follow local laws and respect security measures, especially near government buildings like the Kremlin.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>560 tok · 1877ms</small></td>
+              <td class="ans curr">Red Square is a major tourist attraction in Moscow, Russia, with a strong police and security presence. As with any crowded public space, be aware of pickpockets and keep your belongings secure. The area is generally safe for visitors, but it&#x27;s wise to stay alert during large events or demonstrations.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>84</td>
+              <td><span class="cat">crime_safety</span></td>
+              <td class="q">Should I be careful here?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>561 tok · 1585ms</small></td>
+              <td class="ans prev">Red Square is a major tourist attraction in Moscow, Russia, and is generally safe for visitors. However, as with any busy public space, be mindful of pickpockets and keep an eye on your belongings. It&#x27;s also a site of political significance, so occasional demonstrations or heightened security may occur.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>546 tok · 2154ms</small></td>
+              <td class="ans curr">Red Square is a major tourist attraction in Moscow, Russia, and is generally safe for visitors. However, as with any busy public space, keep an eye on your belongings and be aware of your surroundings, especially in crowds.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>85</td>
+              <td><span class="cat">crime_safety</span></td>
+              <td class="q">Any warnings about this area?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>569 tok · 1923ms</small></td>
+              <td class="ans prev">Red Square is a major tourist attraction in Moscow, Russia, but be aware of large crowds and pickpocketing, especially during peak seasons. It has historically been a site for political demonstrations and parades, so check local news for any planned events that might affect access. The area is generally safe, but stay vigilant in crowded spaces.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>549 tok · 1584ms</small></td>
+              <td class="ans curr">Red Square is generally safe for tourists, but be aware of heavy crowds and pickpocketing, especially near major attractions. It is a historic site where large public events and demonstrations sometimes occur, so check local news for any scheduled gatherings.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>86</td>
+              <td><span class="cat">crime_safety</span></td>
+              <td class="q">Is Moscow safe for tourists?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1377 tok · 1315ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant! I can help you navigate the app and use its features. Is there something specific about Rovvy you&#x27;d like to know?</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>562 tok · 1890ms</small></td>
+              <td class="ans curr">Moscow is generally safe for tourists, but like any major city, it&#x27;s wise to stay aware of your surroundings, especially in crowded areas like Red Square. Petty crime such as pickpocketing can occur, so keep valuables secure. The city has a strong police presence in tourist zones.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>87</td>
+              <td><span class="cat">crime_safety</span></td>
+              <td class="q">What do I need to prepare before going here?</td>
+              <td><span class="prov prev">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>581 tok · 1837ms</small></td>
+              <td class="ans prev">Before visiting Red Square, check the weather in Moscow and dress appropriately for cold winters or warm summers. Bring your passport if you&#x27;re a foreigner, as you may need it for entry to sites like Lenin&#x27;s Mausoleum. Wear comfortable walking shoes, as the square is large and surrounded by historic landmarks. Also, note that security checks are common, so avoid large bags.</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>610 tok · 2553ms</small></td>
+              <td class="ans curr">Before visiting Red Square in Moscow, Russia, prepare for cold weather (especially in winter) and bring a valid passport if you&#x27;re a foreigner, as you may need it for entry to certain sites like Lenin&#x27;s Mausoleum. Dress modestly for any religious or official buildings, and consider learning basic Russian phrases like &#x27;zdravstvuyte&#x27; (hello) and &#x27;spasibo&#x27; (thank you). Check opening hours for attractions like Saint Basil&#x27;s Cathedral and the Kremlin, as they may vary by season.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="diff">
+              <td>88</td>
+              <td><span class="cat">crime_safety</span></td>
+              <td class="q">Are there entry fees at Red Square?</td>
+              <td><span class="prov prev">gemini</span><br/>
+                  <small></small><br/>
+                  <small>1379 tok · 1241ms</small></td>
+              <td class="ans prev">I&#x27;m Wayra, Rovvy&#x27;s built-in travel assistant! I can help you with questions about how to use the app&#x27;s features. What can I help you do within Rovvy?</td>
+              <td><span class="prov curr">deepseek</span><br/>
+                  <small>discovery</small><br/>
+                  <small>554 tok · 1410ms</small></td>
+              <td class="ans curr">Red Square is a public square in Moscow, Russia, and there is no entry fee to access the square itself. However, some individual attractions on the square, such as Saint Basil&#x27;s Cathedral or Lenin&#x27;s Mausoleum, may have separate admission fees.</td>
+              <td><small>ans:True · fact:yes · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>89</td>
+              <td><span class="cat">conversation</span></td>
+              <td class="q">Hello Wayra!</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>conversation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">Hello! You&#x27;re looking at Red Square. Ask me about the weather, local food, culture, what to wear, or how far it is from you.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>conversation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Hello! You&#x27;re looking at Red Square. Ask me about the weather, local food, culture, what to wear, or how far it is from you.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>90</td>
+              <td><span class="cat">conversation</span></td>
+              <td class="q">Thanks for your help.</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>conversation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">You&#x27;re welcome! Ask me anything about Red Square — food, culture, weather, or the drive.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>conversation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">You&#x27;re welcome! Ask me anything about Red Square — food, culture, weather, or the drive.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>91</td>
+              <td><span class="cat">conversation</span></td>
+              <td class="q">That&#x27;s interesting, tell me more.</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>conversation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">Ask a specific question about Red Square — food, culture, weather, restrictions, or the route.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>conversation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">Ask a specific question about Red Square — food, culture, weather, restrictions, or the route.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>92</td>
+              <td><span class="cat">conversation</span></td>
+              <td class="q">Good morning!</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>conversation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">Hello! You&#x27;re looking at Red Square. Ask me about the weather, local food, culture, what to wear, or how far it is from you.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>conversation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Hello! You&#x27;re looking at Red Square. Ask me about the weather, local food, culture, what to wear, or how far it is from you.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>93</td>
+              <td><span class="cat">conversation</span></td>
+              <td class="q">You&#x27;re awesome.</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>conversation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">Thank you! Happy to help you explore Red Square.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>conversation</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans curr">Thank you! Happy to help you explore Red Square.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>94</td>
+              <td><span class="cat">conversation</span></td>
+              <td class="q">What else can you help with?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>conversation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">I can help with Red Square — weather, food, culture, what to wear, safety tips, distance from you, and how to get there on the Live map.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>conversation</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">I can help with Red Square — weather, food, culture, what to wear, safety tips, distance from you, and how to get there on the Live map.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:4/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>95</td>
+              <td><span class="cat">user_interaction</span></td>
+              <td class="q">How does Live work?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>app_guide</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">Open Group → Live (or your trip&#x27;s Live/Map tab) to share location, drop meet points, and run a countdown timer so everyone converges without endless texts.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>app_guide</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Open Group → Live (or your trip&#x27;s Live/Map tab) to share location, drop meet points, and run a countdown timer so everyone converges without endless texts.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>96</td>
+              <td><span class="cat">user_interaction</span></td>
+              <td class="q">How do I start a trip?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>app_guide</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">From the dashboard choose your trip workspace, or open Trips and tap New Trip. Add a title, dates, and destination, then invite your group so everyone shares polls, splits, and live coordination on the same itinerary.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>app_guide</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">From the dashboard choose your trip workspace, or open Trips and tap New Trip. Add a title, dates, and destination, then invite your group so everyone shares polls, splits, and live coordination on the same itinerary.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>97</td>
+              <td><span class="cat">user_interaction</span></td>
+              <td class="q">How do I share my location?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>app_guide</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">Open Group → Live (or your trip&#x27;s Live/Map tab) to share location, drop meet points, and run a countdown timer so everyone converges without endless texts.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>app_guide</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Open Group → Live (or your trip&#x27;s Live/Map tab) to share location, drop meet points, and run a countdown timer so everyone converges without endless texts.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>98</td>
+              <td><span class="cat">user_interaction</span></td>
+              <td class="q">How do I create a group?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>app_guide</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">Open Group in the left sidebar, then Travel Hub to start a coordinated workspace. Create your group, name it, and share the invite link or code so friends can join. That group becomes home for trips, polls, and shared expenses.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>app_guide</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Open Group in the left sidebar, then Travel Hub to start a coordinated workspace. Create your group, name it, and share the invite link or code so friends can join. That group becomes home for trips, polls, and shared expenses.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>99</td>
+              <td><span class="cat">user_interaction</span></td>
+              <td class="q">What does the pencil icon do?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>app_guide</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans prev">The pencil icon on Live lets you edit a dropped pin — rename the label, adjust the spot, or refine what you&#x27;re sharing before you navigate or send it to your group.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>app_guide</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">The pencil icon on Live lets you edit a dropped pin — rename the label, adjust the spot, or refine what you&#x27;re sharing before you navigate or send it to your group.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr>
+            <tr class="same">
+              <td>100</td>
+              <td><span class="cat">user_interaction</span></td>
+              <td class="q">How do I switch travel modes?</td>
+              <td><span class="prov prev">local</span><br/>
+                  <small>app_guide</small><br/>
+                  <small>0 tok · 1ms</small></td>
+              <td class="ans prev">Open Plan in the sidebar to switch between Flights, Hotels, Routes, and Buses. On Live, use the map tools for driving, walking, and Solo Live navigation.</td>
+              <td><span class="prov curr">local</span><br/>
+                  <small>app_guide</small><br/>
+                  <small>0 tok · 0ms</small></td>
+              <td class="ans curr">Open Plan in the sidebar to switch between Flights, Hotels, Routes, and Buses. On Live, use the map tools for driving, walking, and Solo Live navigation.</td>
+              <td><small>ans:True · fact:uncertain · loc:True · score:3/5</small></td>
+            </tr></tbody>
+    </table>
+  </section>
+</div>
+</body>
+</html>

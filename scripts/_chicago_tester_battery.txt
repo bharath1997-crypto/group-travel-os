@@ -1,0 +1,72 @@
+﻿
+============================================================
+SCENARIO: CHICAGO-CORTEZ ù West Cortez Street
+{
+  "pin": "West Cortez Street",
+  "total": 3,
+  "failures": 0
+}
+============================================================
+
+[OK] Q1: What restaurants, cafes, or attractions are near this exact spot?
+      intent=nearby provider=deepseek chars=660 note=-
+      Near West Cortez Street, the OpenStreetMap listings show a Church of God Spanish place of worship about 0.01 miles away at 1132 North Spaulding Avenue, and the University of Illinois Mile Square Health Center - Humboldt Park clinic about 0.11 miles away at 3240 West Division Stre
+
+[OK] Q2: I have a $50,000 budget for a 4-day trip starting here. Plan an insanely
+      intent=nearby provider=deepseek chars=1131 note=-
+      Verdict: A $50,000 budget for 4 days in Chicago is generous, but a private jet and Michelin-star dining at that level are not feasible within this budget and timeframe. The area near West Cortez Street is a residential/logan square neighborhood, not a luxury hub. Nearby hotels fr
+
+[OK] Q3: What sources are you using for this place's details, hours, and nearby r
+      intent=discovery provider=deepseek chars=1133 note=-
+      I'm pulling your place details from live map data and Wikipedia's Chicago entry, which gives me the neighborhood context, local culture, and general area info. For hours and specific business details, I rely on the map's point-of-interest data, but since this pin is just a street
+
+
+============================================================
+SCENARIO: CHICAGO-HAMLIN ù North Hamlin Avenue
+{
+  "pin": "North Hamlin Avenue",
+  "total": 2,
+  "failures": 0
+}
+============================================================
+
+[OK] Q1: What's here, how far is it, how to prepare?
+      intent=location_hard provider=local chars=144 note=-
+      As the crow flies, North Hamlin Avenue is about 5 mi (8 km) from Chicago. The mapped driving route is about 3.9 mi. Estimated drive time: 8 min.
+
+[OK] Q2: What restaurants, cafes, or attractions are near this exact spot?
+      intent=nearby provider=deepseek chars=597 note=-
+      Near North Hamlin Avenue, the nearby places are mostly places of worship and community facilities, not restaurants or cafes. Within about 0.2 miles, you'll find the First Congregational Church of Chicago (0.02 mi), Templo Voces Espiritules (0.06 mi), Church of Christ (0.13 mi), Y
+
+
+============================================================
+SCENARIO: CHICAGO-HYATT-WICKER ù Hyatt Place Chicago/Wicker Park
+{
+  "pin": "Hyatt Place Chicago/Wicker Park",
+  "total": 2,
+  "failures": 0
+}
+============================================================
+
+[OK] Q1: What can I do here?
+      intent=discovery provider=deepseek chars=1043 note=-
+      You're looking at Hyatt Place Chicago/Wicker Park, a great base in one of Chicago's trendiest neighborhoods. Since you're about 3 miles away, it's an easy drive or a quick ride on the Blue Line (Damen stop) from downtown. For a day trip, plan for a few hours to explore Wicker Par
+
+[OK] Q2: What restaurants, cafes, or attractions are near this exact spot?
+      intent=nearby provider=deepseek chars=594 note=-
+      Near the Hyatt Place Chicago/Wicker Park, you'll find several dining and cultural spots within a short walk. Ina Mae Tavern & Packaged Goods (0.01 mi) serves Southern cuisine, Nori (0.02 mi) offers sushi, Oiistar (0.02 mi) specializes in ramen, and Davenport's (0.03 mi) is a bar.
+
+
+============================================================
+SCENARIO: CHICAGO-SPRINGFIELD ù North Springfield Avenue
+{
+  "pin": "North Springfield Avenue",
+  "total": 1,
+  "failures": 0
+}
+============================================================
+
+[OK] Q1: What can I do here?
+      intent=discovery provider=deepseek chars=1159 note=-
+      North Springfield Avenue is a residential street in Chicago's Logan Square neighborhood, about 6 miles northwest of downtown. Since you're starting from home in Chicago, you can reach it by car in roughly 20û30 minutes depending on traffic, or take the Blue Line to Logan Square a
+

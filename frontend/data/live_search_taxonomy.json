@@ -197,10 +197,96 @@
       "label": "Viewpoints nearby",
       "mapLabel": "Viewpoints",
       "icon": "👁️",
-      "keywords": ["viewpoint", "viewpoints", "scenic", "lookout", "overlook", "vista"],
+      "keywords": ["viewpoint", "viewpoints", "vista"],
       "osm_queries": [
         "node[\"tourism\"=\"viewpoint\"](around:{radius},{lat},{lng});",
         "way[\"tourism\"=\"viewpoint\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "scenic_drives",
+      "group": "nature",
+      "label": "Scenic spots nearby",
+      "mapLabel": "Scenic spot",
+      "icon": "👁",
+      "keywords": ["scenic", "overlook", "lookout", "sunset", "photo spot", "picnic"],
+      "osm_queries": [
+        "node[\"tourism\"=\"viewpoint\"](around:{radius},{lat},{lng});",
+        "way[\"tourism\"=\"viewpoint\"](around:{radius},{lat},{lng});",
+        "node[\"tourism\"=\"picnic_site\"](around:{radius},{lat},{lng});",
+        "way[\"tourism\"=\"picnic_site\"](around:{radius},{lat},{lng});",
+        "node[\"natural\"=\"peak\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "historic_sites",
+      "group": "civic",
+      "label": "Historic sites nearby",
+      "mapLabel": "Historic site",
+      "icon": "🏛",
+      "keywords": ["historic", "ruins", "castle", "fort", "old town", "heritage", "archaeological"],
+      "osm_queries": [
+        "node[\"historic\"=\"castle\"](around:{radius},{lat},{lng});",
+        "way[\"historic\"=\"castle\"](around:{radius},{lat},{lng});",
+        "node[\"historic\"=\"ruins\"](around:{radius},{lat},{lng});",
+        "way[\"historic\"=\"ruins\"](around:{radius},{lat},{lng});",
+        "node[\"historic\"=\"archaeological_site\"](around:{radius},{lat},{lng});",
+        "way[\"historic\"=\"archaeological_site\"](around:{radius},{lat},{lng});",
+        "node[\"historic\"=\"fort\"](around:{radius},{lat},{lng});",
+        "way[\"historic\"=\"fort\"](around:{radius},{lat},{lng});",
+        "node[\"historic\"=\"city_gate\"](around:{radius},{lat},{lng});",
+        "way[\"historic\"=\"city_gate\"](around:{radius},{lat},{lng});",
+        "node[\"historic\"=\"tower\"](around:{radius},{lat},{lng});",
+        "way[\"historic\"=\"tower\"](around:{radius},{lat},{lng});",
+        "node[\"historic\"=\"manor\"](around:{radius},{lat},{lng});",
+        "way[\"historic\"=\"manor\"](around:{radius},{lat},{lng});",
+        "node[\"historic\"=\"church\"](around:{radius},{lat},{lng});",
+        "way[\"historic\"=\"church\"](around:{radius},{lat},{lng});",
+        "node[\"historic\"=\"heritage\"](around:{radius},{lat},{lng});",
+        "way[\"historic\"=\"heritage\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "capitals",
+      "group": "civic",
+      "label": "Capitals & capitols nearby",
+      "mapLabel": "Capital",
+      "icon": "🏛",
+      "keywords": ["capital", "capitol", "statehouse", "state house", "government seat", "parliament", "assembly"],
+      "osm_queries": [
+        "node[\"capital\"=\"yes\"](around:{radius},{lat},{lng});",
+        "node[\"capital\"=\"2\"](around:{radius},{lat},{lng});",
+        "node[\"capital\"=\"4\"](around:{radius},{lat},{lng});",
+        "node[\"capital\"=\"6\"](around:{radius},{lat},{lng});",
+        "node[\"capital\"=\"8\"](around:{radius},{lat},{lng});",
+        "node[\"place\"=\"city\"][\"capital\"~\"^(yes|2|4|6|8)$\"](around:{radius},{lat},{lng});",
+        "node[\"place\"=\"town\"][\"capital\"~\"^(yes|2|4|6|8)$\"](around:{radius},{lat},{lng});",
+        "node[\"amenity\"=\"townhall\"](around:{radius},{lat},{lng});",
+        "way[\"amenity\"=\"townhall\"](around:{radius},{lat},{lng});",
+        "node[\"building\"=\"government\"](around:{radius},{lat},{lng});",
+        "way[\"building\"=\"government\"](around:{radius},{lat},{lng});",
+        "node[\"historic\"=\"government\"](around:{radius},{lat},{lng});",
+        "way[\"historic\"=\"government\"](around:{radius},{lat},{lng});",
+        "node[\"office\"=\"government\"][\"government\"=\"administrative\"](around:{radius},{lat},{lng});",
+        "way[\"office\"=\"government\"][\"government\"=\"administrative\"](around:{radius},{lat},{lng});"
+      ]
+    },
+    {
+      "key": "monuments",
+      "group": "civic",
+      "label": "Monuments nearby",
+      "mapLabel": "Monument",
+      "icon": "🗿",
+      "keywords": ["memorial", "obelisk"],
+      "osm_queries": [
+        "node[\"historic\"=\"monument\"](around:{radius},{lat},{lng});",
+        "way[\"historic\"=\"monument\"](around:{radius},{lat},{lng});",
+        "node[\"historic\"=\"memorial\"](around:{radius},{lat},{lng});",
+        "way[\"historic\"=\"memorial\"](around:{radius},{lat},{lng});",
+        "node[\"tourism\"=\"artwork\"](around:{radius},{lat},{lng});",
+        "way[\"tourism\"=\"artwork\"](around:{radius},{lat},{lng});",
+        "node[\"man_made\"=\"obelisk\"](around:{radius},{lat},{lng});",
+        "way[\"man_made\"=\"obelisk\"](around:{radius},{lat},{lng});"
       ]
     },
     {
@@ -401,17 +487,8 @@
       "label": "Landmarks nearby",
       "mapLabel": "Landmarks",
       "icon": "⭐",
-      "keywords": ["landmark", "landmarks", "monument", "monuments", "memorial", "memorials", "historic", "statue", "sculpture", "attraction", "attractions"],
-      "osm_queries": [
-        "node[\"tourism\"=\"attraction\"](around:{radius},{lat},{lng});",
-        "way[\"tourism\"=\"attraction\"](around:{radius},{lat},{lng});",
-        "node[\"historic\"=\"monument\"](around:{radius},{lat},{lng});",
-        "node[\"historic\"=\"memorial\"](around:{radius},{lat},{lng});",
-        "way[\"historic\"=\"monument\"](around:{radius},{lat},{lng});",
-        "way[\"historic\"=\"memorial\"](around:{radius},{lat},{lng});",
-        "node[\"tourism\"=\"artwork\"](around:{radius},{lat},{lng});",
-        "way[\"tourism\"=\"artwork\"](around:{radius},{lat},{lng});"
-      ]
+      "keywords": ["landmark", "landmarks", "monument", "monuments", "memorial", "memorials", "statue", "sculpture", "attraction", "attractions"],
+      "union_keys": ["monuments", "historic_sites"]
     }
   ]
 }

@@ -1,0 +1,450 @@
+reason,wikidata_qid,wikidata_name,overture_gers_id,overture_name,distance_m,score
+rejected,Q5743575,Heronswood,16bdbce9-66bf-4442-9af4-b6991fe0af44,Heronswood Garden,5.9,74.1
+rejected,Q5774698,History House of Greater Seattle,3fdab7ce-1c4f-42df-87e9-832e8b2b7203,Schilling Cider House,96.4,41.5
+rejected,Q5919920,Howard House,0d27ab15-94db-4ceb-9904-3ab9ee680844,Doc Mayard's Public House,50.5,48.6
+rejected,Q5967559,I-5 Colonnade,42d1f453-4bbd-4dd6-b076-e0cd596f78b6,Siam On Eastlake,117.4,34.5
+rejected,Q6016930,Independent Order of Odd Fellows Hall No. 148,2505ce4a-6db0-4edf-9247-67ef0e0047d3,Tolt River John Macdonald Park,101.3,29.7
+rejected,Q6373411,Karshner Museum,23cc5949-294b-48c7-9d2f-5da7e243a4ff,Karshner Museum and Center for Culture & Arts,70.7,51.7
+rejected,Q258961,OK Hotel,d4f4c4b9-4d0a-4f6f-86ab-ae71a37f4cf7,The Chapel Lounge,42.8,42.9
+rejected,Q388376,Burke Museum of Natural History and Culture,a0e4b300-26fd-45d1-af05-595243a92fd0,Glenn Hughes Penthouse Theatre,121.3,41.1
+rejected,Q1456136,The Penthouse,298eafd6-b72a-423d-91f2-36cfe4033601,Owl N Thistle,84.6,45.5
+rejected,Q2128527,Rainier Club,ca53cd6d-589f-4148-9c4f-b3ba6714a3f8,Kurt Cobain Park,80.2,42.9
+rejected,Q3044487,Seattle Center,2c010b50-e3f7-43aa-8968-fc70c2f9ca82,Seattle Storm,118.1,51.9
+rejected,Q4727699,Alki Beach Park,4e211002-54b4-4543-a00e-acf22e54be41,El Chupacabra Alki,101.0,60.6
+rejected,Q4738153,Alvin Larkins Park,bfeb51e6-a73b-4eaf-90f4-c2134b973ea3,Spectrum Fine Art,118.8,40.0
+rejected,Q6772773,Marra Farm,d62a30d8-7c60-44e5-b0d7-b5b73ad8ae08,Marra-Desimone Park,65.0,48.3
+rejected,Q6783697,Masonic Lodge Building,9f7bea09-155c-4bd7-8486-5cbce13599e8,Tot Lot Park,131.4,29.4
+rejected,Q4883914,Bellevue Arts Museum,0514b07f-710d-4ded-b54b-9e2cd6c473ce,STK Steakhouse Bellevue,72.3,55.8
+rejected,Q4883926,Bellevue Downtown Park,f7066455-29a2-492e-b248-87ad6e7baab9,Bellevue Summer Movies in the Park,102.7,57.1
+rejected,Q4897427,Beth's Cafe,86f7936f-14da-4f5b-a331-56246c9f9096,St. Andrews Pub,133.9,30.0
+rejected,Q4935845,Bobo,b110e07c-4174-4311-8ba1-49a7e7b79654,Off The Rez Cafe,129.1,13.3
+rejected,Q4960570,Bremerton Elks Temple Lodge No. 1181 Building,85e0d60e-ee77-420c-ac93-8e814267c7b5,Mud Lab Bremerton,102.7,42.6
+rejected,Q4972428,Broadway Center for the Performing Arts,6d0cc7ff-3117-4589-b7fe-941d13bff466,The Broadway Gallery 765,147.6,40.7
+rejected,Q5017199,Caffé Vita Coffee Roasting Company,424267d0-6546-4818-925f-a1b3939b066b,Overcast Coffee,138.9,49.0
+rejected,Q5035884,Capitol Hill Arts Center,15488c3b-9b90-4945-b21e-9a3afb1c4d0f,Ramen DANBO Capitol Hill,97.3,58.3
+rejected,Q5059922,Center for Wooden Boats,064b7ce1-43d0-4a42-ba32-691ca2c7afb0,203° Fahrenheit Coffee,149.6,40.9
+rejected,Q6418856,Kiwanis Ravine,ec97968e-0b07-4388-b674-9330db0027f8,Kiwanis Memorial Preserve Park,147.0,54.5
+rejected,Q6424338,Kobe Terrace,6476a210-5ff1-4a84-8673-c2bb18640e22,Panama Hotel Tea & Coffee,73.5,40.0
+rejected,Q6486519,Langston Hughes Performing Arts Center,e94a020a-c537-41e2-9004-1d8dba2941b7,Langston Hughes Performing Arts Institute,10.7,78.5
+rejected,Q6688498,Louisa Boren Park,6d81b490-58c4-47ed-b98c-43002d36918a,Louisa Boren Lookout,126.6,64.9
+rejected,Q7497390,Shine Tidelands State Park,f0e3f1ec-7bde-4408-9a9c-96439ffaca41,Admiralty Condos,88.6,38.1
+rejected,Q7568404,South Seattle Community College Arboretum,2ad57884-cf13-41fc-b349-9bc5bd4abd40,The Arboretum at South Seattle College,142.0,82.7
+rejected,Q7589959,St. Mark's Greenbelt,524b860c-9409-4a72-a0b9-2f4508e0d6da,Gage Academy of Art,143.8,31.6
+rejected,Q7645191,Suquamish Museum,6812c72a-4587-476c-a5d0-d142fcd00e22,Suquamish Seafoods,119.8,70.6
+rejected,Q7684822,Taproot Theatre Company,c29a764d-b0fd-4e9b-8e55-b9f869d9bb48,Taproot Theatre Company's Jewell Mainstage,32.3,70.8
+rejected,Q7829968,Town Hall Seattle,f7dc0407-2fba-481f-8b52-035e47c7e3df,Lmrg Llc Dba Primo,79.8,40.0
+rejected,Q5145768,Coliseum Theater,5dd55ffb-76c7-4835-8d39-dade5cf28c91,ACT Theatre,139.6,59.3
+rejected,Q5147728,Colman Park,5333dac2-92c0-4f01-a68a-7ff459e8afdb,Mt Baker Beach,100.3,24.0
+rejected,Q5154664,Community Center and War Memorial Building,627261d5-701b-43b8-86ed-5dc510ba5f0d,Everett Performing Arts Center,148.9,41.7
+rejected,Q5187381,The Crocodile,be7ee554-c99f-47d9-b754-49794f84a9b8,Cottontail,137.1,52.6
+rejected,Q5594668,Grand Illusion Cinema,c98127c2-e878-42fe-9fe5-3a5717dbaff9,Mandarin Chef,99.7,47.1
+rejected,Q5594850,Grand Opera House,91091eb2-aba3-49cb-a4fd-c951440efa3c,Forsyth And Sons Inc,73.3,43.2
+rejected,Q5600778,Greater Tacoma Convention and Trade Center,e440c98c-57dc-4d26-a937-8b37caf53e51,Tacoma Venues & Events,22.7,45.2
+rejected,Q6783772,Landmark Convention Center,3bfbeb20-d8bb-4fd2-8f5b-81bb078a8412,Temple Theater Box Office,142.3,31.4
+rejected,Q5219490,Daniels Recital Hall,8918ff18-8fb9-46bf-8676-0b4dfd8b0a48,Seattle Parks and Recreation,97.0,45.8
+rejected,Q5243101,Daybreak Star Cultural Center,d7d7b57d-795d-4b06-af0d-bbee444bea45,Daybreak Star Center Wedding and Event Rentals,14.7,53.3
+rejected,Q5307746,Drinkmore Cafe,5f95bbe0-4edd-4462-a121-be8ad9a86600,Drinkmore Internet Lounge,55.6,66.7
+rejected,Q5329008,East Montlake Park,e474f767-0314-4e30-ac22-75387452ac06,Story of North Island (Totem Pole),118.0,32.0
+rejected,Q5364412,Elks Temple,956e4aa5-ab49-4bcc-9882-547485c67931,The Speakeasy Salon Tacoma,17.0,36.4
+rejected,Q6800800,McCurdy Park,6f0e1b94-86ee-4667-b561-8fd92a4ca7cf,Marsh Island,55.9,33.3
+rejected,Q6802240,McLeod Residence,4b9862e8-be77-4c93-b77e-dfb2c0f188d0,clēēn:craft Experience Center,74.2,44.4
+rejected,Q6804124,Meany Hall,f8a28170-dbe0-46a9-abb6-b407e8ee8b9a,Meany Hall Theater,46.5,71.4
+rejected,Q6908241,Moore Theatre,2e94af28-fb98-4a73-a2db-8127fa267add,Retro Restaurant & Lounge,87.5,48.3
+rejected,Q6940805,Q6940805,2abb1511-8b94-4503-8c49-46c17ddae309,Connections Museum,17.8,0.0
+rejected,Q6940877,Museum of History & Industry,4b7efb94-edbf-4976-a18d-cb14d6a4dd31,Museum of History and Industry (MOHAI),20.7,83.9
+rejected,Q7048344,Nolte State Park,65c31384-91d1-4932-9f5a-e8e602fb50b6,Deep Lake,55.8,40.0
+rejected,Q43305521,Aurora Drive-In,8446af65-ee3c-4b99-abcc-5b81aa45b7a3,Aurora Donuts and Ice Cream,109.3,52.4
+rejected,Q43305535,Star-Lite Drive-In,c7ca6d84-e40a-4298-a869-5a298d3c3809,Birrieria Tijuana Lakewood,66.2,45.5
+rejected,Q43305559,Auburn Avenue Theater,1a971ef0-6e92-49f1-b9f2-84d86f9ec76a,Auburn Community Players!,0.4,53.3
+rejected,Q43305562,Granada Theatre,d9875528-78e4-410c-ad12-3aa97665057f,the Kitsch-en,96.6,33.3
+rejected,Q43305563,Regal Auburn 17,b7f600a7-905f-4b34-8047-4e8d129f9cd2,Gotcha Arenas,71.1,42.9
+rejected,Q43305560,Avon Theatre,6ee1c804-5c2c-493e-8f99-9f44f62d5883,Hawkers Bar & Grill ,75.7,43.5
+rejected,Q43305570,Bellevue Galleria Stadium 11,69e4da44-bc82-4a81-b8d1-6cfd79d4b319,Bellevue Radar,106.1,57.1
+rejected,Q43305571,Crossroads Quad Cinemas,7d2337cf-8ba4-41cc-8e9f-2f0fe5da931d,Crossroads Cafe,122.1,60.6
+rejected,Q43305568,AMC Loews Factoria Cinemas,f53e83ad-4504-499f-9f88-103b4333742a,AMC Factoria 8,5.4,60.0
+rejected,Q43305569,Bel-Vue Theatre,f4e1b32e-bf51-407a-83dd-d351c0ff4786,Goddard Park,141.8,22.2
+rejected,Q43305575,Cinemark Lincoln Square,5dfefb5e-a970-494f-84d1-c036c3e747e2,Lincoln Square,78.6,75.7
+rejected,Q43305573,John Danz Theatre,52cb1ac1-fc1b-4f8a-983b-1b57df0f4de9,Where Ya At Matt,93.9,42.4
+rejected,Q43305576,Overlake Cinema I & II,c7e972d7-1dc6-4ac1-b402-396c16fa0ae8,Sree Biryani Palace,60.7,35.9
+rejected,Q43305577,Regal Crossroads 8,3b3bc83c-2cb0-45bb-9eb2-34f36ff9fbde,Regal Crossroads - Bellevue,16.6,79.1
+rejected,Q43305595,Avon Theater,132772ad-05dc-4776-8bff-0a22c5332567,Wayne Park Bothell,99.1,40.0
+rejected,Q43305337,Roxy Cinema,4b88ce83-2536-46d9-81d5-21c5dd1c820c,Taco Dudes & Caribbean,111.4,38.7
+rejected,Q43305396,AMC Loews Alderwood Mall 16,c8238cce-6cac-48a8-9ed7-1d79c9e683f6,85˚C Bakery Café,89.0,37.2
+rejected,Q43305404,Liberty Theater,281aa078-c502-479d-9c71-c89ab9963652,Pioneer Bakery,85.4,55.2
+rejected,Q43305405,Snohomish Theatre,a33ddf3a-7465-4b3a-bc5c-cb5baff8e889,Snohomish Pie Co,60.4,54.5
+rejected,Q43305457,Sunset Drive-In,e8376002-34a3-4ac2-adfb-702429059e61,The Keg Steakhouse,149.6,41.4
+rejected,Q43305474,Midway Drive-In,7c889517-14fa-4704-91e6-9f505d6f3697,Dick's Drive-In,108.9,60.0
+rejected,Q43305481,Fife Drive-In,b28fc2a5-ce1e-47eb-b7ce-2ab8326ded5c,Thai In Fife,14.9,56.0
+rejected,Q43305487,El Rancho Drive-In,5d052ca8-8a1c-4941-a022-151eae542f10,El Piketon Restaurant and Lounge,136.7,51.2
+rejected,Q43305497,Sno-King Drive-In,79eb1cf0-69dd-4c8f-896b-e2a706ac4015,Spartas Pizza and Pasta House,128.9,30.4
+rejected,Q7933704,Viretta Park,f2077be8-774f-458e-96df-7928f0bc6cfc,Stevens Triangle,119.5,28.6
+rejected,Q7941038,Volunteer Park Conservatory,9a8bd2f5-f28e-4723-884e-dd31f3e2ecc2,Volunteer Park,144.7,68.3
+rejected,Q7972232,Seattle Convention Center,f6712f52-a1e9-4b81-b187-5ebcf66cdb10,Metropole American Kitchen & Bar,89.6,41.9
+rejected,Q7972250,Washington State History Museum,d314787b-9c71-458b-9423-04845f3a058a,Tacoma Museum District,48.4,56.6
+rejected,Q8025096,Wing Luke Museum of the Asian Pacific American Experience,03f811cd-0401-40ad-b75c-1ae7328cf6b7,Wing Luke Museum,12.2,43.8
+rejected,Q8032871,Woodland Park Zoo,d31e9004-f028-40b3-b5bb-1617c6b5b137,Jimi Hendrix Memorial Viewpoint,82.8,25.0
+rejected,Q8038234,Wright Park Arboretum,3f61542a-4158-4e8f-8d56-7856b4fce345,Wright Park,116.4,68.8
+rejected,Q8564792,Fort Ward Park,880b53af-5488-48f0-aed1-99351d455d5c,Fort Ward,77.6,78.3
+rejected,Q12060776,Interurban Trail South,e1bbecbc-66dc-4927-a16b-82fd62165b18,Interurban Trail Site - Tukwila,0.0,74.5
+rejected,Q5423177,Ezell's Chicken,4d65aa26-87ca-4032-90aa-ed0a34ef4b38,Ezell's Famous Chicken,4.8,81.1
+rejected,Q5430844,Fairview Park,77894f8b-c332-44e6-a50a-b2d4f3e7de27,Little Water Cantina,67.7,42.4
+rejected,Q5432010,Fall City Masonic Hall,67f83e6d-3e7a-4550-bc92-c4d344773b82,Fall City Bar & Grill,100.3,51.4
+rejected,Q5510825,Future of Flight Aviation Center & Boeing Tour,e8fbca0f-a1df-4dcc-a7ce-49c577ae94b2,Boeing Future of Flight,15.2,68.7
+rejected,Q5526323,Gas Works Park,7ed08858-572d-421d-8764-8b047438c509,Gas Works Lake View Point,63.5,61.5
+rejected,Q5532733,Genesee Park,a33b5073-5a16-44c8-826f-9371ee607959,Westcrest Park Off Leash Area,71.4,39.0
+rejected,Q5579416,Golden Gardens Park,76fd4e52-fdf2-48bf-b7dd-7fa3a0e02d72,Golden Gardens Staircase - Top,140.7,72.3
+rejected,Q43305597,Bremerton Cinema,6335f85b-ac40-4a3a-a242-dc7c9b532e41,True Trail Brewing,123.8,41.2
+rejected,Q43305602,Charleston Cinema,e81b560c-95f9-440d-b71a-6a54cf975961,The Charleston,3.1,74.1
+rejected,Q43305607,Olympic Cinemas,cdc63ec3-d99a-434e-9a25-29def73ade23,Gandhi Indian Cuisine,106.3,38.9
+rejected,Q43305608,Rex Theater,173cd37e-ab4a-4e21-9edf-7d0405d763e3,Another Castle Arcade,135.0,37.5
+rejected,Q43305609,Rialto Theater,8aa8c3ff-d2cb-4150-b765-0215484a017f,Town Portal,147.0,40.0
+rejected,Q43305612,Tower Theatre,414ad7f5-9aa5-423a-aacf-c81d6335559b,Roxy Theatre,125.8,56.0
+rejected,Q43305622,Tin Theatre,2dccc360-d274-4958-868a-6709516bc4c4,The Tin Room,16.8,52.6
+rejected,Q43305621,Burien Theater,8fe8b253-f091-49a0-b8c2-a3c84e12426a,Fireside Burien,140.6,62.1
+rejected,Q43305663,Apollo Theater,8bbd1c70-99c8-468b-a9d1-4595c1dfc60b,Apollo Exos Records & Beer,10.0,52.6
+rejected,Q43305666,Everett Motor Movie,cdc44a25-192e-42e1-a9df-c4bdf2d6759a,Pizza Hut Express,40.5,38.9
+rejected,Q43305667,Granada Theatre,4d11bc6d-8ffc-42d4-9086-d7aeef1b3e57,Sabaijai Thai,108.7,50.0
+rejected,Q43305664,Balboa Theatre,4d11bc6d-8ffc-42d4-9086-d7aeef1b3e57,Sabaijai Thai,79.8,51.9
+rejected,Q43305665,Everett Mall Cinemas,5aa016d9-6c14-4596-b903-15519d68b145,Street Coffee And Bagels,126.3,40.9
+rejected,Q43305671,Regal Everett Stadium 16,c9530cda-2411-4525-9f61-3a0c2f810bf4,Regal Everett,116.4,70.3
+rejected,Q43305668,Orpheum Theater,ba70a147-b590-4d2d-a0c1-27c0a9a852cf,Historic Downtown Everett Theater,87.2,45.8
+rejected,Q43305669,Princess Theatre,5281fc44-a08d-4f81-8b73-76760a6cd578,Village Theatre,145.5,45.2
+rejected,Q43305674,AMC Sea-Tac North Theatre,5fcc7955-6532-4837-a70d-d972b65264a4,Theary Cambodian Foods,115.6,46.8
+rejected,Q43305672,Roxy Theatre,f3b5b747-0427-4918-88df-bea317f74e20,Monte Bistro & Showbar,89.5,43.8
+rejected,Q43305673,AMC Gateway 8,ddb8f743-d40a-41d5-88d3-b52151f2f489,Cold Stone Creamery,92.7,37.5
+rejected,Q43305863,Market Theatre,e24c0b46-db4b-487d-9609-45b26704ed43,Market Grill,39.8,60.0
+rejected,Q43305860,Pacific Science Center IMAX Theatres,72a13469-011b-4014-b82a-189e442574fc,Laser Dome at the Pacific Science Center,48.2,76.3
+rejected,Q43306439,Roycroft Theatre,d1249b29-09a0-4bc0-ad7a-8de295c7ea3e,Firehouse Mini Park,117.0,28.6
+rejected,Q43306456,Arabian Theatre,937ab95c-3380-4b1f-a5cc-27706f8920f3,Über Tavern,77.7,46.2
+rejected,Q43306497,Alaska Theatre,88c935a8-c4fc-4ae8-ae50-07dab3032638,Thai Star,37.4,52.2
+rejected,Q43306500,AMC Dine-In Seattle 10,845dcc4e-8d82-41e2-b693-a2da54d8db11,Amc Seattle 10,21.0,77.8
+rejected,Q43306514,Aurora Cinema I-II-III,00758f56-49fc-4828-bdd2-dcb29fe28e5d,All Nations Soccer Bar & Restaurant,126.9,30.0
+rejected,Q43306512,Atlas Theatre,f551eef7-1b00-467a-ac7e-4ca76a955d71,Freehold Theatre Lab,118.3,60.6
+rejected,Q43306517,Ballard Theatre,4df5a169-bf39-4279-97cc-5ba26e634f87,Matador Ballard,82.8,73.3
+rejected,Q43306522,Beacon Theatre,e9f3c446-1cef-4c6e-9071-75a9197d0ccc,Tenoch Mexican Grill,113.8,42.9
+rejected,Q43306520,Bay Theatre,a95f9474-4f73-4865-b8f9-98bddc78d074,Majestic Bay Theatres,0.2,68.8
+rejected,Q43306525,Blue Mouse Theatre,c9181dbe-8171-4e62-b6b8-eeb0d4934710,Blue Water Taco Grill,117.6,60.6
+rejected,Q43306543,Broadway Market Cinemas,a502f9f5-c51c-44a3-a3c5-6a425233cddf,Broadway Wok,58.0,57.1
+rejected,Q43306555,Broadway Theatre,2335bc36-147f-4ad5-a705-f593d00c806a,Charlie's On Broadway,44.3,70.3
+rejected,Q43306566,Capitol Theatre,781a7885-a0d4-47f2-b504-28cdb0cb4b8b,Taste of Asia,73.2,57.1
+rejected,Q43306571,Class A Theatre,781a7885-a0d4-47f2-b504-28cdb0cb4b8b,Taste of Asia,73.2,50.0
+rejected,Q43306574,Colonial Theatre,781a7885-a0d4-47f2-b504-28cdb0cb4b8b,Taste of Asia,26.8,48.3
+rejected,Q43306579,Columbia Theatre,6b4c3495-4047-48d6-942c-350c1fa5c662,Olympic Sculpture Park,149.4,47.4
+rejected,Q43306582,Crest Cinema Center,1c9cc292-e872-417d-8c61-2c42020496df,Landmark's Crest Cinema Center,11.5,77.6
+rejected,Q43306585,Dream Theatre,0cde5d59-5845-4a79-84ba-aca63359dae1,Seattle Death Museum,30.6,54.5
+rejected,Q7075692,Occidental Park,5f11047a-93c5-4e9d-9fa9-307b09e1b9c4,Occidental Square,58.9,81.2
+rejected,Q7077492,Oddfellows Hall,7305f9a5-a0dc-4396-860d-838af76180e9,Little Oddfellows,45.6,81.2
+rejected,Q7203369,Playhouse Theatre,3bc29d0b-f4ba-4ae7-a0a8-3694a8c9659c,The Floyd and Delores Jones Playhouse Theatre,43.2,58.6
+rejected,Q4819283,Auburn Masonic Temple,b3afebe0-976a-4850-b66f-3c3da0b36bd3,Crown Catering and Espresso,145.2,41.7
+rejected,Q4878121,Beaver Lake Park,eb557dd4-e043-494b-9777-e0e52b7eca56,Beaver Lake Off-Leash Dog Park,118.4,69.6
+rejected,Q5463437,Flying Heritage Collection,b6030501-8b69-415b-854e-7cecbe044813,Flying Heritage & Combat Armor Museum,39.4,62.3
+rejected,Q5471051,Fort Dent,39b4058f-20d6-43e0-8321-4c15ec49beb9,Fort Dent Park,43.3,78.3
+rejected,Q5501246,Freeway Park,ee761885-313d-4dbd-bc5e-b7a6709c4df0,Jim Ellis Freeway Park,92.6,70.6
+rejected,Q7258919,Puget Power trail,3812ffcb-c229-40a5-a4d4-6fab2f72773f,Penny Arcade,147.8,27.6
+ambiguous,Q7306115,Anderson Park,57529a62-c8dd-4e5f-9012-0d2c90962828,Anderson Park,15.5,100.0
+ambiguous,Q7306115,Anderson Park,bc26d5ae-606f-486c-9b51-06ae1e75d021,Anderson Park,30.9,100.0
+rejected,Q28035324,Barnes Building,2779add5-ea2b-4142-9b30-5b7cf9547eff,Belltown Brewing,110.0,45.2
+rejected,Q30154397,Lynnwood Convention Center,aa103af5-e297-478f-a2ce-e338f8b0bfae,Carniceria Market Michoacan,93.5,37.7
+rejected,Q43305246,Admiral Theatre,1545ca6a-f515-429f-a271-3170a904b2cb,Kama'aina Grill,91.6,41.7
+rejected,Q43305244,"Blue Mouse Theatre, North End",6d26ffc0-8c28-4ea5-9583-c5767fd0a501,Blue Mouse Theatre,4.3,78.3
+rejected,Q43305275,Everett Theater,ba70a147-b590-4d2d-a0c1-27c0a9a852cf,Historic Downtown Everett Theater,13.6,62.5
+rejected,Q43306995,Shell Theatre,37de7606-c0fb-47e1-951b-843d3c46d97a,Megabites Deli - Tacoma,117.7,41.2
+rejected,Q43306998,Tacoma Central,2a6dcea1-4145-465e-a2f4-328ee18bea76,Pho Garden,81.8,33.3
+rejected,Q43306996,Sunset Theater,e6608b0d-baa9-467e-aa52-8e943b9d7a3c,Legendary Doughnuts,86.1,42.4
+rejected,Q43307002,Tacoma South Cinemas,7d93b3f1-02ed-462c-96c5-c56064f02025,IHOP,118.0,25.0
+rejected,Q43307003,Tacoma West Cinemas 1-3,f99edcfb-e136-4004-a01a-0a9f094f6595,Starboba Tea & Cafe,122.9,40.0
+rejected,Q43307000,Tacoma Mall Twin Theatre,c099cebf-492b-4326-b651-95194f73a82e,Krispy Kreme,32.3,22.2
+rejected,Q43307006,Village Cinemas,068c226c-8284-4aa7-8fee-7badb49da7dc,Yen Ching Restaurant,22.0,41.7
+rejected,Q43307004,Tacoma West Cinemas 4-5,8fa5d7bf-ec94-4c07-a995-f9fcf40db1f1,Venus & Mars Lounge,108.3,36.4
+rejected,Q43307005,Victory Theatre,dfbc92fa-694b-4b7a-99a7-2487e59e6829,Dorky's Arcade,81.2,48.3
+rejected,Q43307016,AMC Southcenter 16,4731c56a-7d97-423d-b4dc-becbb4d82d07,Cloud Nine Creamery,67.8,37.8
+rejected,Q43307085,White Center Theatre,6366fc03-c2ff-492d-8479-f1930fff7fd0,Mr. B's Mead Center,79.9,57.9
+rejected,Q14713888,Seattle Marine Aquarium,75d03d0e-cb8f-40fc-9a13-12ff205cc6e9,Steamers Ice Cream,149.0,48.8
+rejected,Q48807459,"Celebration Park, Federal Way",feb7ff03-c5b1-4cf5-b575-1b3e86bc84cd,Celebration Park,80.4,72.7
+rejected,Q48815238,Iron Horse,b2e04252-f735-4350-91a4-84c203092c4c,Catherine Person Gallery,18.2,41.2
+rejected,Q48815241,Andy's Diner,aaedb4a1-bbe4-4afe-9dce-0dc42b9c4916,The Nest Arcade,120.3,52.2
+rejected,Q49473193,Auburn Rotary Park,e22933d0-6684-4cd6-9070-1b079a2dbc35,Rotary Park,14.8,75.9
+rejected,Q49473418,Bagshaw Field,9f8ee532-e4a6-4d50-af0a-44616b252d42,Burger King,140.3,33.3
+rejected,Q12064411,North Passage Point Park,0014cb56-480d-4b2d-ac05-6e7236b95b32,Northlake Tavern & Pizza House,103.6,50.0
+rejected,Q16245703,And/or alternative space,4665d192-672c-4083-9bf7-53d517044e7e,Cal Anderson Skate Park,56.1,51.1
+rejected,Q16894471,Magnolia Park (Seattle),65312f9c-9e4a-4189-90d0-ec817986ec6c,Magnolia Park,115.0,76.5
+rejected,Q17513852,Pacific Northwest Museum of Motorcycling,5048de57-ad57-494f-aae6-3c0066227a83,Da Vinci Cafe,146.3,16.7
+rejected,Q19866508,Bell Street Park,c1e635a9-99ee-4b22-a2ed-8b89bba8bdc6,Regrade Park,108.9,57.1
+rejected,Q19881696,Shelly's Leg,b7832ce1-57b6-4612-9edb-a39f9444e2b3,Larry’s Blues Cafe,58.1,48.0
+rejected,Q19885173,Sylvan Grove Theater and Columns,136b3258-6ca1-4927-965f-63d9f38ad4b3,UW: Rainier Vista,28.6,37.5
+rejected,Q20712721,Women's University Club of Seattle,1ad673e5-34cb-4b59-9210-39e86e7f0081,Specialty's Cafe & Bakery,102.7,42.1
+rejected,Q25000324,Martha Lake Airport Park,4c923a82-63e2-466b-a48f-6460e5c1e181,Martha Lake Airport Park Off-Leash Dog Park,58.2,71.6
+rejected,Q43306591,Embassy Theatre,781a7885-a0d4-47f2-b504-28cdb0cb4b8b,Taste of Asia,131.3,50.0
+rejected,Q43306595,Empress Theatre,3dda7d20-e205-4ba5-9755-30a68c1c9fc7,Our/Seattle,25.9,46.2
+rejected,Q43306597,Exhibit Theater,ed33695e-a387-425b-a041-5a2d967f65d8,Blue Water Taco Grill,95.4,46.7
+rejected,Q43306603,Fremont Theatre,9176c6d2-f4fc-47ce-8a96-bce01ee8b103,DIY Tea Lab - Fremont,103.3,64.7
+rejected,Q43306601,Florence Theatre,fe5f944e-7c97-4e20-bd2c-120a0c4f35e7,Double Header,113.0,48.3
+rejected,Q43306607,Granada Theatre,8f8ffcbc-d14d-4ca4-a7ad-2a0119db7699,Till Dawn,104.1,33.3
+rejected,Q43306614,Green Lake Theater,c4e4a741-a876-4e5a-9597-cd4582546f27,Toast Mi Green Lake,55.0,75.7
+rejected,Q43306617,Green Lake Theatre,c4e4a741-a876-4e5a-9597-cd4582546f27,Toast Mi Green Lake,41.2,75.7
+rejected,Q43306633,Green Parrot Theatre,db9e21ca-306d-418e-809b-c26ba18b009e,Friends Of The Waterfront,80.2,53.3
+rejected,Q43306639,Hollywood Theatre,51e37390-8fb0-4c70-a27b-6804a1214103,Bol - Test Kitchen & Bar,91.8,48.0
+rejected,Q43306645,Kokusai Theater,1c071d6e-b6d3-4876-8403-b7213b4fa768,Eastern Café,90.6,51.9
+rejected,Q43306650,Liberty Theatre,eedb6a71-8943-4f27-bd63-c69f746e5d56,Traver Gallery,149.2,55.2
+rejected,Q43306648,Lake City Theatre,5e7c2222-1541-4aa5-a1c4-1f13c5183b5e,Lake City Park,124.8,77.4
+rejected,Q43306655,Madrona Theatre,34e35ea0-df7c-4a3d-adc7-284fe230d903,Golden Wheat Bakery,61.4,52.9
+rejected,Q43306653,Little Theatre,d1249b29-09a0-4bc0-ad7a-8de295c7ea3e,Firehouse Mini Park,107.1,36.4
+rejected,Q43306658,Magnolia Theatre,ea112e3b-9cb8-42c4-a7bf-6c071d8a879b,Magnolia Playground,129.0,62.9
+rejected,Q43306663,Metropolitan Theatre,b23b64e1-a52a-4e19-b3d6-cddad4044f8b,The 5th Avenue Theatre,88.2,57.9
+rejected,Q43306660,McEachern Auditorium,6f0e1b94-86ee-4667-b561-8fd92a4ca7cf,Marsh Island,37.3,37.5
+rejected,Q43306665,"Mission Theatre, 4th Avenue",d0d06823-fb8d-4fb5-af0c-4653c3b87ed5,5th avenue cafe,120.5,50.0
+rejected,Q43306668,"Mission Theatre, Georgetown",23275e33-84b6-4008-bf77-664a7f990b97,Post Pike Georgetown,25.5,60.9
+rejected,Q43306672,Montlake Theater,2cff11f5-c86f-47ed-a5a8-41d66d910d3d,Purr Cocktail Lounge,32.3,34.5
+rejected,Q43306677,Mount Baker Theatre,0ead5dc3-b7a4-4542-84db-9a81e8a80835,East African Imports & Restaurant,121.4,41.0
+rejected,Q43306683,Newmark Cinemas,1a9631ea-7490-4641-9894-f7fe2c789a1c,First & Pike News,102.8,46.7
+rejected,Q43306680,Music Box Theatre,b23b64e1-a52a-4e19-b3d6-cddad4044f8b,The 5th Avenue Theatre,135.6,57.1
+rejected,Q7321123,Rhododendron Species Foundation and Botanical Garden,b1c6888a-6ccc-4e11-87c4-c145e6746b3c,Rhododendron Species Botanical Garden,28.8,83.1
+rejected,Q7322149,Rialto Theater,09c3f188-cacd-4687-b972-011f9277a6f9,Pantages Theater,14.4,66.7
+rejected,Q7326592,Richard Hugo House,a930ba43-d3c4-4a39-8ab3-2ba427d9a69e,One World Restaurant,93.9,44.4
+rejected,Q7406293,Salumi,55d47de0-fc43-425b-9467-b127e4eb8edc,Xtadium,61.8,46.2
+rejected,Q7420003,Santafair,b2afc4b8-e047-4eeb-92b2-4a072b456a11,Starbucks,68.3,44.4
+rejected,Q7430800,Scenic Beach State Park,a845b902-e6da-4de2-a886-4a3b9f815421,Scenic Beach,109.0,68.6
+rejected,Q7431836,Schmitz Park,9c3fd382-abc8-4359-80b0-51adbef3401a,Schmitz Preserve Park,32.3,72.7
+rejected,Q43305794,Poulsbo Stadium 10,e75b3a47-1c32-4471-89c0-e14282091dcf,Parlor Shop,118.2,34.5
+rejected,Q43305800,Roxy Theatre,86d8b3b3-5e96-4265-b455-833c4adbf50d,Mugs & Jugs Sports Bar & Grill,125.7,18.8
+rejected,Q43305806,Bella Botega Stadium 11,d20940bd-820c-4174-af14-42fa4436c87f,Regal Bella Bottega,19.5,66.7
+rejected,Q43305815,Rainier Theater,5358dcc7-a1b9-4b0f-a486-2700752084d4,Renton Civic Theatre,97.5,57.1
+rejected,Q43305813,Landing Stadium 14,762a5ff8-8774-4e6d-a518-b56e26b89b48,ShareTea Landing,38.0,64.7
+rejected,Q43305819,Roxy Theatre,5358dcc7-a1b9-4b0f-a486-2700752084d4,Renton Civic Theatre,24.1,62.5
+rejected,Q43305816,Renton Village 8 Cinemas,4b88ce83-2536-46d9-81d5-21c5dd1c820c,Taco Dudes & Caribbean,111.4,36.4
+rejected,Q43305817,Renton Village Cinemas,4b88ce83-2536-46d9-81d5-21c5dd1c820c,Taco Dudes & Caribbean,111.4,38.1
+rejected,Q43305843,Egyptian Theatre,6349f88d-7c6b-40f6-9fac-f7f9276420d0,Neptune Theatre,147.6,77.4
+rejected,Q43305848,Music Hall Theatre,1dd9c61a-53bb-4e7d-9089-d4f0ade8f324,Capuli Club - Sips & Treats,142.1,53.7
+rejected,Q43305854,"Orpheum Theatre, 5th Avenue",6854ddbf-da7a-460e-92fe-a5230c37787f,Cinque Terre Llc,113.9,42.9
+rejected,Q43305856,"Orpheum Theatre, 3rd Avenue",1258d8c4-7465-4949-8dbd-d9500b95027f,Dr. Martens - Seattle,99.4,45.5
+rejected,Q43305675,Century Federal Way,fdbbfe6c-56f2-4871-a5ee-a6071570a8f3,Century Federal Way and XD,141.6,84.4
+rejected,Q43305677,Federal Way Twin Cinemas,5a88147f-44bd-4639-b1a9-e491abccc684,Barbacoa De Borrego La Oveja Descarriada,135.1,34.4
+rejected,Q43305681,Galaxy Gig Harbor,5d95c64b-dc0e-47af-9762-1b4af8e3a309,Blazing Onion,68.1,40.0
+rejected,Q43305684,Roxy Theatre,367ded39-ca72-4882-9b74-af03c34a1bd4,The Harbor General Store,48.9,43.8
+rejected,Q43305692,Issaquah Highlands Stadium 12,51f6ff2a-35a0-4549-8548-242eabebfe91,Regal Issaquah Highlands,148.9,75.5
+rejected,Q43305710,Vale Theater,5d3a9045-8007-4a22-a9df-44b88dfe00de,Cafe On Fourth,80.3,30.8
+rejected,Q43305711,Gateway Theatre,a33c34bd-c30b-4fda-92f3-f52be02faf03,Howard Mandville Gallery,130.6,46.2
+rejected,Q43305708,Kent 6 Cinemas,16ecf235-f70e-4e1c-8608-392051e4072a,Nana's Southern Kitchen,122.9,41.4
+rejected,Q43305709,Kent Theatre,07b09775-748d-4db3-bea2-6a467a246a0e,Kent Water Park,110.4,59.3
+rejected,Q43305712,Kirkland Parkplace Cinema 6,30b599e1-858a-4c57-afd0-98e50c3757ec,Kirkland Art Center Store,139.2,61.5
+rejected,Q43305719,Regal Lakewood Stadium 15,bb076b18-d0da-4f28-b7b8-96fe7a8b0a08,Regal Lakewood,112.7,71.8
+rejected,Q43305730,Alderwood Stadium 7,2a0ae4f8-5c62-4920-b9bc-e6d970ea6202,Regal Alderwood,4.0,64.7
+rejected,Q43305732,Grand Cinemas,18ac4c90-c9a8-45c2-b5eb-922c8fa7475c,Grand Cinemas Alderwood,29.8,72.2
+rejected,Q43305733,Lynn 4 Theatre,cef00514-dbc5-4a6e-8f78-f50fceb840a6,Pony Express Enterprises Llc,134.9,23.8
+rejected,Q43305747,Cinebarre Mountlake Terrace,d607b277-a23d-498b-9e08-01af187c52ee,Time Out,87.0,34.3
+rejected,Q43305788,Regal South Sound Cinema 10,159b5a75-f76b-4875-ba56-9336d4b40cd4,Starbucks,115.3,22.2
+rejected,Q43305793,Almo Theatre,eec5f959-1ed7-46ee-8faa-2a2c834eea82,Ma Facon TR,87.3,52.2
+rejected,Q49474264,Bellevue Highlands Park,d01f21a5-0a32-46d0-9761-aa25081b14a9,New Delhi Restaurant,130.7,31.2
+rejected,Q43306690,Olympic Theatre,dff610c3-7afe-4285-a140-bc239fce1c3c,Woodland Theater,12.7,38.7
+rejected,Q43306704,Palomar Theatre,ec5bc6ac-112d-47c8-ac78-e69e1f59bf10,The Triple Door,137.5,46.2
+rejected,Q43306713,Queen Anne Theatre,70e93bd9-3877-4d4a-b38c-14c143bb36b1,Applebee's Queen Anne,105.7,56.4
+rejected,Q49474611,Beverly Park,9244e1ea-c92f-4d4a-8b9d-fa921cd2bc0b,Ichiban Teriyaki,119.3,42.9
+rejected,Q49475372,Bothell Landing Park,a8524b85-196a-499f-ba14-bacba179c6f3,NW Espresso,68.6,19.4
+rejected,Q49477443,Centennial Park,355c6064-4295-4f51-97eb-13d4b02beaef,Osprey Park,56.8,46.2
+rejected,Q49493274,Genesee Park,73707887-4cab-460c-ad83-f64cdaf57f7b,Genesee Upper Field,41.9,64.5
+rejected,Q49495202,Grandview Park,0e7c3308-7329-4f48-a7e1-7ac839c65eb3,Grandview Off-Leash Dog Park,75.7,66.7
+rejected,Q49496630,Groveland Park,e602de2e-25a0-441e-bf12-45632a13fab6,Groveland Beach Park,69.3,82.4
+rejected,Q49502326,Hollerbach Park,3794f0fe-788c-43b6-af62-84eeffa34778,Hollerbach Open Space,85.9,72.2
+rejected,Q49502668,Homestead Field,41f24905-32d0-44d1-a058-28012af9094f,Homestead Field and tennis courts,44.1,62.5
+rejected,Q49505284,Intramural Sports Field Number 3,8e8e6134-0f4f-4bd1-8926-6bf17fa9dea1,Medicinal Herb Garden,143.0,26.4
+rejected,Q43306686,Northgate Theatre,04e753a9-cb97-4de9-a552-092f09e43612,Hejung Hayes,81.0,41.4
+rejected,Q43306723,Ridgemont Theatre,f1c5a3f6-140c-455d-8d02-cc02b4c6e5a6,Pete's Egg Nest,20.7,43.8
+rejected,Q43306726,Rivoli Theatre,ed33695e-a387-425b-a041-5a2d967f65d8,Blue Water Taco Grill,105.8,41.4
+rejected,Q43306730,Rosebud Movie Palace,23b4b40f-0238-4373-826a-a26556500b3a,Elm Coffee Roasters,96.5,46.2
+rejected,Q43306735,Seven Gables Cinema,bdadd788-668a-450a-b07e-5ed28d1eb9fe,Landmark Theaters - Seven Gables Theatre,20.5,42.1
+rejected,Q43306732,Seattle Theatre,efe422ce-b9ac-48c6-897b-e1c13a9912bb,Thai Taste,144.8,56.0
+rejected,Q43306743,Strand Theatre,d99119f2-663f-4112-9122-29bfdf9926e1,All Water Seafood & Oyster Bar,111.3,47.4
+rejected,Q43306740,SIFF Film Center,12e52db6-21d1-4f81-a199-6300ba0ddb20,Chutney's,121.6,40.0
+rejected,Q43306747,Sultan's Lavender Cinema,019ee73c-147d-4fa3-9fc3-638181013460,Japonessa Sushi Cocina,94.0,52.2
+rejected,Q43306750,Tilikum Theater,04069fb5-0c9a-4cec-a3d9-fe9eae20be31,Tiptop Thai Taste Llc,135.0,44.4
+rejected,Q43306752,Town Theater,9515761f-dcce-4c4c-8d3b-12bac8f2ec04,SPIN Seattle,95.9,50.0
+rejected,Q43306761,Toyo Cinema,c151bb64-3c38-4cc8-b61b-807f6cdd8289,Archipelago,70.3,45.5
+rejected,Q43306769,UA 150,8a1d7a66-dcc3-4d92-b85f-63a2ffbba32c,2120,39.8,40.0
+rejected,Q43306786,Venetian Theatre,c6ce8157-ad00-4422-a698-30b95780226d,Otherworld Wine Bar,107.7,45.2
+rejected,Q43306792,Wilkes Theatre,82c5773c-7b59-44a8-9118-a3c35e2c9509,Westlake Park,81.3,51.9
+rejected,Q43306796,Winter Garden Theatre,f41ec7b0-a140-4f1c-865c-efb9ecfe987c,Tiger Sugar,148.3,50.0
+rejected,Q43306803,Ye College Playhouse,5eb08d96-a9bc-473c-bba1-3dafe24f84e4,Leon Coffee House,103.7,64.9
+rejected,Q49525376,Mercerdale Field,e8afdf4f-9c2e-4a0e-b866-7e3bff9c8853,Mercerdale Park,32.5,64.5
+rejected,Q43306829,Silverdale 4 Cinemas,9a1f42ee-7fc2-4009-a743-4a95eb3a4b90,Kitsap Mall Cinema,95.1,52.6
+rejected,Q43306835,Brook Theatre,04d24284-4cf3-4f3c-adb1-7d260b11245a,Riverview Park,53.1,44.4
+rejected,Q43306945,Riviera Theater,137e6b6f-bfd0-48c0-97df-2ee7316907ac,Aversano's Italian Restaurant,62.1,42.4
+rejected,Q49527897,Montlake Playground,df75c020-7ec1-4369-b159-3f04fa594fa5,Montlake Playfield,73.5,75.7
+rejected,Q49531676,Nike Site Park,e995ef40-6db8-4ec8-970e-a7a0b77bba4e,Paradise Ridge Equestrian Park,103.9,50.0
+rejected,Q49533010,North Towne Park,937c688a-6734-47d1-8c0e-b4a62bfef6f1,Northtowne Park,21.6,64.5
+rejected,Q49541693,Peter Kirk Memorial Park,ea741790-3714-41be-be1a-69044099a0ef,Peter Kirk Park,82.0,76.9
+rejected,Q43306822,AMC Kitsap 8,9a1f42ee-7fc2-4009-a743-4a95eb3a4b90,Kitsap Mall Cinema,15.6,53.3
+rejected,Q43306951,"Blue Mouse Theatre, Newtacoma",fd8d0bc9-c5b7-485b-9129-33ec2f87a2b4,Chili Thai Downtown Tacoma,25.1,55.6
+rejected,Q43306954,Broadway Theatre,6d0cc7ff-3117-4589-b7fe-941d13bff466,The Broadway Gallery 765,135.1,61.1
+rejected,Q43306959,Capitol Theatre,8442cf0c-fb9f-4e39-8185-22948277d68e,Catherine Ushka's Gas Station Park,131.9,32.7
+rejected,Q43306956,Cameo Theater,b5c8a321-012e-4bca-b452-bcdfad24935c,Mad Hat Tea,59.0,50.0
+rejected,Q43306963,"Community Theatre, East 56th Street",45083ed8-4b06-4b2b-9705-802162dd3582,Smart Nutrition.,37.3,28.6
+rejected,Q43306961,Century Point Ruston and XD,997b1429-96e0-4531-8b00-8d49b9c9859e,Manic Mermaid Minerals,80.4,40.8
+rejected,Q43306966,Galaxy Narrows,39e5d695-1841-48f7-af95-728fd7518542,Ale House Pub & Eatery,106.9,41.2
+rejected,Q43306965,"Community Theatre, South M Street",e557fe8e-5a42-4083-b506-248454b73702,Spotted Cow Coffee LLC,116.7,33.3
+rejected,Q43306969,K Street Theatre,ce901137-7538-4e51-99af-60019ea43ef3,Three Hearts,16.2,50.0
+rejected,Q43306974,Lincoln Plaza Cinema,c79b12e2-a166-44e1-95ff-7fa8facce260,Saigon House Vietnamese Cuisine,119.4,39.2
+rejected,Q43306978,Music Box Theatre,5394fe81-bed0-485f-82bb-adfa0ca4e237,Theater on the Square,87.6,52.6
+rejected,Q43306979,Narrows Theater,31576adf-b93c-455a-bcb8-e43894188a87,TMP Family Theater,23.3,54.5
+rejected,Q43306976,Mecca Theater,5f814897-5e3a-4b7e-ba3c-6c3c2c335960,Tacoma City Theaters,117.0,66.7
+rejected,Q43306982,Park Theatre,36c2d46a-8a5e-41d3-9899-8c3cbf731320,Parky's Tavern,144.9,61.5
+rejected,Q43306980,Paramount Theater,6d26ffc0-8c28-4ea5-9583-c5767fd0a501,Blue Mouse Theatre,76.8,57.1
+rejected,Q43306986,Rex Theatre,b44c0ae6-a0e9-4f39-8b4a-35af52957d6a,Jubilee Burgers,140.2,38.5
+rejected,Q43306984,Realart Theatre,465c7276-5bca-4693-857f-49ab6b98256f,Stonegate Pizza and Rum Bar,31.1,47.4
+rejected,Q43306988,Riviera Theatre,09c3f188-cacd-4687-b972-011f9277a6f9,Pantages Theater,85.6,51.6
+rejected,Q49478535,Clear Creek Sa'qad Interpretive Center,ea39a9f2-c533-4616-8472-70326fd61299,Hearthstone Financial Management Llc,71.1,35.1
+rejected,Q49482793,Denny Yard,bafa813a-1449-4ff5-ac31-f5fc12137577,Jacob Lawrence Gallery,126.1,31.2
+rejected,Q49482900,Des Moines Park,fc1fefd4-c42a-4ff5-a42a-de1ff8ab3b61,Des Moines (WA) Arts Commission,22.5,54.5
+ambiguous,Q49484769,E J Roberts Park,abb3eb92-34cc-4a97-9fa5-30c9d0b8a0eb,E. J. Roberts Park,123.6,100.0
+ambiguous,Q49484769,E J Roberts Park,9b922876-2d6f-4b46-b8b6-381a0c6c6936,E J Roberts Park,82.3,100.0
+rejected,Q49485248,East Park,d4cebe14-3010-4058-b0dc-b7923d88f5d8,Glenn Jarstad Aquatic Center,90.0,27.0
+rejected,Q49487045,Enatai Park,c7779fb3-0f1a-4e67-b67c-40be2a7cbda7,Enatai Neighborhood Park,92.0,62.9
+rejected,Q49487764,Evergreen Park,eacd52f1-0beb-496e-bed5-6c5df750e47a,Evergreen Rotary Park,70.7,80.0
+rejected,Q49488047,Fairmont Park,4a24776a-2721-4bc0-89da-1c74f478d380,Walker Rock Garden,80.1,38.7
+rejected,Q49488831,Ferguson Park,1bcc3350-dfa9-4447-a10b-f872ae8358f9,Ferguson Park Disc Golf Course,145.1,60.5
+rejected,Q49492863,Gardner Weeks Park,14f6966a-dbe4-4765-8cef-57c61ea60591,Frankie's Pizza,133.7,48.5
+rejected,Q49508683,Jonathan Hartman Park,470f73ab-bbe6-44a7-83b2-d530eac346e5,Hartman Park,123.7,72.7
+rejected,Q49510178,Kennydale Lions Park,a4a366b6-1fb4-4e8d-a36a-59310876ed8e,Kennydale Lions Park Playground,93.7,78.4
+rejected,Q49513223,Lake Fenwick Park,9c27dfb2-4e6b-409b-b3f5-73332f42cb87,Lake Fenwick Disc Golf Course,95.2,52.2
+ambiguous,Q49513240,Lake Francis Park,476faba5-353f-474b-989f-59bd1a4e7d7f,Lake Francis Park,26.8,100.0
+ambiguous,Q49513240,Lake Francis Park,37bd8488-36cc-4817-86e8-fcec86ee1794,Lake Francis Park,130.4,100.0
+rejected,Q49513726,Lake Tapps County Park,dba2bfb5-cfc7-4815-821c-15794de61b4d,Kairos Ice cream Inc,92.8,33.3
+rejected,Q49513823,Lake Wilderness Park,e63a9ab0-a398-4aff-94a9-db7e538b8167,Lake Wilderness Arboretum,73.7,71.1
+rejected,Q49542958,Pinehurst Playground,629a7406-9bdf-4d8c-bd15-315bfe641f02,Hardy & Smith,37.2,25.8
+rejected,Q49547383,Qwest Field,91099948-835f-421a-b4e6-dffd72bdbd54,Field To Table,94.5,64.0
+rejected,Q49550275,Rigney State Park,e8836085-c0f7-460e-a49e-3dded70cf1e8,High Country Rv Llc,93.3,27.8
+rejected,Q49550953,Riverdale Park,eb4617d0-7e4e-4c08-9c82-aa99d60826d4,Jackson Dog Park,39.4,26.7
+rejected,Q49551959,Robert E McCormick Park,ff8327e0-efd6-48e7-978a-b124ca38394e,McCormick Park,25.9,75.7
+rejected,Q49552322,Robinswood Park,c071d2e5-50bc-4880-a7d8-7219bb65b05c,Robinswood Community Park,105.9,75.0
+rejected,Q49553136,Rogers Park,20c3efaa-f4ca-41f9-bd16-98978106bf1c,David Rodgers Park,145.2,75.9
+rejected,Q49553411,Roosevelt Field,84dc0c70-4900-4803-9a68-22d5f48a0be2,OC Art Gallery,41.9,20.7
+rejected,Q49554732,Rudolf Reese Park,9196880d-17fe-4669-ac41-de5ce1910243,Reese Park,91.4,74.1
+rejected,Q49556715,Sammamish River Regional Park,225b9c1d-c4ac-4ff9-98ad-91fb68963819,Sixty Acres Park,127.5,35.6
+rejected,Q49560964,Sheridan Park,d4577ce6-8f1f-4af8-904e-351e8eef6680,Eastpark Nature Area,135.0,36.4
+rejected,Q49561536,Si View County Park,609d1ba9-657d-4949-b6e0-89d81d5d6cd3,Si View Zip Line,109.2,51.4
+rejected,Q49566061,Steel Lake Park,212b92d8-569c-4743-891d-1038195d2e03,Steel Lake Park & Family Funland,67.6,66.7
+rejected,Q49566349,Stewart Heights Playfield,d205a6be-9e26-4ad4-984d-94c576d592b8,Stewart Heights Park,39.7,80.0
+rejected,Q49515423,Lebo Recreation Area,3bdaee56-b528-421e-94e7-4ad5a7d4a2ab,Lions Field,48.0,38.7
+rejected,Q49517124,Lincoln Park,3c98c86d-13b1-4de3-b265-0378ed04a9ca,Cal Anderson Park,111.3,55.2
+rejected,Q49519674,Loutsis Park,04d7d0b1-9dfc-448f-bd5c-602487323546,Fred Hockert Park,26.1,48.3
+rejected,Q49520004,Loyal Heights Playground,06ea18ce-896b-40de-9596-fd89e10f5a2a,Loyal Heights Playfield,21.8,80.9
+rejected,Q49520750,Magnolia Park,6eceaf51-9cc9-4813-89ee-a733c524ab9d,Magnolia Boulevard,62.5,51.6
+rejected,Q49521230,Manitou Park,ada239d8-e668-4156-bbda-c7aadde7f721,Rolling Bay Winery,111.9,26.7
+rejected,Q49522410,Mary Murphey Park,e54638ea-41f5-4174-a471-560682440490,McMenamins Tavern on the Square,124.6,37.5
+rejected,Q49568884,Talbot Hill Park,b3ed1e17-f90e-4855-bd82-97ec183999a6,Thomas Teasdale Park,27.6,50.0
+rejected,Q49569904,The Glads Sculpture Garden,1c8afdc2-3a22-4f7f-ad97-88ead522844d,Japanese Garden in the Arboretum,83.2,44.4
+rejected,Q49571995,Triangle Park,9042415c-c52a-4f30-9066-ae0fdcbc37a9,Mill Creek Park,85.7,35.7
+rejected,Q49573382,University of Washington Tennis Courts,c878a42a-6068-4a71-b783-6f6caa05f3d3,Husky Marching Band,109.4,38.6
+rejected,Q49573943,Valley Ridge Park,f5f6aa2c-84ba-4127-832d-968a2d465978,Valley Ridge Field 1,62.9,70.3
+rejected,Q49575135,View Ridge Park,34dd4eb3-3c8f-4b44-ba95-573cc18d26f4,View Ridge Playground,71.1,77.8
+rejected,Q49577247,Washington Park,47f119e0-d4d6-4715-9593-080af3bd7045,Arboretum Foundation,145.8,40.0
+rejected,Q49577827,Waverly Park,7a4d691a-09b0-4b25-8605-3f6c591499b2,Waverly Beach Park,50.4,80.0
+rejected,Q55138629,Seattle Eagle,07d0abd0-42f8-44c5-8b10-037438f68677,Seattle Boardwalk,67.4,66.7
+rejected,Q63476316,Donnie Chin International Children's Park,a68983c9-863d-4b48-8918-7105180a1056,ID/Chinatown Community Center,104.7,40.0
+rejected,Q64706518,Pendergast Park,cbb84e0a-0af9-4756-aa19-6b896f8f3931,Pendergast Regional Park,60.3,76.9
+rejected,Q65032367,Belvedere Park,f4430e96-ec7a-4ae0-a5c1-7915bc442503,Sucia Island State Park,31.7,37.8
+rejected,Q78636600,Opera House,ef2376c5-8b26-4b0d-9d1c-8d84911b5ca0,Cornish Playhouse,125.4,35.7
+rejected,Q78916703,Cinemark Reserve Lincoln Square,3f82134f-cc70-4fd2-bb6d-a7d766552336,Cinemark Reserve Lincoln Square — Dine-in 21+,51.6,84.9
+rejected,Q81525895,McMenamins Anderson School Theater,69e655f4-0664-4be8-bbf4-3f8c0e8e5799,Anderson School Movie Theater,31.0,82.5
+rejected,Q104834584,R Place,a346b902-b56e-4f4d-ab95-e8761c3524c4,Life On Mars,139.1,42.1
+rejected,Q105035529,Muckleshoot Casino Resort,c8ca03ef-a178-407d-8006-5fa2625a9181,Muckleshoot Events Center,106.7,56.0
+rejected,Q107630271,Taku,61ce6135-84df-4856-892f-aef2dceb905f,Starbucks,144.5,46.2
+rejected,Q109801729,Snoqualmie Casino,e2ae3faa-9108-4faf-a06c-2354c697ab6f,Kindai Sushi and Noodle Bar,15.0,40.0
+rejected,Q111145294,DeLuxe Bar and Grill,f7254b4a-f675-47b2-b51c-556d1e67f56d,Deluxe Bar & Grill,10.6,83.3
+rejected,Q111398756,Starbucks Reserve Roastery,59070076-ca7d-44e0-8191-badbd7ed7fd4,Victrola Coffee Roasters,71.4,52.0
+rejected,Q112967262,Merchant's Cafe,95a28384-f362-4e8d-9104-847b9021878c,Merchants Cafe and Saloon,7.7,57.1
+rejected,Q112999613,Columbia Park,6e8ad677-de23-4fb1-b44d-6c22a7621a37,Pho Bo,118.7,31.6
+rejected,Q113210384,Oddfellows Cafe and Bar,26176fa1-7298-47a0-bc67-f7f3018c4efa,Oddfellows Café,2.6,82.4
+rejected,Q113245056,Centennial Park,2c5c0a1d-decc-45b1-9636-20cb737449b9,Rose Garden,11.9,30.8
+rejected,Q113289095,CC's,c9a29c5f-de98-4be9-866a-985e97a14b4f,C C Attle's,4.5,53.3
+rejected,Q70791409,"Columbia Brewing Company, Tacoma",68407212-d146-4fae-961f-9e27f4b6677b,Brewery Lofts Tacoma,149.6,54.9
+rejected,Q78083607,Big Picture,1c3a5c0a-5e1a-489c-b279-58dafb7dae34,Big Picture Seattle,24.1,73.3
+rejected,Q125905642,Drip Tea,3d9639fa-172d-43d8-9714-0cd6120cbcde,Drip Tea Seattle,4.8,66.7
+rejected,Q126083269,Sea Wolf,a957c439-4d54-44fd-bd40-bb7c4da28493,Sea Wolf Bakers,20.0,69.6
+rejected,Q126203922,Fulcrum Coffee,5c2539c0-13e6-4442-a709-897365e38068,Fulcrum Coffee Roasters,12.2,75.7
+rejected,Q127418659,Shikorina,561e0715-a8e6-4f96-b236-d9331160169c,Shikorina Bakeshop & Cafe,4.4,66.7
+rejected,Q128483625,Pizzeria Gabbiano,6e053b74-17c8-488c-a8a1-7dfe30b53934,Asia Ginger Teriyaki,54.6,48.6
+rejected,Q129969207,Le Fournil,988439c5-716a-4617-b3a1-e7258ad2b84f,Le Fournil French Bakery and Catering,13.2,42.6
+rejected,Q130130875,Queen Anne Pool,96ed3db0-bdf6-4813-a9f4-aa920535260d,Queen Anne Coffee Co.,142.3,74.3
+rejected,Q113372125,Mee Sum Pastry,3ca476a3-ee22-4667-a65e-b18b84fcf937,Atrium Kitchen,143.3,50.0
+rejected,Q114000537,Harbor City Restaurant,fe1623c9-97be-4f6f-8989-3a71ccb3daa6,Ringo Curry,139.9,45.5
+rejected,Q114000801,Phnom Penh Noodle House,d6420efe-7488-419b-85b3-48d7e5eeb202,Jufeng Noodle House,135.6,57.1
+rejected,Q114495278,Fisherman's Restaurant and Bar,ebed792b-9787-46bf-870e-20c9f8ea1c74,The Fisherman's Restaurant Seattle,16.9,78.6
+ambiguous,Q114779916,Le Panier,60790aa1-92f6-4156-95a2-c2d6a8111e6c,Le Panier,9.8,100.0
+ambiguous,Q114779916,Le Panier,e93823ed-7108-4ef8-82e6-41dc24e12877,Le Panier,5.1,100.0
+rejected,Q114796099,Momiji,871c2d53-17dd-4b12-ade8-0d98c6791b48,Momiji Capitol Hill,11.5,48.0
+rejected,Q114797778,Giant Shoe Museum,ccf8ae4d-03e0-4f64-b119-36e4fb9de32f,World Famous Giant Shoe Museum,11.4,72.3
+rejected,Q114810701,Daily Dozen Doughnut Company,7cabe176-6ef2-4620-8789-b5737ff29225,Daily Dozen,3.3,56.4
+rejected,Q115015585,Barrio,628f3daa-6b90-4612-b0ca-9d821d7ce2bb,Barrio Mexican Kitchen & Bar,10.4,60.0
+rejected,Q115063545,El Mercado Latino,3549ddb9-374e-4323-bb83-02e969df6d06,El Puerco Lloron,98.4,60.6
+rejected,Q115112016,Michou Deli,bc2f2a46-20ad-4711-8bc1-510ccb0be87c,Turkish Delight,82.5,53.8
+rejected,Q115494594,Annapurna Cafe,52147a75-d8cf-4b90-8f92-e15427274be2,Al Bacha Restaurant,9.1,35.3
+rejected,Q124246065,El Chupacabra,e16f0b98-7ae9-44dd-b61d-419e22326852,El Chupacabra Corp,8.8,83.9
+rejected,Q124321746,Jackalope,7f5a428d-a610-4a8c-a9a9-7a30a6a16b97,Jackalope Tex Mex & Cantina,0.8,52.9
+rejected,Q124458973,Pancita,17c90dae-db6c-4569-815c-8ce9af711d3f,Pair,5.4,54.5
+rejected,Q125470801,"Auditorium Dance Hall, The",26b835bb-2ff4-4a03-88a3-05ad1d6ac05e,Historic Fraternity Hall,90.5,44.9
+rejected,Q130217581,Oxbow,6507eaeb-94db-4a79-948d-0b388c1d54cb,Fuel Coffee & Books,28.2,18.2
+rejected,Q130262342,Counterbalance Park,5b0e56dc-d699-4676-b29c-c0a7cbb03e14,GoldinBlack,63.0,46.7
+rejected,Q131324760,Northwest Veterans Museum,822546ed-ca6e-4819-a2ac-8297a2ad088b,Heritage Park,39.0,31.6
+rejected,Q131717223,Seattle Harbor,8b87d067-d380-464d-a339-39b988009a82,China Harbor Restaurant,1.7,46.2
+rejected,Q134220131,Sunset Tavern,1d0ddf6d-0cbd-4e91-91d0-60d866d7089f,The Sunset,2.2,63.2
+rejected,Q134286875,Bainbridge History Museum,c04c1a1a-e0f0-4c51-90da-90588c0cb880,Bainbridge Island Historical Museum,12.2,80.0
+rejected,Q134431916,SIFF Cinema Center,f12457e4-a465-40ce-97dc-e586cc4e1265,Leo K Theater at the Seattle Center,134.6,37.7
+rejected,Q139677986,Q139677986,d2b8d087-f6c5-4cdd-a9a6-d4204deb1fb1,Neototems Children's Garden,45.8,0.0
+rejected,Q140434520,Mount Baker Park Improvement Club Clubhouse,71d873e7-cc44-4c91-9a37-b5aeafa526b3,Hotsy Totsy Global Llc,33.6,33.8
+rejected,Q140450414,Queen Anne Club,70e93bd9-3877-4d4a-b38c-14c143bb36b1,Applebee's Queen Anne,119.2,72.2
+rejected,Q140542328,Filipino-American Community Hall,f6d48cb8-7d17-488b-85b3-4f443995b7d1,Strawberry Hill Playground,125.4,24.1
+rejected,Q135441918,Masonic Hall,b40ea940-329e-4fd3-9ce1-6d6010760a94,Dragonfly Cinema,84.7,35.7
+rejected,Q135565153,The Monastery,187418ad-49b3-4ec9-9861-7edd7ef85f3b,Nana's Green Tea,143.4,40.0
+rejected,Q136344928,Seacrest Park,5cc6d781-7aae-46cb-992e-0edb448eb781,Marination Ma Kai,10.2,33.3
+rejected,Q136346024,Seabird,c9a099ae-bb8c-49d3-8c5e-8d97c693ea09,Blackbird Bakery,86.5,52.2
+rejected,Q139556163,"5604 75th, Lakewood, WA",150f5950-61c9-4e53-ab67-5c7e180fc6e9,Go Philly Lakewood,63.5,51.3
+rejected,Q139567514,Q139567514,ccbc8675-516e-42ba-9181-32e70cbc8045,Bakke Coffee Museum,0.1,0.0
+rejected,Q141250786,Q141250786,35522f10-fc09-48c0-bbe2-d31e6f12bd88,C & P Coffee Company,7.9,0.0
+rejected,Q141251562,Hiawatha Community Center,02d1d508-8894-44bf-99be-7cae33eebc1f,Hiawatha Playfield,42.0,37.2
+rejected,Q141256975,Victory Memorial Masonic Temple,ec8d89ef-5581-4cd7-99be-6e7bcdb7b99e,Monica's Social Club,124.4,39.2
+rejected,Q141435215,Lupe's Situ Tacos,082231c2-340d-4b96-8886-22288b684a95,Percy's Seattle,12.9,50.0
+rejected,Q115519272,Dacha Diner,2dfecdb3-a828-41e8-8737-ab68914c3b40,Bad Chancla,106.0,45.5
+rejected,Q115552330,Plum Bistro,f92b28c6-b6bb-4b29-8a8b-4b1d8c3e4a12,Bombay Bistro,33.1,66.7
+rejected,Q115609939,ʔálʔal Café,f60bf183-25ba-44c4-a383-084b7f0e7bb8,Caffe Vita,114.2,47.6
+rejected,Q115612438,Omega Ouzeri,bc03a87d-b6af-43a7-b7ea-544fa005d6a0,Piecora's Pizzeria,117.6,46.7
+rejected,Q115628494,Nue,7ed90ba1-c902-4797-b268-f2287e38ad0c,Spinasse,41.6,36.4
+rejected,Q115802015,Supernova,fb1eb935-c102-405c-a071-6ad2aede101d,The Vertigo Club,116.6,38.1
+rejected,Q115809872,Phởcific Standard Time,8b4f532f-c661-4d94-b129-8e6aae424547,Cinque Terre Ristorante,48.0,44.4
+rejected,Q115814369,Saigon Vietnam Deli,58e868f3-1362-4c03-b4bb-52bcff7eed14,Saigon Viet Nam Deli,10.3,82.1
+rejected,Q115814621,Communion Restaurant and Bar,725aec4e-d14b-4cfa-aa28-f10688ce65a8,Communion Seattle,6.7,63.4
+rejected,Q115818823,Frelard Tamales,653cbaa3-d7c7-4b4c-a765-abf75a23ebdb,Mona's Bistro,31.9,35.7
+rejected,Q115903564,Bear Creek Park,c1827866-cc52-4694-880a-90e79abcb1f9,Yummy Teriyaki,110.6,27.6
+rejected,Q115904230,Rotary Park,b814b235-6bc7-4fc1-a157-e8d744a547aa,Redmond Rotary Picnic Area,13.3,48.6
+rejected,Q115904244,Flagpole Plaza Park,61cae3c8-6c24-4ae1-9d9e-06db7e3a065e,Bay Leaf Llc,97.4,38.7
+rejected,Q115904277,Heron Rookery Park,093728a3-1d76-4319-b688-4870205e6d5c,Redmond Central Connector Park,124.1,50.0
+rejected,Q115904386,Nike Neighborhood Park,46c58c08-58f2-48e9-96dc-918772f3ac98,Nike Park,21.6,58.1
+rejected,Q115904397,O'Leary Park,e81ccd30-4658-42f6-8d25-4d0b574f0f0a,Palmers East,39.9,50.0
+rejected,Q115907317,Redmond Watershed Preserve,b63720f5-82e6-4f8e-a072-e18e11aa5509,Watershed Preserve,115.7,81.8
+rejected,Q116158661,Zig Zag Café,3902ed1c-9c40-41c7-80eb-59a2bfc208bb,Zig Zag Cafe,6.8,73.7
+rejected,Q116309855,Stateside,8aa7d7fc-7386-4b8c-a115-68a3b86ab845,Vice Seattle,80.9,57.1
+rejected,Q116626584,Hello Em,abcff8f5-8f9a-4e74-81e9-b0e53bb1b354,Hello Em Viet Coffee & Roastery,11.0,43.2
+rejected,Q117628866,Nordstrom Recital Hall,a6e5553e-bd2d-4f43-aa62-4450eeda3420,Illsley Ball Nordstrom Recital Hall,74.7,77.2
+rejected,Q117722789,Bulldog News,23aa42fe-768b-466e-866d-8e547a8f3adc,Bugis,116.2,47.1
+rejected,Q118347254,Raised Doughnuts,eca616ca-9cb3-4d3b-aebb-9bfe4a9b4631,Raised Doughnuts and Cakes,20.2,76.2
+rejected,Q118413695,Purr Cocktail Lounge,2692ba2b-eef4-4088-b0e8-22356935386f,Octo Sushi,127.4,43.5
+rejected,Q118570259,Wunderground Coffee,58ca4b68-5c41-4fd4-91cc-a15d49e9b695,Wunderground,1.0,77.4
+rejected,Q118905344,Neighbours Nightclub,8a668631-c962-4126-8c90-26b4d86ced26,Q Nightclub,94.6,58.1
+rejected,Q118905981,The Comeback Seattle,542712da-d462-4150-adc3-afc5dfa80b55,A Project Space,42.9,45.2
+rejected,Q119509686,The Mix,c6af255a-b6de-4f2c-834c-517f042a7e9e,Maxwell's,138.7,33.3
+rejected,Q120355618,Wild Ginger,2818023d-64b4-41d2-8838-4e4e1744b0ce,Wild Ginger Downtown Seattle,27.6,56.4
+rejected,Q122086038,Tin Table,f1025034-4ad8-4be3-b8c8-7ee132faee39,Art Table,13.4,55.6
+rejected,Q123198978,Eastern Cafe,1c071d6e-b6d3-4876-8403-b7213b4fa768,Eastern Café,17.4,73.7
+rejected,Q123228087,Fat's Chicken and Waffles,f1a823f4-e0b1-4395-9629-103c5a6900e8,Nora's Woods,140.7,37.8
+rejected,Q113372049,Oriental Mart,3ca5de07-4fb4-4a38-beb6-6ea72634854a,Oriental Mart Filipino Restaurant,9.6,74.3
+rejected,Q5163308,Consolidated Works,d1b5726a-78de-4563-864f-786f85555bcb,Roti Cuisine of India,36.4,41.0
+rejected,Q5281985,Discovery Village,5007e337-ae92-40f7-99fd-eb65c3a96a83,Dickeys Barbecue Pit,115.5,37.8
+rejected,Q5342493,Edward D. Hansen Conference Center,88b190d0-c66d-4877-b2aa-dacc974c3d50,Everett Events Center,79.3,51.9
+rejected,Q7312006,Remlinger Farms,123cd4d3-661b-4f9e-b2c8-ca74c7ed7d38,Remlinger Brewing,138.3,68.8
+rejected,Q7798296,Thrive Cafe,1070b5bd-a5fb-4ee7-98f2-fc190b52044a,India Bistro,140.2,33.3
+rejected,Q7814356,Tollbooth Gallery,8053e086-ebaf-4481-8961-e16d013a642f,The Tobin Gallery,103.4,73.3
+rejected,Q8034954,Working Waterfront Maritime Museum,65c798bf-6945-44b7-acad-a5392b8ad8fa,Working Waterfront Museum,3.3,84.7
+rejected,Q8073520,Zoka Coffee Roaster & Tea Company,d1bff12a-dc57-46dd-9569-dc354817ec91,Rooftop Brewing Company,29.6,51.9
+rejected,Q14713858,Northwest Woodworkers Gallery,ce53d369-d48f-4311-bf9b-806ede9e589f,Steinbrueck Native Gallery,108.9,54.5
+rejected,Q20712370,Suquamish Clearwater Casino Resort,b61ec17b-c4e5-47b4-b373-a04d6222bf51,Salish Kitchen Food Hall & Refreshments,87.9,45.1
+rejected,Q49511633,Q49511633,839e6e52-3edb-430c-8660-4c6553873810,Tsonqua (Totem),100.3,9.1
+rejected,Q59980875,Microsoft Visitor Center,8d259aab-8233-48e8-87d4-a6e14b6c450f,Microsoft Visitor Center and Company Store,10.9,72.7

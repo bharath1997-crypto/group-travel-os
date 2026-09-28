@@ -1,0 +1,63 @@
+﻿=== ANTARCTICA QA BATTERY ===
+{
+  "pin": "Vinson Massif",
+  "total": 14,
+  "failures": 0
+}
+
+[OK] Q1: Where I am right now
+      intent=discovery provider=deepseek chars=520 note=-
+      You're at Vinson Massif, the highest peak in Antarctica, located in the Ellsworth Mountains. This is a remote, ice-covered region with no permanent residents, so there's no local culture or food traditions here. The area
+
+[OK] Q2: What is the temperature right now from here?
+      intent=weather_current provider=local chars=113 note=-
+      Current weather near Vinson Massif: overcast, about -44░C (-46.5░F). Feels like -48░C. Humidity 76%. Wind 4 km/h.
+
+[OK] Q3: What can I do here?
+      intent=discovery provider=deepseek chars=833 note=-
+      Must-see: Vinson Massif is the highest peak in Antarctica at 4,892 meters, part of the Ellsworth Mountains. It's a remote, ice-covered summit with dramatic glaciers like RochΘ Glacier nearby. Food nearby: There are no re
+
+[OK] Q4: How many days should I spend here?
+      intent=discovery provider=deepseek chars=717 note=-
+      For Vinson Massif, plan for about 10 to 14 days total. This includes a few days for travel and acclimatization at base camp, plus a weather window of several days for the summit push. The climb itself is technically mode
+
+[OK] Q5: What kind of food should I take over there?
+      intent=discovery provider=deepseek chars=696 note=-
+      Vinson Massif is a remote, ice-covered peak in Antarctica, not a place with shops or restaurants, so you won't find any local cuisine or nearby dining. For food to bring, focus on high-energy, freeze-dried meals, nuts, c
+
+[OK] Q6: What kind of food should I buy there?
+      intent=discovery provider=deepseek chars=697 note=-
+      At Vinson Massif, a remote mountain in Antarctica, there are no shops or restaurants, so you cannot buy food there. This is an expedition destination where all supplies, including food, must be brought in by your team. T
+
+[OK] Q7: What is the currency over there?
+      intent=discovery provider=deepseek chars=477 note=-
+      The currency over there is not applicable, as Vinson Massif is in Antarctica, which has no official currency or permanent population. The area is governed by the Antarctic Treaty System, and any currency used would be fr
+
+[OK] Q8: How am I going to survive there?
+      intent=discovery provider=deepseek chars=881 note=-
+      Surviving at Vinson Massif is a serious undertakingùthis is the highest peak in Antarctica, not a casual destination. You'd need a fully guided expedition with proper mountaineering gear, cold-weather clothing rated for 
+
+[OK] Q9: What things am I going to survive on in this particular location?
+      intent=discovery provider=deepseek chars=1114 note=-
+      You're asking about survival at Vinson Massif, which is the highest peak in Antarctica, sitting in the Ellsworth Mountains. This is one of the most extreme environments on Earth, so survival here is about preparation, no
+
+[OK] Q10: What is the way to reach over there?
+      intent=discovery provider=deepseek chars=675 note=-
+      To reach Vinson Massif, you'll need to join an expedition, as it's the highest peak in Antarctica and requires specialized logistics. Most climbers fly to Punta Arenas, Chile, then take a ski-equipped aircraft to a base 
+
+[OK] Q11: Do I need any kind of certification to reach out there?
+      intent=discovery provider=deepseek chars=1048 note=-
+      Yes, reaching Vinson Massif requires significant preparation, though not a formal certification in the traditional sense. Because it's the highest peak in Antarctica and sits in a remote, extreme environment, you'll need
+
+[OK] Q12: How is the medical facility over there?
+      intent=discovery provider=deepseek chars=865 note=-
+      There is no medical facility at Vinson Massif. It is a remote, ice-covered mountain in Antarctica, far from any permanent infrastructure or healthcare services. The nearest medical support would be at research stations l
+
+[OK] Q13: How are the people going to stay over there?
+      intent=discovery provider=deepseek chars=560 note=-
+      People don't stay overnight on Vinson Massif itselfùit's a remote, extreme mountain in Antarctica with no permanent facilities. Climbers typically camp on the ice in expedition tents, often at base camps on the plateau, 
+
+[OK] Q14: I heard there is a place in the world that is always fully closed for 
+      intent=discovery provider=deepseek chars=799 note=-
+      You're thinking of the polar day and polar night phenomenon, which happens near the poles. At Vinson Massif in Antarctica, which sits at about 78.5░S, the sun stays above the horizon for roughly six months (around Octobe
+

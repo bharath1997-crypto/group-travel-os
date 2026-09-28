@@ -34,6 +34,9 @@ router = APIRouter(tags=["explorer_v2"])
 MAX_RADIUS_M = 50000
 MAX_NEARBY_LIMIT = 200
 MAX_VIEWPORT_LIMIT = 500
+DEFAULT_EVENTS_LIMIT = 50
+MAX_EVENTS_LIMIT = 200
+NEXT_CURSOR_HEADER = "X-Next-Cursor"  # also listed in CORS expose_headers (app/main.py)
 
 
 @router.get("/nearby", response_model=ExploreNearbyResponse)
@@ -327,39 +330,66 @@ def get_city(
 
 @router.get("/events", response_model=list[EventResult])
 def get_events(
+    response: Response,
     lat: float = Query(...),
     lng: float = Query(...),
     radius_m: float = Query(50000.0, ge=1.0),
-    limit: int = Query(8, ge=1, le=100),
+    limit: int = Query(DEFAULT_EVENTS_LIMIT, ge=1, le=MAX_EVENTS_LIMIT),
+    after_id: _uuid.UUID | None = Query(None, description="Keyset cursor: id of the last event on the previous page"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list[EventResult]:
+    """
+    Events ordered by (start_time, id). The body stays a plain list; when more
+    rows exist the next cursor is returned in the X-Next-Cursor header — pass it
+    back as ``after_id``.
+    """
     now = datetime.now(timezone.utc)
+    after_start = None
+    if after_id is not None:
+        try:
+            after_start = db.execute(
+                text("SELECT start_time FROM events WHERE id = :id"),
+                {"id": str(after_id) if db.bind.dialect.name == "sqlite" else after_id},
+            ).scalar()
+        except Exception as e:
+            logger.error(f"Error resolving events cursor: {e}")
+        if after_start is None:
+            AppException.bad_request("Unknown or expired after_id cursor; restart from the first page")
+
+    keyset = "AND (start_time, id) > (:after_start, :after_id)" if after_id is not None else ""
     if db.bind.dialect.name == "sqlite":
         # SQLite fallback for test suites
-        query = text("""
+        query = text(f"""
             SELECT id, title, start_time, end_time, ticket_url, price_min, price_max, category, lat, lng
             FROM events
             WHERE start_time > :now
-            ORDER BY start_time ASC
+              {keyset}
+            ORDER BY start_time ASC, id ASC
             LIMIT :limit
         """)
         params = {
             "now": now,
-            "limit": limit,
+            "limit": limit + 1,
         }
     else:
-        # PostgreSQL PostGIS query
-        query = text("""
+        # PostgreSQL PostGIS query. Rows are written by Scaper (migrations/008):
+        # in-progress events stay visible until expires_at; cancelled/completed
+        # and provider-delisted (expires_at = fetch time) rows drop out; Scaper
+        # dedup (migrations/009) hides duplicates via duplicate_of.
+        query = text(f"""
             SELECT id, title, start_time, end_time, ticket_url, price_min, price_max, category, lat, lng
             FROM events
-            WHERE start_time > :now
+            WHERE COALESCE(expires_at, end_time, start_time) > :now
+              AND status IN ('scheduled', 'sold_out', 'postponed')
+              AND duplicate_of IS NULL
               AND ST_DWithin(
                   geom::geography,
                   ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
                   :radius_m
               )
-            ORDER BY start_time ASC
+              {keyset}
+            ORDER BY start_time ASC, id ASC
             LIMIT :limit
         """)
         params = {
@@ -367,14 +397,21 @@ def get_events(
             "lng": lng,
             "radius_m": radius_m,
             "now": now,
-            "limit": limit,
+            "limit": limit + 1,  # one extra row tells us whether a next page exists
         }
+    if after_id is not None:
+        params["after_start"] = after_start
+        params["after_id"] = str(after_id) if db.bind.dialect.name == "sqlite" else after_id
 
     try:
         rows = db.execute(query, params).mappings().all()
     except Exception as e:
         logger.error(f"Error querying events table: {e}")
         return []
+
+    if len(rows) > limit:
+        rows = rows[:limit]
+        response.headers[NEXT_CURSOR_HEADER] = str(rows[-1]["id"])
 
     results = []
     for r in rows:

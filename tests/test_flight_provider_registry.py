@@ -117,6 +117,18 @@ def test_registry_enables_only_configured_ids():
     assert [provider.provider_id for provider in providers] == ["duffel"]
 
 
+def test_registry_keeps_duffel_when_extra_provider_is_unconfigured():
+    with patch("app.services.flight_providers.registry.settings") as mocked:
+        mocked.flight_enabled_providers = "duffel,amadeus"
+        with patch("app.services.flight_providers.duffel_provider.settings") as duffel_settings:
+            duffel_settings.duffel_api_key = ""
+            with patch("app.services.flight_providers.amadeus_provider.settings") as amadeus_settings:
+                amadeus_settings.amadeus_client_id = ""
+                amadeus_settings.amadeus_client_secret = ""
+                providers = enabled_providers()
+    assert [provider.provider_id for provider in providers] == ["duffel"]
+
+
 def test_public_registry_excludes_disabled_adapters():
     registration = FlightProviderRegistration(
         provider_id="future",

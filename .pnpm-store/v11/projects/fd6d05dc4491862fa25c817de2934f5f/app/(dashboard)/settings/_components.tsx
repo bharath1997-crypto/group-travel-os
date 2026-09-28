@@ -1,0 +1,437 @@
+"use client";
+
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { IconArrowLeft, IconChevronRight, IconSearch, type IconComponent } from "@/components/icons";
+import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+
+// ── Coming Soon badge — hub-tinted Tailwind class strings ────────────────────
+// Full strings so Tailwind's static analyser always detects them.
+const ACCENT_BADGE = {
+  teal:   "bg-primary-soft text-primary",
+  blue:   "bg-blue-50 text-blue-600",
+  purple: "bg-purple-50 text-purple-600",
+  green:  "bg-green-50 text-green-600",
+  orange: "bg-orange-50 text-orange-600",
+  indigo: "bg-indigo-50 text-indigo-600",
+  amber:  "bg-amber-50 text-amber-700",
+  slate:  "bg-slate-100 text-slate-500",
+  pink:   "bg-pink-50 text-pink-600",
+  red:    "bg-red-50 text-red-500",
+} as const;
+
+// ── Accent styles for SettingsHubRow icon containers ─────────────────────────
+// All class names are hardcoded as complete string literals so Tailwind's static
+// analyser can always find them — no dynamic class construction anywhere.
+const ACCENT_STYLES = {
+  teal: {
+    active:   "bg-primary-soft text-primary border border-primary/20",
+    disabled: "bg-primary-soft text-teal-400 border border-primary/20",
+  },
+  blue: {
+    active:   "bg-blue-50 text-blue-700 border border-blue-100",
+    disabled: "bg-blue-50 text-blue-400 border border-blue-100",
+  },
+  purple: {
+    active:   "bg-purple-50 text-purple-700 border border-purple-100",
+    disabled: "bg-purple-50 text-purple-400 border border-purple-100",
+  },
+  green: {
+    active:   "bg-green-50 text-green-700 border border-green-100",
+    disabled: "bg-green-50 text-green-400 border border-green-100",
+  },
+  orange: {
+    active:   "bg-orange-50 text-orange-700 border border-orange-100",
+    disabled: "bg-orange-50 text-orange-400 border border-orange-100",
+  },
+  indigo: {
+    active:   "bg-indigo-50 text-indigo-700 border border-indigo-100",
+    disabled: "bg-indigo-50 text-indigo-400 border border-indigo-100",
+  },
+  amber: {
+    active:   "bg-amber-50 text-amber-700 border border-amber-100",
+    disabled: "bg-amber-50 text-amber-400 border border-amber-100",
+  },
+  slate: {
+    active:   "bg-slate-100 text-slate-700 border border-slate-200",
+    disabled: "bg-slate-100 text-slate-400 border border-slate-200",
+  },
+  pink: {
+    active:   "bg-pink-50 text-pink-700 border border-pink-100",
+    disabled: "bg-pink-50 text-pink-400 border border-pink-100",
+  },
+  red: {
+    active:   "bg-red-50 text-red-600 border border-red-100",
+    disabled: "bg-red-50 text-red-400 border border-red-100",
+  },
+} as const;
+
+export type AccentColor = keyof typeof ACCENT_STYLES;
+
+// ── SettingsScreenHeader ──────────────────────────────────────────────────────
+export function SettingsScreenHeader({
+  title,
+  backHref,
+}: {
+  title: string;
+  backHref: string;
+}) {
+  return (
+    <header className="sticky top-0 z-20 grid grid-cols-[44px_1fr_44px] items-center border-b border-stone-200 bg-white/95 px-1 py-2.5 backdrop-blur-md">
+      <Link
+        href={backHref}
+        className="flex h-10 w-10 items-center justify-center rounded-full text-[#1E293B] transition-colors hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1"
+        aria-label="Back"
+      >
+        <IconArrowLeft size={20} />
+      </Link>
+      <h1 className="truncate text-center text-[16px] font-bold text-[#1E293B]">
+        {title}
+      </h1>
+      <span aria-hidden className="inline-block w-10" />
+    </header>
+  );
+}
+
+// ── SettingsSectionTitle ──────────────────────────────────────────────────────
+export function SettingsSectionTitle({ children }: { children: ReactNode }) {
+  return (
+    <h2 className="px-4 pb-2.5 pt-6 text-[11.5px] font-semibold uppercase tracking-wide text-stone-400">
+      {children}
+    </h2>
+  );
+}
+
+// ── SettingsLinkRow ───────────────────────────────────────────────────────────
+export function SettingsLinkRow({
+  href,
+  icon: Icon,
+  label,
+  sublabel,
+  trailing,
+  onClick,
+}: {
+  href?: string;
+  icon?: IconComponent;
+  label: string;
+  sublabel?: string;
+  trailing?: ReactNode;
+  onClick?: () => void;
+}) {
+  const inner = (
+    <>
+      <div className="flex min-w-0 flex-1 items-center gap-3.5">
+        {Icon ? (
+          <Icon size={24} className="shrink-0" />
+        ) : null}
+        <div className="min-w-0">
+          <p className="text-[15px] leading-snug text-neutral-900">{label}</p>
+          {sublabel ? (
+            <p className="mt-0.5 text-xs leading-snug text-stone-500">
+              {sublabel}
+            </p>
+          ) : null}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5 text-stone-400">
+        {trailing}
+        <IconChevronRight size={18} />
+      </div>
+    </>
+  );
+  const cls =
+    "flex w-full items-start gap-2 border-b border-stone-100 px-4 py-3.5 text-left transition-all duration-150 hover:bg-stone-50 active:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500";
+  if (href) {
+    return (
+      <Link href={href} className={cls}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" className={cls} onClick={onClick}>
+      {inner}
+    </button>
+  );
+}
+
+// ── SettingsToggleRow ─────────────────────────────────────────────────────────
+export function SettingsToggleRow({
+  icon: Icon,
+  label,
+  sublabel,
+  checked,
+  busy,
+  onToggle,
+}: {
+  icon?: IconComponent;
+  label: string;
+  sublabel?: string;
+  checked: boolean;
+  busy?: boolean;
+  onToggle: (next: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 border-b border-stone-100 px-4 py-3.5">
+      {Icon ? (
+        <Icon size={24} className="shrink-0" />
+      ) : null}
+      <div className="min-w-0 flex-1">
+        <p className="text-[15px] text-neutral-900">{label}</p>
+        {sublabel ? (
+          <p className="mt-0.5 text-xs text-stone-500">{sublabel}</p>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        disabled={busy}
+        className="relative h-8 w-[52px] shrink-0 rounded-full transition-colors disabled:opacity-50"
+        style={{ background: checked ? "#1d9e75" : "#ccc" }}
+        onClick={() => onToggle(!checked)}
+      >
+        <span
+          className="absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all"
+          style={{ left: checked ? 26 : 4 }}
+        />
+      </button>
+    </div>
+  );
+}
+
+// ── SettingsHubCard (main /settings page) ────────────────────────────────────
+export function SettingsHubCard({
+  href,
+  icon: Icon,
+  iconBg,
+  title,
+  description,
+  count,
+  badge,
+}: {
+  href: string;
+  icon: LucideIcon;
+  iconBg: string;
+  title: string;
+  description: string;
+  count?: number;
+  badge?: "Coming Soon" | "Beta" | "New";
+}) {
+  return (
+    <Link
+      href={href}
+      aria-label={`${title} — ${description}`}
+      className={[
+        "group flex items-center gap-4 rounded-2xl border bg-white px-4 py-4",
+        "shadow-sm transition-all duration-200",
+        "hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-lg",
+        "active:scale-[0.98] active:shadow-sm",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2",
+        "border-stone-100",
+      ].join(" ")}
+    >
+      <div
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105"
+        style={{ background: iconBg }}
+      >
+        <Icon size={22} className="text-white" strokeWidth={1.8} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="text-[15px] font-semibold text-neutral-900">{title}</p>
+          {badge && (
+            <span
+              className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+              style={
+                badge === "Beta"
+                  ? { background: "#FFF7ED", color: "#C2410C" }
+                  : badge === "New"
+                  ? { background: "#ECFDF5", color: "#065F46" }
+                  : { background: "#F1F5F9", color: "#64748B" }
+              }
+            >
+              {badge}
+            </span>
+          )}
+        </div>
+        <p className="mt-0.5 truncate text-xs text-stone-500">{description}</p>
+        {count !== undefined && (
+          <p className="mt-1 text-[11px] text-stone-400">
+            {count} settings
+          </p>
+        )}
+      </div>
+      <ChevronRight
+        size={18}
+        className="shrink-0 text-stone-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-teal-400"
+      />
+    </Link>
+  );
+}
+
+// ── SettingsHubRow (rows inside hub subpages) ─────────────────────────────────
+export function SettingsHubRow({
+  href,
+  onClick,
+  icon: Icon,
+  label,
+  sublabel,
+  badge,
+  danger,
+  accentColor,
+}: {
+  href?: string;
+  onClick?: () => void;
+  icon?: LucideIcon;
+  label: string;
+  sublabel?: string;
+  badge?: "Coming Soon" | "Beta" | "New";
+  danger?: boolean;
+  accentColor?: AccentColor;
+}) {
+  // Resolve icon-container classes from the static map (no inline styles → Tailwind purge-safe)
+  const isDisabled      = badge === "Coming Soon";
+  const colorKey        = danger ? "red" as const : accentColor ?? null;
+  const comingSoonBadge = accentColor ? ACCENT_BADGE[accentColor] : "bg-slate-100 text-slate-500";
+  const iconWrapCls = colorKey
+    ? ACCENT_STYLES[colorKey][isDisabled ? "disabled" : "active"]
+    : isDisabled
+      ? "bg-stone-100 text-stone-400 border border-stone-100"
+      : "bg-stone-100 text-stone-600 border border-stone-100";
+
+  const inner = (
+    <>
+      <div className="flex min-w-0 flex-1 items-center gap-3.5">
+        {Icon && (
+          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${iconWrapCls}`}>
+            <Icon size={16} strokeWidth={1.8} />
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className={`text-[14px] leading-snug ${danger ? "text-red-600" : "text-neutral-900"}`}>
+            {label}
+          </p>
+          {sublabel && (
+            <p className="mt-0.5 text-xs leading-snug text-stone-400">{sublabel}</p>
+          )}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        {badge ? (
+          badge === "Coming Soon" ? (
+            /* Hub-tinted Coming Soon badge — readable and intentional, not washed-out gray */
+            <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${comingSoonBadge}`}>
+              {badge}
+            </span>
+          ) : (
+            /* Beta / New keep their existing inline-style pills */
+            <span
+              className="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+              style={
+                badge === "Beta"
+                  ? { background: "#FFF7ED", color: "#C2410C" }
+                  : { background: "#F0FDF4", color: "#166534" }
+              }
+            >
+              {badge}
+            </span>
+          )
+        ) : (
+          !danger && (
+            <ChevronRight
+              size={16}
+              className="text-stone-300 transition-transform duration-150 group-hover:translate-x-0.5"
+            />
+          )
+        )}
+      </div>
+    </>
+  );
+
+  const baseClass =
+    "group flex w-full items-center gap-2 border-b border-stone-100 px-4 py-3.5 text-left transition-all duration-150";
+
+  if (badge === "Coming Soon") {
+    return (
+      <div
+        className={`${baseClass} cursor-default select-none opacity-80 pointer-events-none`}
+        role="presentation"
+        aria-hidden="true"
+      >
+        {inner}
+      </div>
+    );
+  }
+
+  const interactiveClass = `${baseClass} hover:bg-stone-50 active:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500`;
+
+  if (href) {
+    return (
+      <Link href={href} className={interactiveClass}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" className={interactiveClass} onClick={onClick}>
+      {inner}
+    </button>
+  );
+}
+
+// ── SettingsSearchInput ───────────────────────────────────────────────────────
+export function SettingsSearchInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="px-3 pb-2 pt-3">
+      <div className="flex items-center gap-2 rounded-xl bg-stone-100 px-3 py-2.5">
+        <IconSearch size={20} className="shrink-0 text-stone-400" />
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Search settings"
+          className="min-w-0 flex-1 border-0 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-stone-400"
+          autoComplete="off"
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── SettingsPageFooter ────────────────────────────────────────────────────────
+export function SettingsPageFooter() {
+  return (
+    <div className="mt-10 pb-8 text-center">
+      <p className="text-[11px] text-stone-400">Rovvy v2.0 &bull; Group Travel OS</p>
+      <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px] text-stone-400">
+        <a
+          href="/privacy"
+          className="transition-colors hover:text-stone-600 hover:underline focus-visible:outline-none focus-visible:underline"
+        >
+          Privacy
+        </a>
+        <span aria-hidden="true" className="text-stone-300">&bull;</span>
+        <a
+          href="/terms"
+          className="transition-colors hover:text-stone-600 hover:underline focus-visible:outline-none focus-visible:underline"
+        >
+          Terms
+        </a>
+        <span aria-hidden="true" className="text-stone-300">&bull;</span>
+        <a
+          href="/cookie-policy"
+          className="transition-colors hover:text-stone-600 hover:underline focus-visible:outline-none focus-visible:underline"
+        >
+          Cookies
+        </a>
+      </p>
+    </div>
+  );
+}

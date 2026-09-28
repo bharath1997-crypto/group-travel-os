@@ -1,0 +1,640 @@
+reason,wikidata_qid,wikidata_name,overture_gers_id,overture_name,distance_m,score
+rejected,Q4792299,Arlington Club,1c24652b-5d15-49bd-986f-e9c9dc0e910b,Barlow,28.9,40.0
+rejected,Q4841513,Bagdad Theater,e29e5b25-1249-4571-89b9-0ebab1e52427,McMenamins Bagdad Theater and Pub,8.4,59.6
+rejected,Q4929334,Blue Lake Regional Park,c60d96b3-0d0e-4667-9cec-7dc5a3cec552,Blue Lake Park Oregon,88.3,72.7
+rejected,Q5002946,Butterfly Park,2cbfd987-3760-4bb2-a201-d4d531d99993,Butterfly Park Naturescape,91.2,70.0
+rejected,Q5047498,Caruthers Park,2fa2a622-38b9-4364-96c1-9329f80a78aa,Elizabeth Caruthers Park,34.8,73.7
+rejected,Q5124871,Clackamas County Fair and Rodeo,7f49ba37-1a8e-4924-8e74-7c9eb28a1cc3,Oregon Celtic Festival,59.1,37.7
+rejected,Q5149788,Columbia Park,c268cd45-24e0-4bc7-ab81-4154a70c9e42,"Columbia Park (Portland, Oregon)",23.3,61.9
+rejected,Q43201138,Washington Square Cinemas,1f216933-b74a-4e1f-8fae-d7aa2e6a1607,Thirsty Lion Pub & Grill,50.3,39.0
+rejected,Q43201150,Edgefield Power Station Theater,bad6184d-75ae-40ba-a6f4-449611e0b917,McMenamins Power Station Pub & Theater,57.7,71.6
+rejected,Q43201187,Regal Wilsonville Town Center 9,9a65832e-d5ef-4f31-bbe7-ce72fbb83328,Regal Wilsonville,82.3,70.8
+rejected,Q43201185,Grand Parkway,242c9f4d-5a03-4b60-aa22-5f4a30c69456,Silver Falls State Park,87.6,38.9
+rejected,Q43201195,Bungalow Theater,e2366bea-792c-40c2-acae-5d9adaaa40dd,Carril el Forastero,10.3,45.7
+rejected,Q43201199,Pix Theatre,0f4f764b-e72d-4f3e-b925-b85fc1b58305,Lupitas Restaurant,145.6,44.4
+rejected,Q43305413,Woodland Theatre,be71df6f-607c-4c7f-9ca3-6bb71bb80820,Los Pepe's Woodland,128.8,62.9
+rejected,Q43305541,Renfro Drive-In,b8c04f1d-2936-4949-910a-80735d338d65,Domino's,112.8,34.8
+rejected,Q43305567,Bee Gee Theatre,09a0f1bb-5ff6-4a9d-ac57-5b5af7c53162,Battle Ground Skate Park,129.6,41.0
+rejected,Q43305565,Battle Ground Cinema,3d95e087-0f13-42ba-b513-bd1ce08e1086,Black Rock Coffee Bar,124.9,43.2
+rejected,Q43307027,Broadway Theatre,0189f6f0-4e4c-47ae-bd86-f445a8ded9ab,Kiggins Theatre,124.9,51.6
+rejected,Q43307030,Castle Theatre,0189f6f0-4e4c-47ae-bd86-f445a8ded9ab,Kiggins Theatre,50.0,62.1
+rejected,Q43307036,City Centre Stadium 12,621b172b-9f7b-4310-aad8-17b53d29bacf,Regal City Center,31.5,61.5
+rejected,Q43307042,Palace Theater,d4f28825-10ec-41a1-b4c1-2e1e65cac552,Turtle Place,99.4,69.2
+rejected,Q43307040,Mission Theatre,4eeb4a52-1731-4653-bce4-6af6b2b9cc4b,Mint Tea,120.7,60.9
+rejected,Q43307044,Regal Cascade Stadium 16 IMAX & RPX,18135f25-db61-4967-82ab-1362e98885d9,Regal Cascade,21.1,56.5
+rejected,Q43307028,Cascade Park 4 Theater,a664138d-2686-43f9-a75d-fe3ecbbe579e,Café Yumm! - Vancouver,126.1,29.3
+rejected,Q43307033,AMC Vancouver Mall 23,126ece17-7bef-4eef-bff2-caafc8d14a9a,La Costa Mexican Restaurant,140.3,32.4
+rejected,Q43307038,Hazel Dell Cinemas,a5b91499-b7b9-4a3b-85c9-ad9cb368eb85,Southern Girl Delights,130.3,35.0
+rejected,Q16919218,Auditorium and Music Hall,57837d15-05e5-470d-b6a5-df027c312460,Aprisa Mexican Cuisine,80.6,38.3
+rejected,Q16977278,Mary's Club,55dd408b-7ee5-4d33-9b73-e4a939c09aa8,Rotary Club of Portland,131.4,47.1
+rejected,Q16826966,Beaverton City Fountain Park,8932d51a-8df6-4e8d-ac79-72a6182e5685,Beaverton City Park,39.4,80.9
+rejected,Q16890109,CC Slaughters,5c1e6989-d7a1-4366-960c-79823962c562,Cafe UNITED,138.4,41.7
+rejected,Q16895152,Milwaukie Riverfront Park,d3da82fe-7c79-46b7-bc47-50ddcd45cdc9,Milwaukie Water Front,96.8,56.5
+rejected,Q16896253,Otto's Sausage Kitchen,7523cf56-bd18-49bc-9f60-97541e08c635,Arts & Craftsmen,65.5,42.9
+rejected,Q18749000,Guild Theatre,1ff07bee-b19f-4e55-97ea-ea235937c04d,Hollywood Theaters,40.7,58.1
+rejected,Q18749129,Oregon Theatre,92635ef8-a665-40af-9ce1-dcb838a2d460,Brew Dr. Teahouse - Division,33.4,46.2
+rejected,Q17041119,Old Town Pizza,2f72b354-3c25-4976-a368-140f9e6f8dcc,Old Town Pizza & Brewing,6.7,77.8
+rejected,Q17276022,Embers Avenue,a3380dff-61b8-4834-a5e0-7d034e968709,Augen Gallery,64.8,46.2
+rejected,Q17510319,Silverado,36040c96-a34a-4d87-8b5c-14f2d0374b04,Kingsland Kitchen,131.7,44.4
+rejected,Q43200834,Round-Up Theatre,b285e677-d0a3-4068-bf11-3efc8332e39a,Aroy Thai Cuisine,134.1,48.5
+rejected,Q43200839,Dream Theatre,f70536ec-b43d-4d0d-a9c3-740075e207ff,Retro Game Bar,68.7,52.2
+rejected,Q43200844,Acme Theatre,a67b641f-eae6-4964-8cf8-f67b997cb52d,Sloan's Tavern,54.3,38.5
+rejected,Q43200851,Empire Theatre,1a35315b-1601-4106-9477-b89c41fa0f45,Pacific Standard,145.5,40.0
+rejected,Q43200856,Bob White Theatre,cf914af8-a578-457b-bf1f-2785f758c0ac,Henry Higgins Boiled Bagels,52.7,40.9
+rejected,Q43200867,Mall 205 Cinema,301ee3b3-e813-482b-9393-473c804738a5,Club 205,87.2,52.2
+rejected,Q43200865,Grant Theatre,17d7d907-886a-47f2-842d-033a21d5c3a5,Great Harvest PDX Bread Co.,86.6,46.2
+rejected,Q43200870,Egyptian Theater,4a8a9a82-3992-430d-8b70-562922c0c606,Hawthorne Theater,66.4,60.6
+rejected,Q43200874,Empirical Theater,abd66597-7c10-4d18-84f7-c1689a87049d,Kendall Planetarium,31.0,38.9
+rejected,Q43200878,Irvington Theater,6d8d23ed-5123-44ea-a343-09fe4c18bb53,Namaste Indian Cuisine,85.4,41.0
+rejected,Q43200882,Jantzen Beach Theater,e0262621-e71d-4453-adc5-6b30d1810be5,Jantzen Beach RV Park,102.1,76.2
+rejected,Q43200886,Kenton Theatre,c083d73f-b731-4ae7-a527-16b18933a3b9,Kenton Club,86.8,48.0
+rejected,Q43200895,Walnut Park Theatre,336fcff0-2026-43b6-9793-c2c8fdc646e8,Star Kitchen Thai Food,37.1,39.0
+rejected,Q43200892,Alberta Theater,eeb941a9-2b7d-43be-b7ef-247ea6158eaa,Alberta Arts District,92.4,61.1
+rejected,Q18749145,Portland Police Museum,c2d4856b-1563-4488-9d2a-2850de74536d,Portland Police Museum and Historical Society,20.5,65.7
+rejected,Q18749209,Stark's Vacuum Museum,d49f79ea-807a-4854-8778-7148855eb70d,Butters Gallery Ltd,11.8,35.0
+rejected,Q43200647,State Theatre,8fb7c080-4328-4bb0-a4c4-bb56414d53a2,Madison Taproom,40.8,35.7
+rejected,Q43200698,82nd Ave. Cinemas,7b5a0acc-3366-4c5d-89b7-4f8ce6c6d2a3,Arawan Thai Cuisine,139.8,40.0
+rejected,Q43200702,Hudson's Colonial Theatre,bd85f3d9-4aa2-4374-affc-19ce162a34c9,Saen Sook Thai Street Food,99.4,47.1
+rejected,Q43200707,Burnside Theatre,40a25f0e-02e0-4843-a122-3cc154335ff3,Paris Theatre,33.6,69.0
+rejected,Q43200713,Division Street Stadium 13,0b4c4361-4711-49a9-920f-c8456c8e3797,Ichi Teriyaki 23,136.3,38.1
+rejected,Q43200719,Rose Moyer Theatre,82b8ed1b-4067-4e02-b08e-d9c84895cf1e,Regal Division Street,25.9,41.0
+rejected,Q43200730,Circle Theatre,40a25f0e-02e0-4843-a122-3cc154335ff3,Paris Theatre,130.2,66.7
+rejected,Q43200738,Ames Theatre,71b78a5a-ceba-48a7-ac4f-0e6458284b2d,Foster Theater,6.6,61.5
+rejected,Q6878768,Mission Theater,a40b3209-3650-43cc-ab7b-81fde8f650b9,McMenamins Mission Theater,8.7,73.2
+rejected,Q6921253,Mount Hood Masonic Temple,531332ba-6ab6-4e4b-b13f-af07b8bd0471,"Team Evil, Inc",134.3,36.8
+rejected,Q6923996,Alhambra Theatre,dcee94c2-f3e6-4ef5-b518-855b7978a40c,Albina Press,139.3,50.0
+rejected,Q6780666,Mary S. Young State Recreation Area,5d588287-8f10-4927-bbc7-c60c8919afa6,Burnside Park,38.1,21.3
+rejected,Q6971283,National Cash Register Building,fd9ed544-a774-47a5-ac98-7b8c10e4b829,Signal Station Pizza,77.3,39.2
+rejected,Q6988136,Neighbors of Woodcraft Building,1d6af6dd-052d-4b5c-8da5-b29f2ec23432,Toasted S’mores Bar,142.4,34.8
+ambiguous,Q7056281,North Park Blocks,e519fb78-ab54-4638-ace1-7f491f5d4d28,North Park Blocks,60.6,100.0
+ambiguous,Q7056281,North Park Blocks,c076013e-d907-4a1d-9925-575ebb8890d0,North Park Blocks,25.1,100.0
+rejected,Q7060036,Center for an Untold Tomorrow,f1cd919b-144e-4d61-b25d-357384f60f0b,Portland International Film Festival,7.8,40.0
+rejected,Q7071692,Darcelle XV Plaza,b27d2258-902b-40da-ba71-a93e8aa0e8c8,Clearwest Vii Portland Owner,136.5,44.4
+rejected,Q43200744,"Blue Mouse Theatre, 4th Street",7fe8a758-239b-43af-8824-815b7b1b2ef9,Cuốn - Vietnamese Street Food,16.1,50.0
+rejected,Q43200751,"Blue Mouse Theatre, Washington Street",368e2bd3-32dd-4753-aa84-0207a4f498bd,Domaine Serene Wine Lounge Portland,95.6,45.1
+rejected,Q43200760,Broadway Theatre,d1862850-2df5-43d3-a577-fcaea370308f,Brunish Theatre,123.4,64.5
+rejected,Q43200766,Jefferson Theatre,8ec5a1b2-8bf8-4583-bf5e-0566b71f2313,Ecola State Park Oregon,111.8,45.0
+rejected,Q43200772,Movie House,7e8ddf8f-c395-4868-ae64-fc60f5edb1f8,White Rose Winery,134.5,42.9
+rejected,Q43200776,"Music Box Theatre, Alder Street",801a83f3-aa0f-433e-8a23-991dfd110703,Bistro Alder,69.4,52.4
+rejected,Q43200783,"Music Box Theatre, Broadway",9668f68a-d45c-42b1-bf82-512763cee6ae,Northwest Children's Theater,145.9,44.4
+rejected,Q43200791,New Grand Theatre,31ac68d1-3f9b-47b4-8a08-ba773a2348ce,B and T Oyster Bar,145.6,51.6
+rejected,Q43200788,New Century Theatre,136ded71-5f41-4f96-bcfc-2231d41a41e3,Saint Honore Bakery,101.2,47.4
+rejected,Q43200801,Rivoli Theatre,c548d0a1-fefe-4c52-b709-6fc37725667e,Stewart Llc,124.2,48.0
+rejected,Q43200811,Orpheum Theatre,a6190b91-86a6-4960-a176-9e1153089028,Tea & Tea Bubble Tea Shop,101.7,47.4
+rejected,Q43200826,Regal Pioneer Place,f9637f0b-203f-4091-a1f9-2d79e3bd0680,Gucci Portland Pioneer Place,71.3,68.1
+rejected,Q43307047,State Theatre,e18905c5-2f9d-4e11-9e55-4881bae1408e,Magenta Theatre,21.4,71.4
+rejected,Q43307051,Vancouver Plaza 10,1879333d-0a5d-49f7-8428-6dbed509d3e5,Regal Vancouver Plaza,77.7,76.9
+rejected,Q7101153,Oregon Convention Center,4deee9cc-46e8-4b5d-a303-5d5112e7a31d,Convention Center Plaza,148.9,76.6
+rejected,Q7102376,Oriental Theatre,d0f2036e-32e6-4f36-b413-5fc00a34e653,Architectural Heritage Center,118.1,53.3
+rejected,Q7127307,Palestine Lodge,30f3f4ce-955e-4cfb-9558-c3184d4b4e94,Eu to voltando pra casa,120.9,36.8
+rejected,Q7162948,Peninsula Park,08281a69-25ae-43fc-be30-67b5b1b2542c,Rosa Parks Rose Garden,131.3,38.9
+rejected,Q46176810,Mark Building,d1862850-2df5-43d3-a577-fcaea370308f,Brunish Theatre,98.4,42.9
+rejected,Q47035580,House of Louie,9581adeb-458d-47ac-9c8a-31e9d8053716,Red Robe Tea House & Cafe,58.1,56.2
+rejected,Q49471709,13th Avenue City Park,7aecdecd-46d6-485b-8779-b457bd48bd6a,Legacy Park,47.4,50.0
+rejected,Q49472241,Allenbach Acres Park,c39b313a-1d2c-4bc5-8cfb-1573c855bb9b,Starbucks Coffee Company,143.5,40.9
+rejected,Q49472310,Alpine Park,e8cfcb2f-b96b-46f3-acdb-97449e35f947,The Human Bean,98.6,38.1
+rejected,Q19893902,Pambiche Cocina and Repostería Cubana,deffc96b-02fd-4446-be7d-7947bd6c71ea,Souk’s Boil & Boba Tea,34.3,38.6
+rejected,Q20712510,Three Sisters Tavern,232cb044-8b79-4b36-a6fe-b08334b59520,Fish Grotto Seafood Restaurant & Wine Bar,75.7,43.6
+rejected,Q20712533,Red Cap Garage,571cd400-7fee-482a-9358-30aedfec4e63,Aura Restaurant & Lounge,20.3,41.4
+rejected,Q21015954,Dayton Opera House,1d569e3d-cf7f-40d9-8edf-dec7e89b088a,Dayton City Park,81.9,52.9
+rejected,Q21188243,Howard M. Terpenning Recreation Complex,85e7bd00-cffa-4b90-be4a-6ec46462ffab,Tualatin Hills Park & Recreation District,80.8,51.9
+rejected,Q25352639,Fox Theatre,7e446cac-4609-45ac-8936-65bd2c683850,Regal Fox Tower,61.3,61.5
+rejected,Q21188313,Lelooska Museum,d7e6de2f-87b3-48b2-a50f-5767812e166c,Lelooska Foundation,36.8,47.1
+rejected,Q23058843,Acadia: A New Orleans Bistro,d7e5ccdb-9d94-4ecb-af7f-e09de697a49e,Urban Wineworks,10.2,42.9
+rejected,Q23461676,Laurelwood Pub and Brewery,6c2253a1-6665-422e-a30c-7fd6366d8207,Laurelwood Brewing Co.,9.2,63.8
+rejected,Q23461855,Produce Row Café,35dcb0c4-59d4-4d50-9217-21b9d24b3029,Produce Row Cafe,8.0,81.5
+rejected,Q23461938,Screen Door,4be762d4-1079-4d6b-897d-cbdb9b0624f1,Screen Door Eastside,15.9,71.0
+rejected,Q23671457,The Dime Store,cb68cca7-98e3-4daf-ad34-437597e7a9d0,The Daily Feast,6.2,47.6
+rejected,Q23926646,Overlook Restaurant,a189167a-5e9c-45d0-bc87-471f4e0a5688,Hoplandia Taphouse,122.9,23.1
+rejected,Q23926648,Higgins Restaurant and Bar,0e728609-acbf-4a20-b2b1-540dee36d594,Higgins Piggins,50.4,48.6
+rejected,Q23926657,British Overseas Restaurant Corporation,03e0a648-f59c-4c07-b3db-28b859265f65,Catherine Freshley Fine Art,62.6,42.4
+rejected,Q23926661,Escape Nightclub,c8ca907d-c7b0-4f8f-8f65-abf4b0b17694,Cafe Voila,100.6,46.2
+rejected,Q28035264,The Alibi,5fab38d3-6c5c-417f-9408-900d8f993559,The Alibi Tiki Lounge,47.8,66.7
+rejected,Q43199641,Joy Cinema & Pub,b4c23d87-8c96-4a09-8045-b0be550db840,Joy Cinema,14.4,83.3
+rejected,Q43199651,Valley Cinema Pub,990b17ae-f3f4-4dc1-9269-6fe1d6f0fc2a,SuperPlay,65.5,30.8
+rejected,Q43199657,Regal Lloyd Center 10 & IMAX,fe3a79f7-7bbf-42b3-92d0-42461d60fa5d,Regal Lloyd Center,51.6,81.8
+rejected,Q43199716,Liberty Theatre,4536c1a7-9951-4ed7-b502-c8db619bfd86,Pleasure Burger,127.0,53.3
+rejected,Q43199786,Francis Theatre,e59030be-cc1f-408b-8583-f831f6033682,Francis Square,41.2,75.9
+rejected,Q43199832,Canyon Drive-In,fc3e4379-f9fa-4e6f-8e27-047e2d5e1c62,Always Spring Restaurant,142.6,42.9
+rejected,Q43199842,Carvue Drive-In,34dd2a77-d19f-4421-a70f-36da4aecf32d,Great NorthWest Ice Cream Company,133.8,41.7
+rejected,Q43199919,Super 99 Drive-In,d3da82fe-7c79-46b7-bc47-50ddcd45cdc9,Milwaukie Water Front,144.3,31.6
+rejected,Q43199923,82nd Street Drive-In,7b5a0acc-3366-4c5d-89b7-4f8ce6c6d2a3,Arawan Thai Cuisine,139.8,35.9
+rejected,Q43199929,104th Street Drive-In,4ebcc67a-486c-4de2-88c9-98c05f50836f,Jenni's Sacred Grounds,117.9,32.6
+rejected,Q43199940,Barbur Boulevard Drive-In,16654a41-1400-487a-a5a4-8a69f2671638,Taco Time,41.9,29.4
+rejected,Q43199945,Foster Road Drive-in,a90c08ab-fa34-4b05-b840-3432720799e3,SE Foster & 111th,132.0,45.7
+rejected,Q43199982,Woodburn Drive-In,b9b30f8d-4eb6-4c93-a6e6-d5f112465e5e,"Woodburn, OR (Og)",83.2,64.5
+rejected,Q43199987,Aloha Theatre,476c20d7-2157-4798-8ce6-066532b3014e,Aloha Bar & Grill,66.7,72.7
+rejected,Q43200060,Beaver Theater,b303e0ca-f021-41d8-a579-7169886e4a74,Beaverton Bakery,17.5,60.0
+rejected,Q43200064,Westgate 5 Theatre,3e1c8ee0-7429-4a20-99b7-b2141b94e018,Westgate Business Ventures Llc,123.9,58.3
+rejected,Q43200068,AMC DINE-IN Progress Ridge 13,8fff3a9d-ed77-46a8-88d2-f9798b744fdc,Menchie's Frozen Yogurt,146.7,38.5
+rejected,Q43200076,Town Center Tri- Cinemas,dee1154d-6e32-4c07-91d8-38b231f99a22,Starbucks,136.7,25.0
+rejected,Q43200113,Canby Theatre,90f75dd0-22be-4285-a065-4752015eadef,El Charrito,19.1,41.7
+rejected,Q43200187,Estacada Theater,acf8fbe7-fa3b-4f54-b479-95317c7ab175,Wade Creek Park Estacada Oregon,127.4,51.1
+rejected,Q43200251,Televue Theatre,0bfbb0e5-a442-44f8-9997-d41f47d8c2af,Stanley's Corner,99.6,32.3
+rejected,Q43200286,Gresham Cinemas,947872b3-14a2-4a63-80cf-364961aabb97,Black Angus Steakhouse,134.1,27.0
+rejected,Q43200301,Regal Stark Street Stadium 10,5f4d4fce-7186-4478-a7b4-8d14699d1b18,Regal Stark Street,11.8,76.6
+rejected,Q43200555,Molalla Theatre,9226d60f-f957-41d9-81a5-77d8681fbe61,The Prairie House Inn,119.7,31.2
+rejected,Q43200573,Star Theatre,3e804ef3-9f2a-41f8-b846-5a2499845e77,Cameo Theatre,80.1,72.0
+rejected,Q43200627,Liberty Theatre,fdfe2bc3-0cb5-482c-b08f-14109b4087a0,Liberty Plaza,55.9,64.3
+rejected,Q43200635,Regal Hilltop 9 Cinema,a5a10428-65f8-43b5-9711-9edf147dd00d,Regal Hilltop,109.6,74.3
+rejected,Q43200641,Star Theatre,f50e3e2e-6f74-47f7-8ed7-09eb256ef44a,Watershed Cafe,62.3,47.6
+rejected,Q49475343,Boring-Estacada Rail Line,e67ba9d6-539d-4442-bbf8-19d0f1b9ce19,Bright Side Coffee Co.,110.2,43.5
+ambiguous,Q49475883,Brooklyn Park,adae99ac-70a7-4192-9acb-005409056373,Brooklyn Park,111.4,100.0
+ambiguous,Q49475883,Brooklyn Park,bb8708c6-8d78-49ee-8f64-685c1214513c,Brooklyn Park Pub,104.0,86.7
+rejected,Q49475909,Brookside Park,617564ad-1da3-453d-bea4-07dbf994049e,Brookside Wetland,100.8,71.0
+rejected,Q49475918,Brookview Park,c88d4e40-5a65-4a14-b841-07d5b25e553a,Brookview Wetlands,12.2,68.8
+rejected,Q49475711,Brentwood Park,d2295592-aa4c-4619-960f-0212cc763420,Brentwood City Park,147.7,84.8
+rejected,Q49476083,Buckman Field,b303f308-5e76-4e53-acd4-ace608496b6e,Level Beer,138.9,34.8
+rejected,Q49476263,Burns Island Park,5d588287-8f10-4927-bbc7-c60c8919afa6,Burnside Park,18.6,80.0
+rejected,Q49476279,Burntwood Powerline Park,965c41df-c5a8-490a-a29b-a8bb1a4912ad,Hart meadows park,98.3,39.0
+rejected,Q49476281,Burntwood West Park,1799e170-f47f-49fd-936b-ff5f1b32aeeb,Tallac Terrace Park,99.4,31.6
+rejected,Q7203581,Plaza Blocks,6aeb5808-7f61-44cf-ab41-3df1270de7e7,Bangkok Palace Portland,132.5,45.7
+rejected,Q7231872,Portland Aquarium,7472209c-68af-4875-a891-4620a4bf6ec3,Apple Peddler Restaurant,58.1,26.7
+rejected,Q7505616,Shute Park,503275c2-dbfc-43de-b917-a54cf1e498b7,Black Rock Coffee Bar,94.0,29.6
+rejected,Q7366114,Rood Bridge Park,0a8227da-fb3b-430f-9cb5-7fbfc5d0f4f9,Tualatin River Rood Bridge - Farmington,103.0,52.8
+rejected,Q7367680,Rose City Golf Clubhouse,20c55ae7-c6da-44c1-894e-79c506df52f6,Rose City Grill,16.5,54.5
+rejected,Q7448690,Sellwood Riverfront Park,aed848ca-10d3-4a29-902e-c37dba82559a,Oaks Bottom Park River Front,36.0,38.5
+rejected,Q7231894,Portland Children's Museum,a7a17124-3801-482e-87cd-b8d69f4ded2d,Children’s museum,35.3,79.1
+rejected,Q7231961,Portland Institute for Contemporary Art,d5cab691-8bbe-44b4-b47e-3d1f7e807e28,Portland food cart,64.5,52.6
+rejected,Q7231980,Portland Metropolitan Exposition Center,e04122c3-a8a0-4507-ae33-11d6e0f19d5b,West Delta Bar And Grill,132.6,31.6
+rejected,Q7232021,"Portland Railway, Light and Power Sellwood Division Carbarn Office and Clubhouse",a4fbba4a-c111-438f-ac90-606a2db73d64,Waverly Country Club,134.4,30.3
+rejected,Q7305267,Red and Black Cafe,ad4e4954-3984-4ca4-a031-8095785ff2f1,Dollar Tree,143.1,50.0
+rejected,Q7816762,Tom McCall Waterfront Park,86b23f94-8680-4a7f-b884-da1abfe472f9,Waterfront City Park,116.2,73.9
+rejected,Q7600934,Star Theater,34ad6a03-0fa6-4e2c-9023-81246b7d6b66,Roseland Theater,48.0,71.4
+rejected,Q7568155,South Park Blocks,e18e31ec-9a1c-4fc8-9ab3-58adc8bccf55,Verde Cocina @ PSU Farmers Market,149.3,41.7
+rejected,Q7588704,Oaks Pioneer Church,ea5b0960-e663-4ebb-a71e-633f20c0475a,Springwater Corridor Trail,71.1,40.0
+rejected,Q7589025,St. Johns Signal Tower Gas Station,fd9ed544-a774-47a5-ac98-7b8c10e4b829,Signal Station Pizza,1.8,60.4
+rejected,Q43200907,Crown Theater,91aba331-7256-4ef6-ae36-e52652511be2,Urban Steel Kitchen and Bar,142.2,44.4
+rejected,Q43200904,Eastgate Theater,e21a9224-56ae-4acf-901c-d791b5121fa4,Mocha Express Tanning,121.8,32.4
+rejected,Q43200911,Esquire Theatre,3b8e03c6-87c7-45db-8a2d-a3dd41598f14,Tea Social,62.5,48.0
+rejected,Q43200913,Oak Grove 8 Cinema,27dee947-2c4b-44d0-98cf-dd16beb128fe,Buathong Thai Cuisine,148.6,35.9
+rejected,Q43200918,Old Chelsea Tri Cinema,58760ddf-35ee-4f58-8687-c5f97402cd17,Collins Beach Sauvies Island,116.6,44.0
+rejected,Q43200922,Parkrose Theatre,b7c31b5f-e9d3-4c50-a850-c2b405450632,Barista Brew Coffee & Tea,123.2,46.2
+rejected,Q43200927,Flick,db56a7ed-ba25-4528-8d29-cf13d336b271,Froelick Gallery,105.0,47.6
+rejected,Q43200931,Tom Kat Theatre,89d1dbd1-86ff-489f-aafe-8b11b146228d,Ascendant Beer Company,68.0,43.2
+rejected,Q43200936,Crest Theatre,8771c007-ea69-4398-ab49-f293be05b0b9,Twilight Room,75.1,38.5
+rejected,Q43200946,Echo Theater,82f0348f-552c-4a07-9b1a-c8e8c9126c5c,Echo Theater Company PDX,0.5,66.7
+rejected,Q43200949,Sellwood Theater,0ef66d35-cd18-4b1b-bd77-50db8aa2b0c6,Sellwood Public House,79.1,43.2
+rejected,Q43200954,Sunnyside Theatre,d5f18746-19e2-42ec-88b4-701a4834247f,Rogue Eastside Pub and Pilot Brewery,120.7,37.7
+rejected,Q43200959,Sunset Theatre,a2afee4b-8031-4eb5-a9ae-870184bccc6b,Brasserie Montmartre,145.8,52.9
+rejected,Q43200964,Victoria Theatre,c358f66e-3b97-415f-ae7f-f113ee8e5b4b,"Dr. Martin Luther King, Jr. School Park",55.9,34.6
+rejected,Q49478613,Clinton Park,bb4730ec-9453-4d0f-973f-b9dd20874ddc,Clinton City Park,64.0,82.8
+rejected,Q49476627,Camassia Conservancy,bba98d59-b920-47be-8691-5560656b3ea9,Camassia Nature Preserve,120.5,63.6
+rejected,Q49476736,Campbell Fountain,b3301693-d7ef-451b-9f01-163358800436,Mox Portland,49.8,41.4
+rejected,Q43201063,Sunset Theatre,684a8679-5614-4e99-8f6e-fb241d3fae08,Try My Thai Restaurant,145.3,48.0
+rejected,Q49473957,Beacon Hill Park,3138cdf2-180a-427f-9891-b31bc661ec1d,"Sexton Mountain, Beaverton, Oregon",115.2,37.5
+rejected,Q49474452,Berkeley City Park,09f71f31-0688-45b0-8c44-24d741c10598,Starbucks,71.6,29.6
+rejected,Q49474513,Berrydale City Park,8d519fb9-0e0e-43ab-b187-10ea92ade997,Beacon Light Inc,121.7,40.0
+rejected,Q49474807,Billick/Dundee School Park,9f12686f-a647-41e2-a6c2-65b8bb79b780,Dundee Billick Park,47.6,84.4
+rejected,Q49475263,Bonita City Park,a8e51a4b-aaeb-4aef-a8f8-f351aeb9c706,Bonita Park,142.2,81.5
+rejected,Q49477727,Chapman and Linn Park,ed5e288a-b611-4d63-a80c-9327d6bf63ec,Singer Creek Park,71.8,36.8
+rejected,Q49477751,Charles Ames Memorial City Park,1e8c5705-ac61-4952-89bf-9a9f12f20eda,Marion Forks Fish Hatchery,108.7,38.6
+rejected,Q49478051,Chimney City Park,f0818aca-4383-4f28-aebd-4d2eeeb6a60e,Chimney Park,45.1,82.8
+rejected,Q49478290,City Park,8932d51a-8df6-4e8d-ac79-72a6182e5685,Beaverton City Park,115.9,64.3
+rejected,Q49478362,Clackamette Park,f77d2d67-8259-4b50-a664-e94904412458,Clackamette Park Campground,91.2,74.4
+rejected,Q43201062,Sandy Cinema,186c107b-77a4-4724-979f-92043e195943,Smoky Hearth Restaurant Bar & Grill,149.5,35.9
+rejected,Q2201163,Washington Park,2c819d81-f6bb-4b7c-aae9-be719dfe530a,Rose Garden Children's Playground,64.6,29.2
+rejected,Q4640361,Hidden Creek Park East,fc3a7229-e3b3-4a26-8874-a5e9effb4af9,Maru Sushi | Japanese,102.3,34.1
+rejected,Q1018098,Butterfly Park,2cbfd987-3760-4bb2-a201-d4d531d99993,Butterfly Park Naturescape,91.1,70.0
+rejected,Q6186382,Jesse H. Settlemier House,e8f2b1d8-3fe9-4231-9037-b44a8eb158f0,La popular envíos #4,136.7,32.6
+rejected,Q6389685,Kennedy School,a232c80c-7142-4bdb-be49-65f0fd158edc,McMenamins Kennedy School,17.7,71.8
+rejected,Q6390945,Kenny & Zuke's Delicatessen,dc89a763-9950-42a0-b870-3eb8190d9841,McMenamins Al's Den,119.5,40.9
+rejected,Q6422444,Knights of Columbus Building,b2b49be6-b4d5-43ef-b3ec-c4a10feabdbc,Ringside Fish House,48.0,38.3
+rejected,Q6003635,Imbrie Farm,591c139e-69b7-477c-be3a-ccbfcd62dab2,McMenamins Octogonal Barn,54.9,27.8
+rejected,Q6010308,In Other Words Feminist Community Center,312b8ebd-d179-48ab-a6c6-cbf2305405a7,Curious Comedy Theater,74.9,38.7
+rejected,Q6074928,Irvington Tennis Club,707e24bd-ddbf-4a73-9783-ae6769288a82,FFRF - Portland Area,109.9,25.6
+rejected,Q6155617,Jantzen Beach,430b360e-17f6-4862-991e-86faa2f69d47,Pizza Hut,67.7,27.3
+rejected,Q7829915,Town Center Park,76e2b870-940a-42a9-945b-8af968c3b0d2,Black Bear Diner,86.6,43.8
+rejected,Q49476774,Canby Community Park,71709f75-02d7-4ce3-8e7c-955be68a881f,Canby Pond,49.6,53.3
+rejected,Q49477034,Carolyn King Memorial Park,0acfff14-0d98-4412-aa8f-d55c1cc02bb2,Carolyn King Viewpoint Park,62.0,64.2
+rejected,Q49477109,Carter Park,fbeb40e1-bf01-4032-9a09-489f0212937e,Simply Sweets,147.3,8.3
+rejected,Q49479302,Columbia City Park,9086a3fe-4db2-4915-89ab-70325afd139a,Columbia Park Swimming Pool,75.4,57.8
+rejected,Q49479300,Columbia City Park,b57bf302-8326-49d6-b9f8-81a7e20ad53d,Cherry Park,122.9,48.3
+rejected,Q49480186,Cornelius City Park,225bd2f8-d9a1-4e05-b1fd-75fbdd00da6b,Arboretum City Park,142.9,47.4
+rejected,Q49480641,Courtside City Park,a3723b7f-dd8b-43da-89b6-8588c230de57,Courtside Park,25.1,84.8
+rejected,Q49480709,Cowan Park,bd62f44e-8fca-4c21-9755-d0dee89bca09,Settlemier House,118.5,23.1
+rejected,Q49480981,Creston City Park,6ab91695-3278-4411-bb54-e51afad29833,Creston Pool,74.7,62.1
+rejected,Q49481107,Cross Memorial City Park,3e68331d-c04e-47b0-89f9-706fc3fbdbd0,Black Rock Coffee Bar,133.4,39.0
+rejected,Q49481123,Crossroads City Park,7465a766-9673-45c4-9e45-eb8ef6aab2bd,Stomping Grounds Coffee House,90.7,36.7
+rejected,Q49472852,Argay City Park,548bf046-982f-4f7a-865d-7bc613936d7b,Argay Park,37.4,80.0
+rejected,Q49472897,Armory Park,816717ff-6ac4-40f2-a3c4-d3dada7f9d7f,Ari's Pub,144.0,40.0
+rejected,Q49472926,Arneson City Park,7583cbf9-5249-41bc-b8f0-d161e976192b,Papa Murphy's,137.8,33.3
+rejected,Q49473152,Atkinson City Park,6a6aaf68-44c2-4ca2-92c0-681c128d5eb9,Atkinson park,82.1,83.9
+rejected,Q49473530,Bales Wetlands Natural Area,f0487326-42e2-4a27-a702-e5a6c189c9ea,Bales Wetlands Park,127.5,73.9
+rejected,Q49473624,Barclay Park,c6615f1a-400b-4680-a5c1-fa606af13cef,Barclay Theatre,112.7,74.1
+rejected,Q5176217,Council Crest Park,b6c6c4fd-3b0c-466d-a285-12dddde1eda1,Portland Heights,15.1,29.4
+rejected,Q5177202,Country Bill's,1213628c-fda1-4d03-8ee9-7e3acea1eee9,Putter's Bar & Grill,89.9,53.8
+rejected,Q5254705,Delta Park,eda9df42-3b77-467f-9ab3-970f0e4acad7,East Delta Park,71.1,80.0
+rejected,Q5364385,Elks Building,d383eabc-cd09-4baf-ab27-083f5cfdbad7,Donnell's Bar,136.4,45.5
+rejected,Q5364411,Elks Temple,d333cf0e-64d8-4132-bfd3-8b1385d64779,Bellpine,49.8,42.1
+rejected,Q5401300,Esther Short Park,e6eb3a16-0c9b-4119-9623-fffd5a2db74d,Esther Shore Park Subway,129.0,78.0
+rejected,Q5452702,"First Church of Christ, Scientist",24e619aa-4139-43cd-852e-a510cc443d4a,Northwest Children's Theater,111.3,40.0
+rejected,Q5495374,Fred Harlow House,9dafc094-61af-4451-90f8-d3eab1ef589c,Fred E Harlow House Museum,22.5,79.1
+rejected,Q5568649,Glenn & Viola Walters Cultural Arts Center,3b0908fb-cf35-4f66-8aa3-5a888bd71627,Walters Cultural Arts Center,6.6,82.4
+rejected,Q5610865,Ground Kontrol,543dea31-bcf2-49b8-b72a-c6bd9a0caa4c,Ground Kontrol Classic Arcade,18.9,65.1
+rejected,Q5621114,Gustav Freiwald House,0354d416-50f6-4ea0-86bd-577017accbed,BobaTale Tea House,110.5,46.2
+rejected,Q5639517,Hair of the Dog Brewing Company,2f231273-1b74-4184-8a22-77709240021d,Labyrinth Forge Brewing Company,20.4,74.2
+rejected,Q14709151,Oaks Amusement Park,1cbe2a67-52fa-4d50-97d0-1e85d93ed973,Herschell–Spillman Noah's Ark Carousel,92.0,42.1
+rejected,Q12073285,Yale Union Laundry Building,9ecd56a4-2cce-451d-a799-d3eb18e1036a,Grand Central Restaurant & Bowling Lounge,135.1,44.1
+rejected,Q14708767,Bonnie Lure State Recreation Area,effd17bb-92bb-4830-a968-0a4e5dbf9760,Bonnie Lure State Park,15.9,69.1
+rejected,Q7894594,University Club,b0b05709-bc77-4eda-8677-c6ee78ccb521,Oregon Historical Society,139.4,40.0
+rejected,Q7919737,Venetian Theatre,935e9b97-07bf-4ad7-95c1-69172f732eb5,Earth Oven Pizza,124.0,56.2
+rejected,Q7971921,Washington High School,ed0d582b-e363-4f20-9ce4-a7d7d95831f3,Washington High School Dog Park,88.4,83.0
+rejected,Q8003299,Willamette Park,527546bc-d604-4189-b209-7e56f10aa323,Willamette park playground,63.5,73.2
+rejected,Q49481470,A Park,9d9f4cc1-036f-446b-8072-98b132f3de6f,Custer Park,35.1,58.8
+rejected,Q49481969,Datis City Park,a5b1b654-6167-4d2e-bfd0-d6ff29bc44d0,Columbia City Beach,132.0,41.2
+rejected,Q49482059,Davids Windsor Park,1be8fc62-75c6-4c43-9426-149ee9d2bd17,David's Windsor Wetlands Natural Area,9.0,57.1
+rejected,Q49482134,Davis Park,a288d769-d644-431a-aa1f-58ff8f1e5e54,Davis Skatepark,145.1,80.0
+rejected,Q49482193,Dayton Boat Landing,45ea5792-9608-4d17-854b-b6ca4b20ac6f,Dayton Landing,133.7,84.8
+rejected,Q49482502,Deerfield Park,b15ed75e-731a-460a-bffa-cef0f676368d,Rock Creek Trail parkrun,44.1,36.8
+rejected,Q49482844,Depot City Park,9f1e839f-c644-496d-bdeb-ed137ce44337,Depot Rail Museum,80.3,43.8
+rejected,Q43198133,99 W Drive-In,5346dc6b-b904-42e1-839a-a04c4e139483,99W Drive-in Theatre,114.3,72.7
+rejected,Q43198666,Regal Movies on TV Stadium 16,3f2961ae-66c5-4ea8-8f43-f44b0305244d,Regal Movies On TV,20.3,76.6
+rejected,Q43199613,Century 16 Cedar Hills,9413a24f-e10f-4267-a3d7-1b986957176a,Cinemark Cedar Hills 16,112.1,80.0
+rejected,Q110588691,Bistro Agnes,bb1cf3db-e5ab-4b53-950b-c22fc482976f,Scooter McQuades,133.1,50.0
+rejected,Q110588849,Henry Ford's Restaurant,15f18c57-9899-4a2b-946f-387deb6841e3,The Old Barn,94.2,30.0
+rejected,Q110612923,Reo's Ribs,8aff91ee-7ca9-4924-844b-9c5516d84573,Magnolia's Corner,126.0,44.4
+rejected,Q110637151,Viking Soul Food,02c44bbd-fed1-4095-9628-9420a5ba7612,Fifty Licks,47.6,37.0
+rejected,Q110639907,Clyde's Prime Rib,d268fe62-83ea-4547-8524-6ac10fab3ea8,Clyde's Prime Rib Restaurant and Bar,4.7,69.4
+rejected,Q110639936,Nimblefish,ac151f28-b0da-4041-b00e-b6c94077912e,Boxer Sushi,12.8,38.1
+rejected,Q110713271,Caffe Mingo,ae179d4c-a851-4027-80c3-c7557e20b14a,Coffee Time,93.6,54.5
+rejected,Q110818510,Yonder,b4e00dae-4d4d-4f87-a3c3-0a0a2e22c0f8,Los Mayas Loncheria,20.3,32.0
+rejected,Q110913950,Toki,0fcb76fd-4a79-4203-a1d4-45a6fd7dd730,Tanaka,71.1,40.0
+rejected,Q110921667,Birrieria La Plaza,24c5a3c3-3c08-4340-8889-2dd5a6316149,Franz Bakery Outlet,92.5,37.8
+rejected,Q110941656,Nudi Noodle Place,e2b16167-5fc0-4590-80c5-2a96bc78ac08,Papaccino's Coffee House and Cereal Bar,89.7,38.5
+rejected,Q111050369,TarBoush,20ec6918-11b8-4df9-8771-9baec7740c6f,Artichoke Music,141.5,43.5
+rejected,Q111169701,Tom's Restaurant and Bar,cff8c3af-87ef-4c34-a085-e13aaa505c18,Hawker station PDX,57.2,42.1
+rejected,Q111186757,Ya Hala,f89389c6-48a3-41de-b592-e23acf9bb3a6,Lazy Susan,36.7,47.1
+rejected,Q111239068,3 Doors Down Café and Lounge,d686b4b9-7592-44c8-adc1-93b057b72303,3 Doors Down Cafe,23.6,72.7
+rejected,Q111396008,Oaks Bottom Public House,861ce7c7-2488-4c08-ac95-778b179acec1,Laurelwood SE Public House,59.8,56.0
+rejected,Q111512524,Beastro,914c1673-a1be-4b33-872f-64529246fe09,BEASTRO by Marshawn Lynch,19.1,43.8
+ambiguous,Q111662038,Gladstone Street Pizza,906d98e8-d705-49e9-84e6-36fee7e12d58,Gladstone Street Pizza,1.8,100.0
+ambiguous,Q111662038,Gladstone Street Pizza,ddaa7faa-7c7d-4b38-9cb1-9b1791a157f6,Gladstone Street Pub,32.3,85.7
+rejected,Q111711192,Berlu,a98cd4d1-b46e-4d96-af38-0b71430b6b8f,Berlu Bakery,34.8,58.8
+rejected,Q111722887,Pix Pâtisserie,b4b6f4d8-0906-43a7-aa61-f0eaf4282f16,Pix Patisserie / Pix-O-Matic,3.9,55.0
+rejected,Q111726389,Sunshine Noodles,aa12c519-621c-4999-a996-d87d4aca9017,Murdoch Collections,94.5,40.0
+rejected,Q28134691,Bluehour,d6c50e04-8151-45a6-87cc-519034940963,The Eleanor,110.2,53.3
+rejected,Q28196025,Der Rheinlander,b14bddb6-6d83-44f4-9756-a8855ff45929,Sheridan's 52nd Ave Sports Bar,126.8,43.9
+rejected,Q28217374,The Parish,c36b6c14-dda4-411d-905c-a70d3bef0417,Prasad,142.7,50.0
+rejected,Q28232716,Performing Arts Building,79493295-c202-4d8f-9f92-aedc94134225,Kaul Auditorium,79.3,35.9
+rejected,Q28232743,The Grand Lodge Hotel,f9e48741-df75-4de5-a7c5-410df6a3b3e2,Ironworks Grill - Grand Lodge,9.1,59.1
+rejected,Q28451478,Wildwood,d72e677e-a557-4c81-bed7-8c77e1330aaa,Wildwood Restaurant & Bar,4.8,59.3
+rejected,Q28453024,United Artists Theatre,a2afee4b-8031-4eb5-a9ae-870184bccc6b,Brasserie Montmartre,131.8,47.6
+rejected,Q28453025,Playhouse,954e2b1b-084b-4af4-b2e7-b75e08a177b4,Bombay Chaat House,133.1,51.9
+rejected,Q43201092,Robin Hood Theater,31ef8632-a540-4304-bef1-0878c3bd627c,Sesame Donuts Cafe,67.3,45.2
+rejected,Q43201129,Regal Bridgeport Village Stadium 18 & IMAX,dce994aa-251d-4837-8046-34f6dbe98099,Regal Bridgeport Village,46.8,75.0
+rejected,Q29831950,Ilani Casino Resort,8ddbb37f-2a67-4423-87a3-1896d4526622,Cyber Quest at ilani,66.7,56.4
+rejected,Q30598076,Grüner,87830401-d9e7-4b85-97b0-f76f10e292f3,The Green Room,62.9,50.0
+rejected,Q49484528,Duniway City Park,a2b2fa0c-0d77-42a6-b76f-abe1f3177471,Duniway Track,122.4,66.7
+rejected,Q49484616,Durham City Park,511c9516-030e-4839-aff7-34fbc84e0493,Durham Park,104.1,81.5
+rejected,Q49484686,Dwight Parr Park,fd79578c-76d4-45f6-9069-1b9bf99330c3,Starbucks,96.5,32.0
+rejected,Q49485169,East Holladay Park,caf1eba7-3b06-4b1d-9aa4-332ef83aea5f,East Holladay Fenced Off-Leash Dog Park,99.2,63.2
+rejected,Q49485283,East Rockwood Park,a288d769-d644-431a-aa1f-58ff8f1e5e54,Davis Skatepark,40.6,42.4
+rejected,Q49485611,Ed Benedict Park,e5dd5110-b77e-4918-83dd-f13d5c74a25b,Portland Memory Garden,43.6,36.8
+rejected,Q49486484,Elk Rock Island Natural Area,9c783d53-df32-4fa1-8c29-2646e9419e73,Elk Rock Island,75.2,69.8
+rejected,Q15264274,Oregon Jewish Museum,9e97c01a-c2f2-4ea7-9bb2-6fceb0b4cab9,Eugenia Salomon P.c,52.8,35.9
+rejected,Q15917394,Gypsy Restaurant and Velvet Lounge,284ff1a5-eeed-4c7d-b6e2-9c7335faa8aa,Neighborhood Restaurant Group Llc,141.1,43.3
+rejected,Q43199618,Century 16 Eastport Plaza,c0c56990-6416-4e12-a67f-01d01b72d3d0,Tokyo-Ya Ramen,143.1,35.9
+ambiguous,Q43199623,Columbia Theatre,e52cc2b5-7bee-4df6-bd73-50b048eb2330,The Columbia Theatre,33.8,100.0
+ambiguous,Q43199623,Columbia Theatre,41bbe841-a31f-4f58-a693-a3a1a3649fd5,The Columbia Theatre,19.9,100.0
+rejected,Q43199634,Forest Theater,a56ca66c-c16e-4ab3-8162-044406c47bc3,Tualatin estate,91.4,48.3
+rejected,Q43199635,Hill Theatre,a1824b47-0ec1-4dd1-a81f-3d2b2bdd4260,Tall Trees Taphouse,79.1,58.1
+rejected,Q43199639,Ideal Theater,91aba331-7256-4ef6-ae36-e52652511be2,Urban Steel Kitchen and Bar,142.2,44.4
+rejected,Q43201086,Regal Sherwood Stadium 10,38e4c368-cedd-47db-9c60-8f22fd28c719,Regal Sherwood,18.1,71.8
+rejected,Q37935949,Fort Yamhill State Heritage Area,848d1576-5480-472b-92da-1c43983a2423,Juanita's Cafe y Neveria,112.7,46.4
+rejected,Q37939797,Willamette Stone State Heritage Site,ac69acca-ca05-4f63-afc2-bc1d32f52e01,Willamette Stone,31.6,61.5
+rejected,Q39045494,Farragut Park,5bb8c1ba-7bc4-42e0-b17b-2cb9e402c9c9,Farragut City Park,13.5,83.9
+rejected,Q49487148,Englewood City Park,adfb6fec-f637-40be-9fb9-a7740eb53864,Englewood Park,32.1,84.8
+rejected,Q49487346,Errol Heights City Park,73e800b8-3108-4ac8-8f04-4d7492dd7b7d,Errol Heights Community Garden,113.7,67.9
+rejected,Q49487445,Essex City Park,baa62f29-5294-41ba-b56d-e03aa1d5cd6c,Essex Park,42.2,80.0
+rejected,Q49488185,Falcon Park,c7ecc232-7820-4884-91e6-964d881d4dfd,Burlingame Park,131.4,53.8
+rejected,Q49488304,Fanno Creek Park,a408bdea-71d3-4432-9962-4af3cc2d18eb,Fanno Creek Greenway,112.4,72.2
+rejected,Q49488947,Feyer County Park,65b4228e-858e-46bb-a3ff-fdc211c8a882,Feyrer Park,135.3,71.4
+rejected,Q49488951,Fezett City Park,b16c39b8-a3fa-40dc-adfa-2409c07d7db6,Pioneer Park,148.9,28.6
+rejected,Q49493452,George Rogers City Park,86fde2af-b97f-4065-9dc5-da7606d83f0b,Oswego Creek,59.0,40.0
+rejected,Q49494008,Glen Echo Wetlands,7489bf44-3098-4c47-8e2e-78e47273ab67,Roadrunner Pizza,120.7,17.6
+rejected,Q49494046,Glen Otto City Park,e0142be6-1754-4fd3-ac0c-3082a7387de0,Glenn Otto Park,53.8,82.4
+rejected,Q49494226,Glenwood Park,00d764bf-2e1b-4fe9-8ded-8a9ebcb8d4e3,Glenwood Park playground,66.8,70.3
+rejected,Q49494867,Governor Tom McCall Waterfront Park,86b23f94-8680-4a7f-b884-da1abfe472f9,Waterfront City Park,127.8,61.8
+rejected,Q49495020,Granada Park,0da2fa15-0df3-4726-b9ec-648675c40a3a,Slicks Big Time Bbq Food Truck,43.3,23.8
+rejected,Q49495272,Grant Park,1cd3bd6b-bf59-4d69-b204-3e4f01435104,Grant Pool,21.5,70.0
+rejected,Q49490014,Floyd Light Property,f4fb8c38-acde-4ccd-9a3a-8c213cfaf932,Stark Fir Mobile Home Park,147.6,34.8
+rejected,Q49490172,Foothills City Park,3fe5290d-f72b-404d-b58f-407996266d40,Foothills Park,66.9,84.8
+rejected,Q49492423,Fulton Park,507ef86f-8fe7-4e92-a14b-3d7dd4355d66,Fulton Park Community Center,94.4,56.4
+rejected,Q49492556,Gabriel City Park,56615569-527e-4b1f-9622-4b028c229df4,Gabriel Park,113.3,82.8
+rejected,Q49492730,Gammans City Park,71c5ec8d-ed63-4ab0-94fc-5f3d50d218c0,Gammans Park,18.2,82.8
+rejected,Q49492792,Garden Home Recreation Center,d8168dda-851a-4196-962c-b444a5fdae0e,Dairy Queen Grill & Chill,146.4,34.6
+rejected,Q113581100,Depot Park,9f1e839f-c644-496d-bdeb-ed137ce44337,Depot Rail Museum,46.6,51.9
+rejected,Q113585277,College Nature Park,c1fb4aff-6bbe-42ee-96f1-08f617eb804e,Country Coffee Troutdale,108.4,46.5
+rejected,Q113585485,Lewellyn Park,eb464a48-b85e-4b50-8f69-12c75340040f,Sunrise Park,84.2,32.0
+rejected,Q113585494,Weedin Park,f870d88b-b654-4ec0-85f0-73550dcc8733,Weedin City Park,10.1,81.5
+rejected,Q111743365,Two Wrongs,c19cabb3-4432-417a-b6aa-956afabc9d6b,Two Wrongs Portland,13.0,69.0
+rejected,Q111788516,Favela Brazilian Cafe,520dc349-60e2-4271-ab28-3066b9bf9bd4,La Arepa,125.3,41.7
+rejected,Q111946137,Mama Đút,2e534c81-8acb-4c62-9e51-2555db4c4bef,Farm Spirit Llc,14.7,34.8
+rejected,Q111947825,Thơm Portland,5ddc9ecc-a678-4ad6-b961-a408608f659c,Nucleus Portland,122.5,55.2
+rejected,Q111949019,Lucier,407a9b14-6da1-4bd1-95b3-7a3700e56b0b,Cart Lab,80.4,28.6
+rejected,Q111949717,Cassidy's Restaurant and Bar,f48aca8f-ea55-4568-905a-ad67ee5378fb,Cassidy's Restaurant,2.1,54.5
+rejected,Q111950693,Stretch the Noodle,3f9e87a2-68c9-40cc-879c-37a682818bcb,Thai Consulate,51.8,43.8
+rejected,Q111951247,Radar,d6004948-40c8-4ae8-92b3-3122b7241533,Gravy,17.2,40.0
+rejected,Q111951357,Jacqueline,d6878efb-dd9f-48cd-8b55-fd465e98ee94,Quaintrelle,39.8,47.6
+rejected,Q111973099,Fenouil,7576d92f-dec0-469a-a28e-60028e913014,Fenouil Llc,17.8,77.8
+rejected,Q112205985,Frog & Snail,c83b49ab-dd54-474b-ba01-176b70dae6cd,Ding & Spice ,83.8,40.0
+rejected,Q112240014,Steeplejack Brewing Company,29ae49a0-b859-4542-95b7-4d47a17800ec,Steeplejack Beer,8.1,65.1
+rejected,Q112648996,Ruthie's,52135478-0361-4b8f-baec-00073a611e4d,Eugenio's,61.5,47.1
+rejected,Q112730512,Seastar Bakery,968a81a4-d1b0-4436-90df-2e201645715d,Lone Star Burger Bar,31.8,60.0
+rejected,Q49496784,Gum Drop City Park,4dc6fde7-49b7-4a4f-9c7e-12bfbf1f4541,Gumdrop Park,15.5,60.0
+rejected,Q49497631,Handy/Nechocokee City Park,c521382c-f084-41ee-9cea-a91b2a104660,Handy Park,37.1,55.6
+rejected,Q49497874,Harbor View City Park,a9a14438-3095-4b48-b90f-c0471add722b,Harbor View Property,147.8,68.3
+rejected,Q49498184,Harney City Park,cc9cf055-ff3b-4fa6-8c09-e05bcd6f9865,Harney Park,72.7,81.5
+rejected,Q49499250,Hazelwood City Park,b5286ef4-c85e-42ae-b191-79515783b05f,Hartke City Park,145.7,74.3
+rejected,Q49500382,Heritage Tree Park,5d743b82-b56a-41ce-b242-e6e58f4c455a,Alison Mckenzie Acupuncture And Herbs,133.8,29.1
+rejected,Q49500938,High Rocks City Park,5c9462be-2d53-4774-837d-a61e385ab7cd,High Rocks Restaurant and Lounge,137.9,62.2
+rejected,Q49501668,Hillsdale City Park,dd95540c-7943-4850-bbaa-f61e4fd21472,Hillsdale Off-Leash Dog Area,148.2,51.1
+rejected,Q6685176,Lotus Isle,889c72a7-bed0-4fb2-ab91-4ca1d9152ed5,Multnomah Falls,120.7,32.0
+rejected,Q49495490,Gray Park,dd95540c-7943-4850-bbaa-f61e4fd21472,Hillsdale Off-Leash Dog Area,103.5,21.6
+rejected,Q49496079,Greenridge City Park,b16c39b8-a3fa-40dc-adfa-2409c07d7db6,Pioneer Park,121.5,25.0
+rejected,Q49493397,George Himes City Park,fa74af95-e9ff-4961-beba-f0a14fafb136,Burlingame Park,70.3,48.6
+rejected,Q113579951,Woodale Park,83cd9dc3-f33f-4726-9246-d5b1abf1110a,Woodale City Park,18.8,82.8
+rejected,Q113580104,Mayors Square,4781c1fe-474e-4520-97d1-ff0f41a9401c,Mayor's Square City Park,9.3,70.3
+rejected,Q113168981,Isabel Pearl,25d65535-112e-4730-a5dd-5501aad7b4f1,Isabel Restaurant,10.7,66.7
+rejected,Q113309347,Batterfish,4e242bcd-f7f8-4951-9e36-b85d5c959a6a,Eris Cocktail Lounge,74.4,43.5
+rejected,Q49502487,Holman City Park,e5d77035-4fab-4bd8-b07a-8a4a60420a03,Holman Pocket Park,12.6,64.7
+rejected,Q49502880,Hoover Park,87a07323-4704-4517-a290-3baddb085316,Herbert Hoover Park,51.5,73.3
+rejected,Q49504495,Ibach City Park,dc775d1b-6434-4ea2-afe0-15a1d7d541fa,Ibach Park,67.5,80.0
+rejected,Q49504523,Icicle City Park,6552c955-b137-40a8-85ea-b9f44d327bf0,Icicle Park,66.8,81.5
+rejected,Q49505228,Intel Aloha Wetlands Park,f997114c-3b35-42d0-bba8-1551e7c13f05,West Coast Phillyz,107.3,41.9
+rejected,Q49505402,Iron Mountain City Park,bd132a79-3da9-4b44-bbe8-887812c2d798,Monte Ferro Winery,128.6,48.8
+rejected,Q49507359,Jefferson Street City Park,c36c208d-aaa0-421c-9893-aae8ffb19a3d,Blue Star Donuts,90.4,33.3
+rejected,Q49507924,Joel Perkins Park,8ab0d280-ed95-4482-ab79-a929fb8fd433,Cellar Door Wine Tours,143.6,41.0
+rejected,Q49508258,John Luby Park,5e053299-bc04-4bb7-a772-9e6df6c6ae10,John Luby City Park,97.6,84.8
+rejected,Q49508786,Jordan Park,a9cdf7c0-3a56-4aed-a037-001d73531a9f,Jordan Woods Natural Area,85.3,50.0
+rejected,Q49509075,Jurgens City Park,ae790f66-bb3a-448c-9e64-4f139aafdcfc,Jurgens Park,78.9,82.8
+rejected,Q49509777,Kelley Field,da46789f-0fcd-4e52-8ee5-01c31bf7a074,End of the Oregon Trail Interpretive Center,40.3,18.2
+rejected,Q49510328,Kern City Park,4aab572d-f0d8-4add-b508-35e099a87d7f,Kern Park,12.4,78.3
+rejected,Q49510659,Kiku City Park,0ea37a6e-6c9d-432d-8a59-f51bda01a8b4,Kiku Park,44.3,78.3
+rejected,Q49511030,Kingsley City Park,6194cead-2c8f-4a6e-a99e-5a9c4f66d019,Kingsley Park,9.7,83.9
+rejected,Q49511693,Knighton Square,ff81c09a-21b0-40aa-9eaf-61377728b889,Lightning Treats & Sweets,135.7,47.4
+rejected,Q49512713,Lafayette Locks County Park,0ad76e1a-83d3-4b4d-ae9f-94a6deb48999,Lafayette Locks Historical Park,104.5,75.9
+rejected,Q49512791,Lafky City Park,642d83bc-0f75-41c7-960b-80e938aed372,Lafky Park,27.8,80.0
+rejected,Q49512933,Lair Hill City Park,5fed6b65-9830-4a30-bb45-35e69a082d65,Lair Hill Park,15.7,84.8
+rejected,Q49513902,Lakeshore City Park,fa71ccc0-707b-4c92-b0ea-655db144e44a,Lakeshore Park,37.1,84.8
+rejected,Q49514498,Langley City Park,6552c955-b137-40a8-85ea-b9f44d327bf0,Icicle Park,86.0,64.3
+rejected,Q113680080,Hapa PDX,f08da698-5698-4af2-be8b-29796ba021e4,Ramen and Whiskey PDX,7.5,34.5
+rejected,Q116608504,Von Ebert Brewing,24019c91-1254-4ffe-8fb7-9345e8c9b460,Von Ebert Brewing Glendoveer + Kitchen,21.8,75.6
+rejected,Q122929767,Miss Delta,8e4d3af7-ecd7-4057-81e7-2a3cc7b7e9f1,Stash Tea-Retail,37.6,46.2
+rejected,Q125121306,Dundee Woman's Club,5344e467-0bc6-4816-a459-7e2dcd44ec1b,Lumpy's Tavern,42.4,42.4
+rejected,Q125982147,Bark City BBQ,5d1902af-0400-4973-906b-adc8fbfb9791,Starbucks,112.9,36.4
+rejected,Q126094279,Farm Spirit,2e534c81-8acb-4c62-9e51-2555db4c4bef,Farm Spirit Llc,42.9,84.6
+rejected,Q126113003,No Saint,458b0877-65b4-49c6-9ec6-fdfbb796a82e,Taco Machine,19.0,40.0
+rejected,Q126126589,Rangoon Bistro,b080c1d6-21b2-42fc-9bf5-9778fbeb59fe,Landmark Saloon,137.2,41.4
+rejected,Q126265088,HunnyMilk,a2853500-3bc8-4812-980e-ec5f6bf3790b,Wildwood Saloon,44.0,25.0
+rejected,Q126325685,Ki'ikibáa,26391da0-f2ae-4a28-aeaf-0fec39374af3,Su-kasa Sushi,114.9,36.4
+rejected,Q126362489,Pastificio d'Oro,99e63dcc-8c5b-4427-b569-31245d08d666,Ruth Hunter Studio,126.8,41.2
+rejected,Q126367258,G-Love,762fff71-e914-4507-81b4-70d734c42038,The Love Shack,13.1,50.0
+rejected,Q126375564,Sissy Bar,8e6bcd16-34bf-482a-bba2-a1d97bda7d96,Nectaris,50.8,30.8
+rejected,Q126489261,Rukdiew Cafe,716f2dad-a60e-4f85-9d50-57084568c018,Luke's Frame Shop,124.2,33.3
+rejected,Q126678978,Tanuki,ebf289a5-2944-4ab3-bc93-529278476e7a,Tinker Tavern,63.0,42.1
+rejected,Q126916031,Beaker & Flask,e0be6024-6c43-4962-94e5-d10cd802d4dd,Slammer Tavern,58.0,38.5
+rejected,Q126936036,Magna Kubo,7d5700ee-c75c-40e2-bfb5-679b63138a79,Broadway Cafe,107.2,44.4
+rejected,Q126946539,Sweet Lorraine's,a127665c-e865-471b-b92e-e45977e462a6,Bowery Bagels,123.9,41.4
+rejected,Q127040178,Kaede,ac66525b-32f4-4100-b32d-fc21f6c37ec1,Cafe 57 PDX,41.4,37.5
+rejected,Q127433574,Taste Tickler,48e04282-3aae-4e7d-bbef-b86275c11e3a,Caffe D'arte,93.6,48.0
+rejected,Q127433590,Tercet,c548d0a1-fefe-4c52-b709-6fc37725667e,Stewart Llc,58.9,47.1
+rejected,Q127433623,HeyDay,cc08e4d3-f66f-4420-9a11-1ec2c979a889,GNARLYS,25.8,30.8
+rejected,Q127603460,Ripe Cooperative,9e0ffe16-bd41-4df5-801d-15962dcca345,Expatriate,120.0,46.2
+rejected,Q127612789,Houston Blacklight,066d7d18-2ec2-4fe2-b63e-91984389835d,Night Light Lounge,14.3,55.2
+rejected,Q127691243,The Uncanny,11149d45-0b1c-40d2-bb4e-39e9727b9e96,Amnesia Brewing,103.6,27.3
+rejected,Q128765451,Mole Mole,0cc1e813-c5ee-4cd4-a86c-94fd78ef5d90,Boxer Ramen,148.8,50.0
+rejected,Q49516423,Liberty City Park,38c67277-4520-4800-ba93-0ccc8b427677,Commercial Park,115.3,50.0
+rejected,Q49516534,Library City Park,731f4c76-c435-48c5-96f1-414cc606997c,Carnegie Park,109.0,53.3
+rejected,Q49516563,Library Park,731f4c76-c435-48c5-96f1-414cc606997c,Carnegie Park,11.4,56.0
+rejected,Q49516567,Library Park,0f4f764b-e72d-4f3e-b925-b85fc1b58305,Lupitas Restaurant,119.2,31.6
+rejected,Q49516810,Lincoln Park,bfcc9391-e119-427a-9382-8b196c50abe1,Lincoln City Park,56.4,82.8
+rejected,Q49517081,Lincoln Park,942e09a8-bb6b-4d41-b856-a087af813b15,Pacific University Softball Field/Lincoln Park,58.5,41.4
+rejected,Q49518294,Little Woodrose Natural Area,f462b70e-ec8a-4d30-af51-f9b0d4073ae0,Little Woodrose Nature Park,46.4,80.0
+rejected,Q49518577,Locust City Park,f7ff409f-da18-4af1-9737-3cc43a9d870e,Wally's Chinese Kitchen,113.5,38.7
+rejected,Q49520675,Madrona Park,d7279735-da13-435d-abda-4992d6539986,Madrona City Park,43.8,82.8
+rejected,Q49520876,Main Street City Park,e6bf582b-7d90-4004-b208-56a993f9512a,Cooper Mountain Ale Works,54.4,43.5
+rejected,Q49521078,Mallory Meadows Park,7a52a02e-d94a-4fcf-a5c4-d1b154e80aee,Mallory Park,14.2,75.0
+rejected,Q49521451,Maple Park,bc856b6a-74ff-434c-aab9-7fdca3714940,Thom Park,70.6,42.1
+rejected,Q49521694,Marilyn's City Park,f40942c9-fdb3-40ef-a975-61b02827b168,Oly's Cafe & Treats,109.8,38.9
+rejected,Q49522699,Matrix Hill Park,8a7117bd-c2af-47fe-8581-a2f777d27a0e,Matrix Hill Woods Natural Area,30.0,60.9
+rejected,Q49524669,Memorial City Park,b463a19a-6de8-4a0c-b2b2-35d9ee9658a1,Wilsonville Dog Park,58.7,31.6
+rejected,Q49525478,Merrifield City Park,23e17376-5d13-41c3-aff7-abc2269e4907,Knott City Park,124.1,57.1
+rejected,Q49525726,Metzger County Park,312925a3-9fe6-49bb-9d0d-764b855b5e10,Metzger Park,78.7,77.4
+rejected,Q49525732,Metzler Park Recreation Site,b16fbcdc-34dc-4055-99c8-f1feb4e39f53,Clackamas Metzler Park,11.7,48.0
+rejected,Q49527376,Mocks Crest Property,98118af7-6c92-4141-adbf-47ad593aa816,Mocks Crest,83.5,71.0
+rejected,Q49527736,Montavilla Park,7a3183ed-95d4-4a7b-928f-e2dc6ca53e4b,Montavilla Park Playground,96.7,73.2
+rejected,Q49528800,Moulton Falls Park,f855fa22-9e25-4a2b-97c2-a2a73110cdd6,Bells Mountain Trail,90.8,57.9
+rejected,Q49529166,Mount Talbert Nature Park,c7c7afe3-49a4-4ac0-be6d-61e270e03603,Mount Talbert,80.9,68.4
+rejected,Q49529911,Murrayhill Powerline Park,dec9f52d-cbda-4f8d-8cd2-0db7863a6880,Murrayhill Park,81.0,75.0
+rejected,Q49532301,North Clackamas Central Park,32bfb22b-cde4-4575-b0c2-5d6fa4df51b6,North Clackamas Park,109.6,83.3
+rejected,Q49533048,North Willamette Neighborhood Park,bc6ae6aa-f5e1-44be-ace4-b92eae0fe620,North Willamette Park,103.4,76.4
+rejected,Q49533402,Northview City Park,4a849a10-f3ca-431f-9d85-5d615fec1153,Northview Park,123.0,84.8
+rejected,Q130372782,Pasar,05361b07-131c-44be-9099-8450f2c42c1b,Abyssinian Kitchen,60.0,40.0
+rejected,Q130372780,Alpenrausch,34501c28-ef56-4625-9613-ce3cc77ecf2d,Ava Genes,39.8,40.0
+rejected,Q130711718,Sure Shot Burger,a46304fb-9353-4417-86e8-bc9f87ffadff,Oakshire Beer Hall,10.9,52.9
+rejected,Q130857651,Caro Amico,c073eac2-f341-4fe2-a52a-c647466f0a4f,Caro Amico Italian Cafe,13.0,71.4
+rejected,Q130857831,Sammich,02e8048e-94b4-4e1e-8180-3ce67a21674f,Sammich | Portland,17.1,60.9
+rejected,Q131340533,Mémoire Cà Phê,81c5dc54-8688-423a-93af-e85118b33b33,Cliffs PDX,55.4,33.3
+rejected,Q131425508,Pan Con Queso,07083454-80cd-4b81-99b9-b92c96b34c67,Rocio's,122.8,40.0
+rejected,Q131443028,Tasty Corner Chinese Restaurant,ce0828be-51fe-40c1-85e6-2a8b611c38bf,Tasty Corner,13.6,75.0
+rejected,Q131447763,Monte Carlo,c8cc114a-8bc0-413d-8332-8bb1f132bfaf,Roseline Coffee,42.6,46.2
+rejected,Q131626060,Matt's BBQ Tacos,fb0c6ad1-916b-4c1f-bb54-2288f537024f,Hinterland Bar and Food Carts,2.8,35.6
+rejected,Q131717307,Leaky Roof Gastropub,25c6abc2-e3c1-45cb-b4e9-4b61f168b78f,Leaky Roof Gastro Pub,14.6,82.9
+rejected,Q131759174,Arden Wine Bar and Kitchen,d943b6b8-e270-4703-b329-ea5700146343,Tea Zone And Camellia Lounge,84.2,56.4
+rejected,Q131933140,Tōv Coffee,8337148d-efca-49fc-80b0-1eff3c88b6bc,Tov Coffee II,15.3,78.3
+rejected,Q131939365,Javelina,34fc6f80-1abb-4001-819d-5197810fd8c1,Javelina Indigenous Dining,37.6,47.1
+rejected,Q133825732,Frybaby,8ccc1842-feab-493d-a862-59f932b9d179,Pan Y Pueblo,23.3,31.6
+rejected,Q133864530,Turning Peel,e56255fc-ea7f-469b-a585-0259cd91d3db,The Turning Peel Pizza,5.5,80.0
+rejected,Q133871102,Fair Weather,20f174f0-8191-4335-a614-92aa2051141e,Double Barrel Tavern,145.1,43.8
+rejected,Q134376191,Cheese & Crack Snack Shop,d4e29169-3af5-4ccd-9c22-a37d6c48c72e,Hand To Mouth Enterprises Llc,84.4,38.5
+rejected,Q134522745,Cultured Caveman,022fe399-c0b4-4043-af59-5104996f5857,Carnation Contemporary,102.9,42.1
+rejected,Q134649125,De Noche,3428f15a-2264-4897-b69b-01004a4e45e1,Remedy Wine Bar,106.2,42.1
+rejected,Q134659654,Orange & Blossom,7aabf891-4796-4d08-b063-b96290891fc1,Orange and Blossom Patisserie,13.4,65.1
+rejected,Q134710886,Canton Grill,f1811187-2c24-40be-a900-c8263f9c62b5,Canton Grill Dragon Lounge,3.9,48.0
+rejected,Q134727576,Jade Rabbit,b95ff042-e4f6-4df6-ab45-c393a3f19092,Bread and Ink Cafe,38.0,50.0
+rejected,Q134984793,Legin,ec913ba2-4e69-4b60-90d0-3fdf36046f3a,East Portland Coffee Roasters,57.4,11.8
+rejected,Q134996111,New Cathay,47e2d1d2-b292-4741-91a9-85a5a6619e6e,Lindo Yucatan,146.2,43.5
+rejected,Q135244160,Farmer and the Beast,88727c54-f2ee-4d7b-a71f-e5ecbcdd517e,Farmer and the Beast- NW Portland,12.2,76.9
+rejected,Q135796849,Stoopid Burger,9e00ac83-2ab9-43ad-a237-1c3a554ab08b,Bridge City Cafe,40.0,48.0
+rejected,Q136955778,Gino's Restaurant and Bar,2b940472-69f5-4b2f-b6da-eb5aeb49e246,Bake On The Run,138.1,44.4
+rejected,Q137661595,Face Plant,90a93840-cb65-4f49-9c34-360ebf2d2528,"Swan Island, Portland, Oregon",16.0,37.8
+rejected,Q140445826,Gol (restaurant),a873f9b4-e9c7-45fe-9eb2-36f20a11eec1,Gol PDX,2.3,60.0
+rejected,Q141169838,Mirisata,bccf3763-900c-44b9-8485-8972093becb1,Pad Thai Kitchen,108.6,37.5
+rejected,Q141184071,The Malarkey,3f50cf08-56c4-4f37-a89a-14baf38a6a45,McCall Waterfront Park,134.2,46.7
+rejected,Q49535983,Oregon Electric Right of Way Path,abfe7a0f-98fb-4656-92c0-4bab1d4db199,Morasha - Melton,27.5,42.6
+rejected,Q49536358,Oswego Park,19258be6-a258-4568-99f7-16e0dbdc91fb,George Rogers Park,133.3,48.3
+rejected,Q49539983,Parrett Mountain Access,2ff7aad3-4c1b-40e8-b0a0-32534167a348,Willamette Greenway State Park,88.2,37.7
+rejected,Q113580419,Visionary Park,dcc62b6e-6a5e-454b-86d3-be4381eaff96,Beaver Creek Gallery,43.1,41.2
+rejected,Q49498483,Hart Meadows Powerline Park,4a821564-cedc-494e-9df7-9f1fc63e88b3,Summercrest East Park,58.0,50.0
+rejected,Q49498577,Harvard City Park,16a76a8d-88bb-400b-a554-71d514609859,Harvard Park,138.0,82.8
+rejected,Q49499217,Hazel Dell Park,0ae6b699-b431-4015-9cef-2efbb015c6fe,Hazel Dell Community Park,48.6,75.0
+rejected,Q49516175,Lewellyn City Park,eb464a48-b85e-4b50-8f69-12c75340040f,Sunrise Park,107.0,26.7
+rejected,Q49523924,McLoughlin House,44ccdef7-3209-4ffc-9326-af07972e837c,McLoughlin House - Fort Vancouver National Historic Site,4.3,45.7
+rejected,Q49524002,McNary City Park,cb38a29e-60e2-489a-a6d8-f3884ffd818b,McNary Dog Park,47.9,77.4
+rejected,Q49541408,Periander Park,4a6571ae-25c5-48a1-89e3-343e53ba3bf9,Portland Heights Park,14.5,57.1
+rejected,Q49542257,Piccolo City Park,c76a189a-41ec-4e67-bac7-95052b6290fc,Piccolo Park,75.5,82.8
+rejected,Q49543186,Pioneer City Park,b16c39b8-a3fa-40dc-adfa-2409c07d7db6,Pioneer Park,111.7,82.8
+rejected,Q49543191,Pioneer Community Center,6381eaf2-746d-4d68-a47f-884d11b78538,Richard Bloom Sr Tots Park,136.2,24.0
+rejected,Q49543437,Pioneer Park,f6548a1e-ee1e-4d0b-bedf-676f19c150ec,Burger King,58.1,34.8
+rejected,Q49545233,Portland Police Memorial,41298180-0e4a-4d86-8b41-4ba39d0a2490,Gastro Mania SW Portland,101.4,50.0
+rejected,Q49545246,Portland Womens Forum State Park,be04f6ce-9143-4c75-b341-c097c55bf232,Portland Women's Forum State Scenic Viewpoint,113.7,67.5
+rejected,Q49552773,Rockwood Central Park,15cf5813-6901-4c5a-8b38-7746a4626ef7,Rockwood Central Park Disc Golf,104.1,80.8
+rejected,Q49552816,Rocky Butte Natural Area,f03d2814-e175-4cd7-a52f-f19a10f7620a,Joseph Wood Hill Park,39.9,31.1
+rejected,Q49553130,Rogers Park,cbd8e1c9-d104-460e-88e7-7a68aadba228,"Rogers Park, Forest Grove",3.6,62.9
+rejected,Q49553618,Rose City Park,592bba93-3548-4ad3-92ea-d2433d69f6a4,Rose City Park Baseball and Soccer Field,24.8,51.9
+rejected,Q49553808,Roselawn City Park,958ab4f4-7706-4bee-b1df-425a7c3032a6,Kings Corner (aka Roselawn Park),4.8,66.7
+rejected,Q49553824,Rosemont Bluff Natural Area,35f7579c-c042-41dd-9acf-b89b1fd2b945,Frazer Park,66.5,26.3
+rejected,Q49553990,Rossman City Park,ccd429a2-2480-430c-9d39-86fa24be3f0c,Rossman Park,68.9,82.8
+rejected,Q49555087,Ruth Rose Richardson Park,88b11f74-915b-4410-b69a-16fbf5c59c0e,Ruth Rose Richardson Memorial Park,42.4,84.7
+rejected,Q49555276,Sacajawea Park,6b46fd80-b91b-4576-b93e-8134d8b405ee,Sacajawea Fenced Off-Leash Dog Park,111.2,57.1
+rejected,Q49555870,St. Johns Park,f0a90def-884a-4f69-9b56-10c3a7b1f35b,Saint Johns City Park,29.8,76.5
+rejected,Q49556679,Sam Jackson Park,f644d466-6f85-4369-b0aa-a003561aa2fe,Peter O. Kohler Pavilion,120.2,30.8
+rejected,Q49565079,Stafford City Park,327da466-4db3-4bfc-8ccd-5709946a63ee,Rose Farm Museum,90.9,29.4
+rejected,Q49566031,Steamboat City Park,9c259586-ccf7-412d-8c4a-9de6bb079d1e,Steamboat Park,90.3,84.8
+rejected,Q49566164,Stephens Creek Natural Area,c4466c74-1b7d-495d-812e-25f8d6acf437,Stephens Creek Nature Park,44.6,79.2
+rejected,Q49566490,Stocker City Park,578e3ec5-5a94-4d13-89be-852297036384,Crossroads Coffee Cafe,94.5,29.4
+rejected,Q49566563,Stone City Park,b16c39b8-a3fa-40dc-adfa-2409c07d7db6,Pioneer Park,133.5,59.3
+rejected,Q49566815,Strathmore Park,548bf046-982f-4f7a-865d-7bc613936d7b,Argay Park,59.9,40.0
+rejected,Q49567272,Summerlake City Park,ce4be91f-94cb-45f9-adf7-452676a367d4,Summerlake Dog Park,109.1,82.1
+rejected,Q49567684,Sunrise Park,7f923c61-139a-43a6-b813-ba0418d25f61,Sunrise City Park,23.6,82.8
+rejected,Q49567793,Sunset City Park,d8ceba04-632a-409e-9e33-36c7717d3eb0,Woodhaven Park,75.6,40.0
+rejected,Q49569596,Tennis Court Park,3edae9c0-7468-44f5-91a0-da6a3ad6041a,D C Latourette Park,31.6,55.6
+rejected,Q49569784,Thatcher/Loomis City Park,94da0580-f6af-4244-9645-85b1e543fe5f,Thatcher Park,69.6,68.4
+rejected,Q49571869,Trenton Park,f85b03a0-b302-440c-9920-bddb4ab8fa9d,Trenton City Park,81.1,82.8
+rejected,Q49572294,Tualatin Commons Park,7527cdfa-51ac-47b9-9d60-8cc6f55c708f,Peet's Coffee & Tea,39.3,36.8
+rejected,Q49572292,Tualatin Commons,a8b20f73-e6fe-4ac0-96e1-5ed1a8b7f901,Tualatin Lake at the Commons,87.2,72.7
+rejected,Q49572296,Tualatin Community Park,cce300d9-57af-40d1-a73e-030d57bcef0d,Tualatin Dog Park,95.0,75.0
+rejected,Q49572302,Tualatin Valley Water Dist Athletic Fields,c6efc61f-ee57-4f00-b37f-4eb69cacaa98,Water District Park 9v9,72.6,46.2
+rejected,Q49572875,Two Plum Park,091f2e11-1b5d-40da-a2f4-8d8dfae45792,Two Plum City Park,19.4,83.9
+rejected,Q49569951,The Milwaukie Center,e2033619-e4c7-4516-b1e2-5ed25f047044,North Clackamas Park Complex & Ball Fields,107.6,25.0
+rejected,Q49570298,Thompson Park,ee290580-cd99-4a31-a698-b51909e0f0fc,Thompson City Park,142.1,83.9
+rejected,Q49571499,Town Center City Park,45aad0ff-e78a-401e-831a-0e1463a77cf9,Wilsonville Parks & Recreation Administration Offices,98.4,41.7
+rejected,Q49571720,Tranquil City Park,98ef2100-5d7b-4411-9863-8d94c8488fe6,Tranquil Park,63.0,83.9
+rejected,Q49540371,Paula Jean Powerline Park,95f2b6c9-a176-4aa7-904d-b8e6f5ea1261,Paula Jean Park,127.5,75.0
+rejected,Q49540943,Pelfry City Park,a3c5787e-ea43-48e0-9bbc-6bdeec0f024b,Portland Fairview RV Park,76.9,48.8
+rejected,Q49545564,Powell City Park,3dc32e3b-c7ff-40ad-9474-cd0b70a04935,Powell Park,44.3,81.5
+rejected,Q49547765,Raleigh Park and Swim Center,0537f185-0b4e-4d84-b085-18d959437ce6,Raleighwood Park,79.4,59.1
+rejected,Q49548437,Raymond Park,ed651d2a-a4eb-4e07-a139-0bfc65f22e79,Raymond City Park,95.9,82.8
+rejected,Q49549520,Reuter City Park,e076eec3-935e-42b8-80d8-78c228c9703f,Reuter Farms Park,128.2,72.7
+rejected,Q49550005,Richmond Natural Area,c49a1ddb-ba00-4660-a1dd-511ab624239f,Lee And Allie's Bar & Grill,74.7,40.0
+rejected,Q49550224,Ridgewood View Park,855a5443-df71-41e8-a1fd-18d41c04823f,Ridgewood Park,139.8,84.8
+rejected,Q49550662,River Fox City Park,404d06fa-8c49-499e-822c-7ebf03777ae6,River Fox Park,14.6,84.8
+rejected,Q49550839,River Run City Park,b22b4f8e-3e1a-4ff4-a4e3-623530ca3de4,River Run Park,30.1,84.8
+rejected,Q49557882,Sara Hite Rose Garden,e2033619-e4c7-4516-b1e2-5ed25f047044,North Clackamas Park Complex & Ball Fields,113.4,32.8
+rejected,Q49558386,Scheupbach Powerline Park,ff57f810-6f2d-45f0-b746-13b04f61f41a,Schuepbach Park,26.6,70.0
+rejected,Q49559617,Senior Citizen Park,731f4c76-c435-48c5-96f1-414cc606997c,Carnegie Park,140.9,50.0
+rejected,Q49559625,Senior Estates Park,46b61f3e-7868-4751-a931-a734cb2914cf,"Silverfalls, Silverton Oregon",126.4,34.0
+rejected,Q49563017,Somerset Meadows Park,6005fe12-9056-4308-b42c-7d7c0397eec6,Somerset West Park,99.5,66.7
+rejected,Q49563032,Somerset West Swim Center/Park,6005fe12-9056-4308-b42c-7d7c0397eec6,Somerset West Park,42.6,75.0
+rejected,Q49563828,South Waterfront Park,cc51b278-df94-43f0-b5b3-87d460b28a67,Sw Waterfront Portland Oregon,149.0,60.0
+rejected,Q49563876,Southeast Community Park,008e4b08-28e4-424c-857e-9e48dc675ed3,Hope's Bake Shop,113.4,30.0
+rejected,Q49564094,Southwest Community Park,4a855c7b-8d94-46de-80ea-0d638c9640df,Cedarville Inn,144.4,21.1
+rejected,Q49564142,Southwood City Park,b8a4a656-c677-4c3f-8fb8-274c25edef6b,Southwood Park,38.1,84.8
+rejected,Q49564486,Sportcraft City Park,bb31fdb8-c815-4943-a3eb-dbf0a51cbecc,Jon Storm Park,64.5,52.9
+rejected,Q49581513,Willow Park,0268416f-cb8a-412f-a7af-08d24de3774d,Peet's Coffee & Tea,143.4,14.3
+rejected,Q49581654,Wilshire City Park,56bd2d16-a81d-459e-abaa-8326b0c66f80,Wilshire Park,11.7,83.9
+rejected,Q49582033,Windstorm City Park,b16c39b8-a3fa-40dc-adfa-2409c07d7db6,Pioneer Park,19.0,51.6
+rejected,Q49582258,Wintler Community Park,e27ef045-ccf0-4061-adaa-f678af4b6d90,Columbia River Beach,133.2,42.9
+rejected,Q49582597,Woodard City Park,63ceb64c-12df-4059-a38e-dcb2361f0bf3,Woodard Park,117.6,82.8
+rejected,Q51211701,Dr. Forbes Barclay House,e7a2f942-5089-48f6-8a3f-984f9d5b22db,Cypress Oregon City,122.4,42.9
+rejected,Q51778076,Portland Art Museum Main Building,514cf4d6-cd49-45b3-acd8-7d24344bee42,Portland Art Museum,6.2,73.1
+rejected,Q105081286,Duniway Park,a2b2fa0c-0d77-42a6-b76f-abe1f3177471,Duniway Track,109.1,80.0
+rejected,Q102368861,Pied Cow Coffeehouse,a66ebd25-6fe6-45ea-82ac-7316546eb204,The Pied Cow,7.7,57.1
+rejected,Q104144782,"Coffee Time (Portland, Oregon)",ae179d4c-a851-4027-80c3-c7557e20b14a,Coffee Time,10.8,57.9
+rejected,Q104829751,"Ox (Portland, Oregon)",4a8a9a82-3992-430d-8b70-562922c0c606,Hawthorne Theater,67.1,34.3
+rejected,Q104830762,Kachka (restaurant),53dfe983-b199-4c15-b17e-76db48fe8a4b,Harhar,88.4,50.0
+rejected,Q104843047,Tasty n Daughters,c49a1ddb-ba00-4660-a1dd-511ab624239f,Lee And Allie's Bar & Grill,124.6,38.9
+rejected,Q104848553,Departure Restaurant and Lounge,7e60a81f-cedd-4d81-abf3-fdf70443e49d,Red Star Tavern and Roast House,87.8,54.5
+rejected,Q104876024,The Original Dinerant,9d737722-2cf1-41c9-a3fb-71ef5b4f67e7,Portland Penny Diner,110.5,54.1
+rejected,Q104880189,Martin Luther King Jr. School Museum of Contemporary Art,c358f66e-3b97-415f-ae7f-f113ee8e5b4b,"Dr. Martin Luther King, Jr. School Park",72.7,68.1
+rejected,Q104881086,Andina,98d3384f-a8db-4da5-914a-2c03530f7b4a,Manzana,90.9,61.5
+rejected,Q104902744,Ataula,4f6e509e-fdcd-4720-9e7d-f0b016b9f0c7,Langbaan,9.0,42.9
+rejected,Q104902878,Portobello Vegan Trattoria,225627f6-ffda-4d7a-b528-1295e4761567,Taqueria Los Gorditos,86.2,51.1
+rejected,Q104903215,Pink Feather,85c0b04b-4f70-4524-afa6-743cfffca474,The Pink Feather Restaurant & Lounge,4.7,68.6
+rejected,Q78914446,Grand Lodge TheaterAt Grand Lodge,f9e48741-df75-4de5-a7c5-410df6a3b3e2,Ironworks Grill - Grand Lodge,30.9,53.3
+rejected,Q86755708,The Dude Ranch,4f3beb7e-ab17-4bae-a243-f5912340482d,La Rumba Restaurant,131.9,33.3
+rejected,Q94268977,World of Speed,64945314-b2e6-4dba-bf5b-471b0747c526,World Of Speed Museum,24.6,80.0
+rejected,Q96395204,Nel Centro,193f2085-6fd0-4d83-baa8-b7979e723bad,Raven & Rose,137.8,50.0
+rejected,Q96401667,Revelry,68e92743-9b9c-4f96-bd32-bce0f217f896,Fausse Piste Winery,129.0,30.8
+rejected,Q97360108,Darcelle XV Showplace,86e02bba-3286-48c4-9406-08855ffb4d0d,Portland Arts Collective,144.9,44.4
+rejected,Q98574727,Toro Bravo,6632d939-1820-48f4-9324-58400c891916,Wonder Ballroom,21.4,48.0
+rejected,Q100528068,Portland Memory Garden,f0c0be51-ae44-48f4-8450-b2741953b095,Ed Benedict Skatepark,125.5,32.6
+rejected,Q100587786,Community Park,f4a4d56e-eee5-4dcb-b4be-b3a1b15e256f,Overlook Park,135.1,44.4
+rejected,Q100726212,Kronberg Park,c3f3da91-84c6-4d1d-b417-ba20b38b3c20,The River Road House,101.7,34.5
+rejected,Q100763661,Captain George Vancouver Monument Plaza,ca52d7d4-f7fc-4659-8c66-5f0e54d35f19,"Choose Fun, Inc",29.0,34.0
+rejected,Q101445596,The Roxy,c9b39475-756e-47db-8fdd-9e9f73743a95,Lardo,102.2,44.4
+rejected,Q65554093,Kenton Park,c24545f5-67b9-4ba2-a2d3-a39e17238937,Kenton City Park,84.8,81.5
+rejected,Q59451337,"Columbia Theater (Portland, Oregon)",88248278-ce3c-40cf-b444-f98cd85d0331,Brody Theater - Portland,105.8,74.1
+rejected,Q62572135,Portland Museum of Modern Art,d3fcb52c-7374-4198-ab55-f58af9317e4f,Sumner-Albina Park,27.9,34.0
+rejected,Q65071748,The Goose,5e0881b3-1a34-44db-98b7-29aad93506e4,Moonshot Tavern,4.7,40.0
+rejected,Q65079491,Bit House Saloon,0f082b55-becc-4fe3-962d-464faff2fefa,Bit House Collective,15.1,50.0
+rejected,Q55138239,Organ Grinder Restaurant,d3754f93-eab1-43f5-b4c6-5a3d545b72e8,Don Pedro,146.3,36.4
+rejected,Q55403814,Errol Heights Park,73e800b8-3108-4ac8-8f04-4d7492dd7b7d,Errol Heights Community Garden,102.0,54.2
+rejected,Q58030579,Town Club,3ce59f96-465c-4819-b63d-9f3e525b0afb,Washington Park Inn,141.0,28.6
+rejected,Q108402723,Stocker Park,578e3ec5-5a94-4d13-89be-852297036384,Crossroads Coffee Cafe,73.7,20.7
+rejected,Q108597617,Georgian Room,ed261e74-dfce-40d2-a4d6-c902267ae957,Rialto Pool and Poker Room,142.4,51.3
+rejected,Q107071961,Laurelwood District AVA,594f94da-3ba0-4f52-9012-8df609deb59b,Ponzi Vineyards,57.2,26.3
+rejected,Q107104695,Tualatin Hills AVA,71b3b487-967d-4a57-a161-02e40d6193f5,David Hill Vineyards and Winery,11.7,44.9
+rejected,Q107145289,Wei Wei,28413ab5-59aa-4f3a-89f1-3ebb5f437be9,Wei Wei - A Taste of Taiwan,6.6,43.8
+rejected,Q107222347,Cross Park,8266cee6-c0d9-441c-a8bf-7ef8ab6f9976,River Park,100.6,40.0
+rejected,Q107366473,Spella Caffè,771302f3-7635-4ed4-a174-fe2c21f85e3d,Peet's Coffee,92.8,48.0
+rejected,Q105409464,Henry Thiele Restaurant,def816d2-4e27-4532-b7a4-f0904cb041fa,Khao Soy Thai Restaurant,123.3,48.0
+rejected,Q105409477,The Pagoda,bf2def66-482f-48ac-9d78-14dfeca4b54a,Xiao Ye,96.5,30.8
+rejected,Q105438939,Walk of the Heroines,a047dab3-3fbd-4d1a-94a4-375097e0ead4,NomNom  Steam Buns,105.5,43.2
+rejected,Q105563254,Ate-Oh-Ate,714765f5-ab18-4cca-af10-315dc12d43a2,Heart Coffee (Woodstock),42.6,37.5
+rejected,Q106207765,La Carreta Mexican Restaurant,6da8ab3e-525c-4d0e-b3cb-829e8a7682a1,La Carreta Mexican Restaurant Portland,3.0,64.3
+rejected,Q106336943,Masia,1f9ebba6-14b5-4aef-b616-02e5813c4b8c,Mucca Osteria,94.1,55.6
+rejected,Q106435303,Palomar (bar),6a71379b-1cbc-47dd-b90f-7e807b7f5c46,Marsee Baking,71.3,40.0
+rejected,Q106571393,"Long Park (Molalla, Oregon)",23e7c75d-d4cf-4a53-956b-7566471832f1,Leonard Long Park,54.9,58.5
+rejected,Q106639625,Sunshine Tavern,5851de41-f94d-4005-b09e-df185da1954c,Kanji Fusion Restaurant,5.6,51.9
+rejected,Q106652362,East India Co. Grill and Bar,982efc73-1cce-42dc-bfed-412d0890ab29,East India Co. Grill & Bar,7.0,72.2
+rejected,Q106679040,Akadi,20b91bc0-f100-4136-a547-6c09e0d0c23f,AKADI PDX,3.5,71.4
+rejected,Q106679058,Abyssinian Kitchen,d8f3f366-b1d1-4c99-8661-03aa02f7eb5b,Pastini,142.7,58.8
+rejected,Q106688813,Botanist House,0496f9a4-bd4e-4efc-91e8-c462a571062b,Botanist,17.6,72.7
+rejected,Q106770887,Fong Chong,a6b9b5b8-dfe2-4e9c-b77e-52a2a1907624,Ford's On 5th,142.1,43.5
+rejected,Q106778724,Berlin Inn,fc2034c5-8ac2-45ac-acfc-75ad7e5e22b1,Bear Paw Inn,108.0,63.6
+rejected,Q106935357,Fish Grotto,5518cbe4-3670-4611-b57f-e1a70ce9f193,Sand Bar at Fish Grotto,13.9,64.7
+rejected,Q106935620,Eem,e661e4ad-ca4d-415c-b3e6-ce7cdc5555ee,EaT: An Oyster Bar,39.5,25.0
+rejected,Q49574152,Vance Park,bc228272-4d59-422a-bd70-687b5338df1f,Park Place Cafe,123.0,80.0
+rejected,Q49574153,Vancouver Lake Park,e2556529-f90a-488b-90be-6060a998707f,Vancouver Lake Regional Park,22.8,80.9
+rejected,Q49574314,Ventura City Park,a42fd9e6-6aef-48b0-919b-f58130a3a782,Ventura Park Virtual Tree Tour,113.2,51.1
+rejected,Q49574418,Vernon Ross Veterans Memorial,d9c38f9f-f0ed-4b8b-a7d1-c40e11b07026,The Ambassador Restaurant & Karaoke Bar,35.5,44.8
+rejected,Q49574428,Vernon Tank Playground,bb25aaaf-c4be-4471-ad0b-e5f5f78019c3,Playground,47.8,62.5
+rejected,Q49576405,Wallace City Park,014e2b67-ab52-4e31-a354-2f743305fc2a,Wallace Park,19.8,82.8
+rejected,Q49576539,Walnut Tree City Park,f2455d29-08e1-4db4-b26d-135e53528f62,"St Helens, OR (Columbia)",80.4,38.1
+rejected,Q49576631,Waluga Park East,7b3d7445-ddc2-416a-9be9-07df80ed31c4,Waluga Park,73.4,81.5
+rejected,Q49576977,Washington City Park,5c3adbbc-0c0f-4d92-8fbb-3b20912a8c93,Archery Range Washington Park,65.3,73.5
+rejected,Q49577495,Waterfront City Park,b4e3d981-a387-4d96-9085-a7f20539299b,Proof Reader Whiskey Craft Kitchen,127.5,39.1
+rejected,Q49577531,Waterhouse South Powerline Park,589c680d-b451-4369-a1a3-94574973317d,Waterhouse Park,86.1,65.2
+rejected,Q49578965,West Portland Park Natural Area,abdf7f58-dbfc-4433-aa19-8021f638558a,Loll Wildwood Natural Area,127.9,56.1
+rejected,Q49579347,Westlake City Park,f8e2fb32-12e5-4f48-8aad-95e0c14c884e,Westlake Park,123.9,83.9
+rejected,Q49579460,Westridge City Park,1ebb2ddf-1d4f-4466-a308-b9c556f00346,Westridge Park,38.1,84.8
+rejected,Q49579806,Whipple Creek Park,f824ef96-7eb8-4aa9-a805-7908b1d3e893,Whipple Creek Regional Park,71.9,80.0
+rejected,Q49580803,Wilkes City Park,ebe63b15-7b4e-42f9-8cb0-dce5d1aacf16,Wilkes Park,50.8,81.5
+rejected,Q105320824,Ping,ef89147d-19aa-40cc-a296-b920f645bc43,L’ Orange,118.6,33.3
+rejected,Q69680058,Tapalaya,98cc708a-4a4f-43a2-8444-4c67d5dbc568,Tabla,120.6,61.5
+rejected,Q78355345,Shine Distillery and Grill,956c8ee7-b349-4614-808a-0f57378b746b,PDX Sliders,23.8,45.2
+rejected,Q14709118,Newell House Museum,60659bdb-5e9b-4da1-be3c-5bb54dc2a7a5,Newell Pioneer Village,28.3,39.0
+rejected,Q49482800,DeNorval Unthank City Park,dd0fe451-9793-438e-bed7-a2715ad52f2a,Unthank Park,124.4,63.2
+rejected,Q108782183,Stammtisch,ab700fa4-9b38-435b-b696-85b7215cd741,Mikiko Mochi Donuts,92.8,34.5
+rejected,Q108841616,Silver Dollar Pizza,34f6d227-74e6-4124-aa84-1b8a4e08191c,Silver Dollar Pizza Company,2.6,82.6
+rejected,Q108904951,Jojo,db952825-4ea2-4a33-925b-c01dbb340823,Jojo Food Truck,60.3,42.1
+rejected,Q108933729,Zefiro,8fa6db24-83b5-4c72-966d-fcac4e7728e7,Enso Elite Inc,128.4,30.0
+rejected,Q109001349,Nacheaux,8009124c-dd28-4c99-814b-43c6e71f6a55,The Essence of China,45.1,33.3
+rejected,Q109058131,Gado Gado,dcde172e-1c68-4f98-abd1-8f0a40ada53f,Shandong Restaurant,121.5,47.1
+rejected,Q109116475,Gilt Club,6715810d-60a2-4bb3-8902-3a047d38f7e3,Curiosity Club,126.4,60.9
+rejected,Q109237021,Chicken and Guns,f3039955-de25-46e3-9c82-e47729259c96,The High Dive,47.4,40.0
+rejected,Q109254653,Kim Jong Grillin',3cce980e-c436-4cd2-a346-b073f2879d8b,Nine Gallery,131.9,42.9
+rejected,Q109256534,Kee's Loaded Kitchen,5877b79a-4715-470a-b307-a3cba3b4fa14,Sushi Love,80.3,45.5
+rejected,Q109974746,Stacked Sandwich Shop,151761a9-2843-42ab-aca8-f54285f8b53e,Nossa Familia Coffee,20.6,29.3
+rejected,Q110233074,Dóttir,fd44320f-04fa-49b8-a3d2-b4f199a350d0,Golden Lotus Thai Kitchen,89.1,34.8
+rejected,Q110281483,Shanghai Tunnel Bar,772030f7-31a7-48f6-9d30-ace40bb5d6b9,Shanghai Tunnel Bar & Venue,2.0,75.0
+rejected,Q110291545,Shut Up and Eat,f08da698-5698-4af2-be8b-29796ba021e4,Ramen and Whiskey PDX,8.3,38.9
+rejected,Q110323954,Bombay Cricket Club,9773b31d-a25d-4652-a3ef-b303d797644a,GM Market,147.1,42.9
+rejected,Q110324125,Lovely Hula Hands,b993b1fb-72e5-44e8-a487-7993030e8d13,Sea Breeze Farm,2.0,25.0
+rejected,Q110324687,El Cubo de Cuba,1453a904-a8bd-4501-87ec-bf86726bd3e6,Bazi Bierbrasserie,76.4,36.4
+rejected,Q110413840,Cafe Azul,74495658-e22f-48b8-aa93-6ebe49f004aa,La Taverna,145.9,42.1
+rejected,Q110442994,Dirty Lettuce,d8be4dd3-f9db-470e-ab1c-29628d9291bf,Red Sauce Pizza,63.3,42.9
+rejected,Q110517263,Lonesome's Pizza,eb337b88-c541-4f1a-a55c-d2adbbace4c1,Spin Room,97.7,48.0

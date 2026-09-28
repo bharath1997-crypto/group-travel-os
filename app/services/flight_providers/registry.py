@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from threading import Lock
@@ -18,6 +19,10 @@ from app.services.flight_providers.travelpayouts_provider import TravelpayoutsFl
 from app.services.flight_providers.protocol import FlightProvider
 from app.services.flight_providers.types import ProviderStatus
 from config import settings
+
+logger = logging.getLogger(__name__)
+
+_DEFAULT_PROVIDER_ID = "duffel"
 
 
 def _utc_now_iso() -> str:
@@ -114,13 +119,22 @@ def register_provider(registration: FlightProviderRegistration) -> None:
 
 
 def enabled_providers() -> list[FlightProvider]:
+    """Return enabled adapters. Skip extras that lack credentials; keep Duffel if listed."""
     enabled_ids = configured_provider_ids()
     providers: list[FlightProvider] = []
     for provider_id, registration in _REGISTRY.items():
         if provider_id not in enabled_ids:
             continue
-        provider = registration.factory()
-        if provider.health_check().status == "unconfigured":
+        try:
+            provider = registration.factory()
+            health = provider.health_check()
+        except Exception:
+            logger.warning("Flight provider %s failed health check; skipping", provider_id)
+            continue
+        # Duffel is the baseline adapter. Keep it when enabled so search/booking
+        # can still run (and report unconfigured themselves). Skip only extra
+        # providers that have no credentials, so one missing key cannot empty the list.
+        if health.status == "unconfigured" and provider_id != _DEFAULT_PROVIDER_ID:
             continue
         providers.append(provider)
     return providers

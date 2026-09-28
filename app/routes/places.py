@@ -3,7 +3,9 @@ app/routes/places.py — Endpoint for searching nearby points of interest.
 """
 from fastapi import APIRouter, Query
 
+from app.schemas.place_spine import PlaceSpineDetail
 from app.schemas.places import PlaceResolveRequest, PlaceResolveResponse
+from app.services.place_spine_service import PlaceSpineService
 from app.services.places_nearby_service import PlacesNearbyService
 from app.services.place_wikipedia_service import PlaceWikipediaService
 from app.services.live_search_taxonomy_service import taxonomy_for_api
@@ -145,4 +147,24 @@ async def get_wiki_summary(
         )
     except Exception as exc:
         raise AppException.bad_request(f"Wikipedia lookup failed: {str(exc)}")
+
+
+@router.get("/places/spine/near", response_model=PlaceSpineDetail)
+def get_place_spine_near(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+    radius_meters: float = Query(50, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
+    """Nearest Overture spine row within radius — map picks without tile gers_id."""
+    return PlaceSpineService.get_nearest(db, lat=lat, lon=lng, radius_meters=radius_meters)
+
+
+@router.get("/places/spine/{gers_id}", response_model=PlaceSpineDetail)
+def get_place_by_gers_id(
+    gers_id: str,
+    db: Session = Depends(get_db),
+):
+    """Overture data-spine row for PlacePanel (second pass after map tap)."""
+    return PlaceSpineService.get_by_gers_id(db, gers_id)
 

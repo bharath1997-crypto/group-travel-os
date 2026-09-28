@@ -11,9 +11,12 @@ from typing import Any
 
 import httpx
 
+from app.services.live_capital_level import capital_category_label
 from app.services.live_search_taxonomy_service import (
     category_osm_queries,
     get_category_by_key,
+    merged_osm_queries_for_category,
+    overpass_keys_for_category,
     resolve_category_from_query,
 )
 
@@ -73,6 +76,11 @@ def normalize_tags(tags: dict[str, Any]) -> str:
     public_transport = tags.get("public_transport")
 
     if amenity:
+        if amenity == "townhall":
+            name_lower = str(tags.get("name") or "").lower()
+            if "capitol" in name_lower:
+                return "Capitol"
+            return "Town hall"
         if amenity == "place_of_worship":
             religion = str(tags.get("religion") or "").lower()
             if religion == "christian":
@@ -132,6 +140,7 @@ def normalize_tags(tags: dict[str, Any]) -> str:
             "gallery": "Gallery",
             "viewpoint": "Viewpoint",
             "artwork": "Artwork",
+            "picnic_site": "Picnic site",
         }
         if tourism == "attraction" and "beach" in str(tags.get("name") or "").lower():
             return "Beach"
@@ -145,6 +154,13 @@ def normalize_tags(tags: dict[str, Any]) -> str:
             "castle": "Castle",
             "ruins": "Ruins",
             "building": "Historic building",
+            "archaeological_site": "Archaeological site",
+            "fort": "Fort",
+            "city_gate": "City gate",
+            "tower": "Tower",
+            "manor": "Manor",
+            "church": "Historic church",
+            "heritage": "Heritage site",
         }
         return historic_map.get(historic, historic.replace("_", " ").title())
 
@@ -191,6 +207,10 @@ def normalize_tags(tags: dict[str, Any]) -> str:
         return "Beach"
     elif "natural" in tags:
         return tags["natural"].replace("_", " ").title()
+
+    capital_label = capital_category_label(tags)
+    if capital_label:
+        return capital_label
 
     return "Place"
 
@@ -278,6 +298,11 @@ def normalize_poi_result(raw: dict[str, Any], origin_lat: float, origin_lng: flo
             "man_made",
             "waterway",
             "aeroway",
+            "historic",
+            "capital",
+            "place",
+            "building",
+            "office",
         ]
     )
     has_address = any(f"addr:{k}" in tags for k in ["street", "city", "postcode"])
@@ -626,8 +651,15 @@ class PlacesNearbyService:
             logger.info("Nearby cache HIT for key %s", cache_key)
             return cached[1][:limit]
 
-        # Construct Overpass QL query
-        queries = CATEGORY_TAG_QUERIES[matched_key]
+        # Construct Overpass QL query (union aliases merge multiple query sets)
+        if matched_key in CATEGORY_TAG_QUERIES and not overpass_keys_for_category(matched_key):
+            queries = CATEGORY_TAG_QUERIES[matched_key]
+        else:
+            merged = merged_osm_queries_for_category(matched_key)
+            queries = merged if merged else CATEGORY_TAG_QUERIES.get(matched_key, [])
+        if not queries:
+            logger.info("No Overpass queries for category %r", matched_key)
+            return []
         subqueries_str = "\n".join([q.format(radius=radius_meters, lat=lat, lng=lng) for q in queries])
 
         overpass_query = f"""[out:json][timeout:15];
@@ -674,10 +706,16 @@ out center;"""
 
         # Normalize and sort results
         normalized_results = []
+        seen_osm: set[tuple[str, str]] = set()
         for elem in elements:
             norm = normalize_poi_result(elem, lat, lng)
-            if norm:
-                normalized_results.append(norm)
+            if not norm:
+                continue
+            osm_key = (str(norm.get("osmType") or ""), str(norm.get("osmId") or ""))
+            if osm_key in seen_osm:
+                continue
+            seen_osm.add(osm_key)
+            normalized_results.append(norm)
 
         # Sort by distance Miles ascending
         normalized_results.sort(key=lambda x: x["distanceMiles"])

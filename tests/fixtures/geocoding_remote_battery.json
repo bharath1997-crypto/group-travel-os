@@ -1,0 +1,7112 @@
+{
+  "version": 1,
+  "description": "Worldwide remote map-tap coordinates for /api/v1/geocoding/reverse battery tests",
+  "count": 1015,
+  "cases": [
+    {
+      "id": "anchor-001",
+      "lat": 65.43711,
+      "lng": -44.69036,
+      "region": "Greenland",
+      "anchor": true
+    },
+    {
+      "id": "anchor-002",
+      "lat": 66.01268,
+      "lng": -105.93853,
+      "region": "Canada",
+      "anchor": true
+    },
+    {
+      "id": "anchor-003",
+      "lat": -78.5255,
+      "lng": -85.6171,
+      "region": "Antarctica",
+      "anchor": true
+    },
+    {
+      "id": "anchor-004",
+      "lat": 16.76659,
+      "lng": -3.00256,
+      "region": "Mali",
+      "anchor": true
+    },
+    {
+      "id": "anchor-005",
+      "lat": 72.4,
+      "lng": 126.7,
+      "region": "Russia",
+      "anchor": true
+    },
+    {
+      "id": "anchor-006",
+      "lat": -25.8,
+      "lng": 131.2,
+      "region": "Australia",
+      "anchor": true
+    },
+    {
+      "id": "anchor-007",
+      "lat": -49.2,
+      "lng": -73.5,
+      "region": "Chile",
+      "anchor": true
+    },
+    {
+      "id": "anchor-008",
+      "lat": 45.2,
+      "lng": 103.8,
+      "region": "Mongolia",
+      "anchor": true
+    },
+    {
+      "id": "anchor-009",
+      "lat": -24.5,
+      "lng": 15.3,
+      "region": "Namibia",
+      "anchor": true
+    },
+    {
+      "id": "anchor-010",
+      "lat": 64.8,
+      "lng": -136.2,
+      "region": "Canada",
+      "anchor": true
+    },
+    {
+      "id": "anchor-011",
+      "lat": 68.5,
+      "lng": -150.2,
+      "region": "United States",
+      "anchor": true
+    },
+    {
+      "id": "anchor-012",
+      "lat": -20.2,
+      "lng": -67.5,
+      "region": "Bolivia",
+      "anchor": true
+    },
+    {
+      "id": "anchor-013",
+      "lat": 33.5,
+      "lng": 88.0,
+      "region": "China",
+      "anchor": true
+    },
+    {
+      "id": "anchor-014",
+      "lat": 47.5,
+      "lng": 67.0,
+      "region": "Kazakhstan",
+      "anchor": true
+    },
+    {
+      "id": "anchor-015",
+      "lat": 21.5,
+      "lng": 98.2,
+      "region": "Myanmar",
+      "anchor": true
+    },
+    {
+      "id": "remote-01-001",
+      "lat": 69.67312,
+      "lng": -119.12462,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-002",
+      "lat": 65.30035,
+      "lng": -112.18762,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-003",
+      "lat": 70.83765,
+      "lng": -96.31552,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-004",
+      "lat": 72.70615,
+      "lng": -116.95714,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-005",
+      "lat": 67.06306,
+      "lng": -118.9571,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-006",
+      "lat": 64.62366,
+      "lng": -102.31256,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-007",
+      "lat": 62.31843,
+      "lng": -113.04068,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-008",
+      "lat": 69.79861,
+      "lng": -100.92705,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-009",
+      "lat": 64.64529,
+      "lng": -99.3757,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-010",
+      "lat": 71.71317,
+      "lng": -119.77254,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-011",
+      "lat": 71.66983,
+      "lng": -95.56512,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-012",
+      "lat": 66.08301,
+      "lng": -114.55822,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-013",
+      "lat": 73.48656,
+      "lng": -108.21919,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-014",
+      "lat": 63.11295,
+      "lng": -116.61493,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-015",
+      "lat": 72.16993,
+      "lng": -98.86959,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-016",
+      "lat": 71.68554,
+      "lng": -94.45939,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-017",
+      "lat": 68.43474,
+      "lng": -85.94095,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-018",
+      "lat": 66.54241,
+      "lng": -100.67858,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-019",
+      "lat": 71.95286,
+      "lng": -98.35181,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-020",
+      "lat": 72.34048,
+      "lng": -99.79267,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-021",
+      "lat": 70.45486,
+      "lng": -118.39615,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-022",
+      "lat": 64.73478,
+      "lng": -109.87142,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-023",
+      "lat": 62.9575,
+      "lng": -111.85232,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-024",
+      "lat": 63.21202,
+      "lng": -110.27092,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-025",
+      "lat": 69.62821,
+      "lng": -107.23087,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-026",
+      "lat": 66.44217,
+      "lng": -112.66725,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-027",
+      "lat": 65.20373,
+      "lng": -87.21709,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-028",
+      "lat": 69.77642,
+      "lng": -98.68041,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-029",
+      "lat": 64.05366,
+      "lng": -94.48056,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-030",
+      "lat": 63.96083,
+      "lng": -106.71906,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-031",
+      "lat": 73.87428,
+      "lng": -97.60001,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-032",
+      "lat": 68.6834,
+      "lng": -96.0385,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-033",
+      "lat": 72.11422,
+      "lng": -92.84,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-034",
+      "lat": 64.74858,
+      "lng": -118.87649,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-01-035",
+      "lat": 65.78544,
+      "lng": -110.62907,
+      "region": "Canadian Arctic",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-001",
+      "lat": 63.37573,
+      "lng": -23.71271,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-002",
+      "lat": 74.02188,
+      "lng": -42.55966,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-003",
+      "lat": 70.48702,
+      "lng": -40.13104,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-004",
+      "lat": 74.63276,
+      "lng": -38.23444,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-005",
+      "lat": 64.23808,
+      "lng": -44.60117,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-006",
+      "lat": 68.98189,
+      "lng": -44.11775,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-007",
+      "lat": 69.35338,
+      "lng": -25.06531,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-008",
+      "lat": 66.39041,
+      "lng": -45.42038,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-009",
+      "lat": 75.9606,
+      "lng": -36.71421,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-010",
+      "lat": 61.45455,
+      "lng": -50.58651,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-011",
+      "lat": 61.75439,
+      "lng": -33.17662,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-012",
+      "lat": 72.67327,
+      "lng": -39.3352,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-013",
+      "lat": 61.01644,
+      "lng": -40.55142,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-014",
+      "lat": 75.93794,
+      "lng": -36.12657,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-015",
+      "lat": 75.53725,
+      "lng": -26.17661,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-016",
+      "lat": 60.1837,
+      "lng": -30.37835,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-017",
+      "lat": 70.90737,
+      "lng": -35.89089,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-018",
+      "lat": 64.2692,
+      "lng": -32.77115,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-019",
+      "lat": 61.78483,
+      "lng": -38.95704,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-020",
+      "lat": 67.25958,
+      "lng": -23.38552,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-021",
+      "lat": 74.01365,
+      "lng": -44.09833,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-022",
+      "lat": 68.00938,
+      "lng": -46.64044,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-023",
+      "lat": 74.60205,
+      "lng": -25.88444,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-024",
+      "lat": 64.77512,
+      "lng": -32.83152,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-025",
+      "lat": 69.74352,
+      "lng": -47.41482,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-026",
+      "lat": 72.20017,
+      "lng": -35.81863,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-027",
+      "lat": 72.45802,
+      "lng": -36.08939,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-028",
+      "lat": 60.00915,
+      "lng": -42.27532,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-029",
+      "lat": 60.31163,
+      "lng": -24.12704,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-02-030",
+      "lat": 74.05955,
+      "lng": -27.05003,
+      "region": "Greenland",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-001",
+      "lat": 61.07514,
+      "lng": -158.8415,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-002",
+      "lat": 66.7801,
+      "lng": -141.06101,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-003",
+      "lat": 58.85653,
+      "lng": -150.28019,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-004",
+      "lat": 58.69213,
+      "lng": -144.78796,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-005",
+      "lat": 65.65834,
+      "lng": -157.43217,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-006",
+      "lat": 62.75282,
+      "lng": -149.00393,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-007",
+      "lat": 60.65057,
+      "lng": -142.55134,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-008",
+      "lat": 62.23138,
+      "lng": -155.76404,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-009",
+      "lat": 63.39296,
+      "lng": -145.40138,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-010",
+      "lat": 60.01151,
+      "lng": -153.76567,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-011",
+      "lat": 67.95149,
+      "lng": -147.00244,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-012",
+      "lat": 62.381,
+      "lng": -149.64848,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-013",
+      "lat": 59.21004,
+      "lng": -155.50605,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-014",
+      "lat": 61.38086,
+      "lng": -148.23383,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-015",
+      "lat": 60.30115,
+      "lng": -155.59565,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-016",
+      "lat": 58.70993,
+      "lng": -147.37794,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-017",
+      "lat": 60.28942,
+      "lng": -141.8916,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-018",
+      "lat": 66.59635,
+      "lng": -158.58285,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-019",
+      "lat": 60.38005,
+      "lng": -146.62044,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-020",
+      "lat": 60.14237,
+      "lng": -157.35376,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-021",
+      "lat": 67.35514,
+      "lng": -148.57914,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-022",
+      "lat": 62.72671,
+      "lng": -144.30761,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-023",
+      "lat": 66.07497,
+      "lng": -156.1918,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-024",
+      "lat": 58.96931,
+      "lng": -151.37898,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-025",
+      "lat": 62.23579,
+      "lng": -150.65951,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-026",
+      "lat": 65.29076,
+      "lng": -146.53271,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-027",
+      "lat": 67.84165,
+      "lng": -158.03164,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-028",
+      "lat": 62.02621,
+      "lng": -153.21395,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-029",
+      "lat": 66.61673,
+      "lng": -155.02687,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-030",
+      "lat": 59.90209,
+      "lng": -151.02773,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-031",
+      "lat": 62.21882,
+      "lng": -154.4291,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-032",
+      "lat": 60.49806,
+      "lng": -141.53469,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-033",
+      "lat": 62.43131,
+      "lng": -142.77302,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-034",
+      "lat": 63.50325,
+      "lng": -158.98823,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-03-035",
+      "lat": 67.99282,
+      "lng": -143.27945,
+      "region": "Alaska interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-001",
+      "lat": 65.81398,
+      "lng": -128.73633,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-002",
+      "lat": 65.09217,
+      "lng": -136.33689,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-003",
+      "lat": 62.91385,
+      "lng": -135.86253,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-004",
+      "lat": 62.40624,
+      "lng": -137.41365,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-005",
+      "lat": 62.27384,
+      "lng": -128.14691,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-006",
+      "lat": 61.59122,
+      "lng": -130.15929,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-007",
+      "lat": 62.73005,
+      "lng": -133.76993,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-008",
+      "lat": 65.74391,
+      "lng": -128.04577,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-009",
+      "lat": 63.33461,
+      "lng": -130.81592,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-010",
+      "lat": 60.92878,
+      "lng": -135.03292,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-011",
+      "lat": 65.81226,
+      "lng": -132.2082,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-012",
+      "lat": 63.25317,
+      "lng": -130.52024,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-013",
+      "lat": 60.34299,
+      "lng": -132.15822,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-014",
+      "lat": 63.0171,
+      "lng": -129.4728,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-015",
+      "lat": 60.9446,
+      "lng": -128.39221,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-016",
+      "lat": 60.48067,
+      "lng": -136.14175,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-017",
+      "lat": 63.57021,
+      "lng": -131.24787,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-04-018",
+      "lat": 61.41122,
+      "lng": -136.80113,
+      "region": "Yukon wilderness",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-001",
+      "lat": 57.34172,
+      "lng": -62.27649,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-002",
+      "lat": 55.56711,
+      "lng": -59.66433,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-003",
+      "lat": 54.51535,
+      "lng": -59.91429,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-004",
+      "lat": 55.1367,
+      "lng": -57.45706,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-005",
+      "lat": 53.22556,
+      "lng": -58.98666,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-006",
+      "lat": 53.43212,
+      "lng": -61.2295,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-007",
+      "lat": 56.03014,
+      "lng": -61.90002,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-008",
+      "lat": 53.89706,
+      "lng": -58.73695,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-009",
+      "lat": 52.43526,
+      "lng": -60.792,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-010",
+      "lat": 57.99073,
+      "lng": -57.02732,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-011",
+      "lat": 52.43956,
+      "lng": -62.50792,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-012",
+      "lat": 53.5912,
+      "lng": -57.46718,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-013",
+      "lat": 57.28519,
+      "lng": -57.84511,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-014",
+      "lat": 54.21716,
+      "lng": -62.89577,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-05-015",
+      "lat": 57.00247,
+      "lng": -59.07522,
+      "region": "Labrador remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-001",
+      "lat": 40.05839,
+      "lng": -112.0766,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-002",
+      "lat": 40.26988,
+      "lng": -117.95306,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-003",
+      "lat": 41.08552,
+      "lng": -116.20373,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-004",
+      "lat": 40.31694,
+      "lng": -112.36642,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-005",
+      "lat": 37.67146,
+      "lng": -117.30743,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-006",
+      "lat": 37.53518,
+      "lng": -114.68066,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-007",
+      "lat": 38.36174,
+      "lng": -114.37102,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-008",
+      "lat": 40.58806,
+      "lng": -116.77842,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-009",
+      "lat": 40.17119,
+      "lng": -116.4161,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-010",
+      "lat": 39.44266,
+      "lng": -112.56798,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-011",
+      "lat": 41.23052,
+      "lng": -117.44621,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-012",
+      "lat": 39.11788,
+      "lng": -116.33992,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-013",
+      "lat": 37.01773,
+      "lng": -113.37328,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-014",
+      "lat": 40.18557,
+      "lng": -116.42827,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-015",
+      "lat": 40.70615,
+      "lng": -114.68992,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-016",
+      "lat": 39.13843,
+      "lng": -117.94198,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-017",
+      "lat": 37.37622,
+      "lng": -112.70136,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-018",
+      "lat": 41.51964,
+      "lng": -114.72646,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-019",
+      "lat": 41.17298,
+      "lng": -114.50494,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-020",
+      "lat": 37.74047,
+      "lng": -117.23533,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-021",
+      "lat": 38.54129,
+      "lng": -112.60611,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-06-022",
+      "lat": 40.98061,
+      "lng": -112.83578,
+      "region": "US Great Basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-001",
+      "lat": 48.69677,
+      "lng": -107.15969,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-002",
+      "lat": 46.74859,
+      "lng": -107.58883,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-003",
+      "lat": 48.34035,
+      "lng": -104.46346,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-004",
+      "lat": 47.21913,
+      "lng": -105.51735,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-005",
+      "lat": 46.46366,
+      "lng": -104.28048,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-006",
+      "lat": 48.59382,
+      "lng": -104.09518,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-007",
+      "lat": 48.43232,
+      "lng": -104.47434,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-008",
+      "lat": 46.07436,
+      "lng": -105.05374,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-009",
+      "lat": 46.99656,
+      "lng": -104.27674,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-010",
+      "lat": 48.40671,
+      "lng": -104.54374,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-011",
+      "lat": 48.43225,
+      "lng": -106.93278,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-012",
+      "lat": 48.36212,
+      "lng": -107.56762,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-013",
+      "lat": 48.6165,
+      "lng": -104.56563,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-014",
+      "lat": 46.6673,
+      "lng": -104.73365,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-015",
+      "lat": 47.38091,
+      "lng": -106.77924,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-016",
+      "lat": 48.38604,
+      "lng": -107.08962,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-017",
+      "lat": 46.07099,
+      "lng": -107.22748,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-07-018",
+      "lat": 46.98479,
+      "lng": -104.54259,
+      "region": "US Montana badlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-001",
+      "lat": 31.90067,
+      "lng": -112.60438,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-002",
+      "lat": 30.92445,
+      "lng": -112.00161,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-003",
+      "lat": 31.94345,
+      "lng": -111.31892,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-004",
+      "lat": 31.81771,
+      "lng": -113.42329,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-005",
+      "lat": 31.9112,
+      "lng": -113.10716,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-006",
+      "lat": 31.8876,
+      "lng": -112.67267,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-007",
+      "lat": 29.32521,
+      "lng": -111.82718,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-008",
+      "lat": 31.18564,
+      "lng": -112.43161,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-009",
+      "lat": 30.81863,
+      "lng": -111.44288,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-010",
+      "lat": 30.15559,
+      "lng": -111.11706,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-011",
+      "lat": 29.76417,
+      "lng": -110.45607,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-012",
+      "lat": 29.00507,
+      "lng": -109.37212,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-013",
+      "lat": 30.61536,
+      "lng": -110.40285,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-014",
+      "lat": 31.22585,
+      "lng": -110.64686,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-015",
+      "lat": 30.09266,
+      "lng": -113.65013,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-016",
+      "lat": 30.99271,
+      "lng": -112.349,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-017",
+      "lat": 29.94175,
+      "lng": -109.75992,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-08-018",
+      "lat": 31.15926,
+      "lng": -112.49839,
+      "region": "Sonoran desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-001",
+      "lat": -3.52572,
+      "lng": -63.91607,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-002",
+      "lat": -2.7808,
+      "lng": -65.04345,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-003",
+      "lat": -4.9817,
+      "lng": -63.79554,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-004",
+      "lat": 1.52291,
+      "lng": -61.22682,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-005",
+      "lat": 1.22244,
+      "lng": -61.84485,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-006",
+      "lat": -3.5924,
+      "lng": -62.52063,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-007",
+      "lat": -5.99675,
+      "lng": -65.13086,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-008",
+      "lat": -2.56089,
+      "lng": -62.20015,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-009",
+      "lat": -0.76236,
+      "lng": -63.35012,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-010",
+      "lat": -2.46272,
+      "lng": -65.86299,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-011",
+      "lat": -2.21451,
+      "lng": -58.98819,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-012",
+      "lat": 0.3682,
+      "lng": -66.30309,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-013",
+      "lat": -5.32164,
+      "lng": -62.84548,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-014",
+      "lat": -0.93647,
+      "lng": -64.64812,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-015",
+      "lat": 0.54739,
+      "lng": -60.48862,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-016",
+      "lat": -0.61763,
+      "lng": -65.75359,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-017",
+      "lat": -4.40696,
+      "lng": -67.75575,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-018",
+      "lat": -4.04126,
+      "lng": -63.24864,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-019",
+      "lat": 0.7979,
+      "lng": -67.27172,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-020",
+      "lat": -2.68447,
+      "lng": -61.70235,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-021",
+      "lat": -4.44452,
+      "lng": -61.03646,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-022",
+      "lat": -2.04498,
+      "lng": -65.56016,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-023",
+      "lat": -0.75154,
+      "lng": -67.94455,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-024",
+      "lat": 0.00772,
+      "lng": -60.29954,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-09-025",
+      "lat": -5.1473,
+      "lng": -63.74854,
+      "region": "Amazon remote",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-001",
+      "lat": -50.59291,
+      "lng": -68.21017,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-002",
+      "lat": -47.85634,
+      "lng": -72.74891,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-003",
+      "lat": -50.00641,
+      "lng": -68.75832,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-004",
+      "lat": -48.34831,
+      "lng": -68.99292,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-005",
+      "lat": -46.65938,
+      "lng": -68.06054,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-006",
+      "lat": -47.23638,
+      "lng": -68.2498,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-007",
+      "lat": -44.86859,
+      "lng": -69.93674,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-008",
+      "lat": -46.24581,
+      "lng": -70.47611,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-009",
+      "lat": -45.35545,
+      "lng": -70.26064,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-010",
+      "lat": -44.82234,
+      "lng": -69.28172,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-011",
+      "lat": -48.2026,
+      "lng": -71.70404,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-012",
+      "lat": -50.02208,
+      "lng": -69.81169,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-013",
+      "lat": -45.87349,
+      "lng": -70.3935,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-014",
+      "lat": -46.98601,
+      "lng": -71.62701,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-015",
+      "lat": -51.38013,
+      "lng": -71.57136,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-016",
+      "lat": -49.82628,
+      "lng": -71.40145,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-017",
+      "lat": -47.67878,
+      "lng": -72.30813,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-018",
+      "lat": -50.14991,
+      "lng": -69.53025,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-019",
+      "lat": -46.34865,
+      "lng": -72.67886,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-020",
+      "lat": -48.73921,
+      "lng": -70.28694,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-021",
+      "lat": -48.67381,
+      "lng": -71.96583,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-022",
+      "lat": -48.63885,
+      "lng": -68.47581,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-023",
+      "lat": -47.32736,
+      "lng": -69.52239,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-024",
+      "lat": -45.14614,
+      "lng": -69.17203,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-025",
+      "lat": -48.95695,
+      "lng": -72.97052,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-026",
+      "lat": -49.18593,
+      "lng": -69.23262,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-027",
+      "lat": -45.17242,
+      "lng": -68.23285,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-10-028",
+      "lat": -48.64783,
+      "lng": -69.26242,
+      "region": "Patagonia",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-001",
+      "lat": -15.81547,
+      "lng": -66.99187,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-002",
+      "lat": -16.65548,
+      "lng": -66.80215,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-003",
+      "lat": -15.51097,
+      "lng": -68.43258,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-004",
+      "lat": -16.42392,
+      "lng": -67.08902,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-005",
+      "lat": -17.89159,
+      "lng": -66.89313,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-006",
+      "lat": -17.4572,
+      "lng": -67.34575,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-007",
+      "lat": -17.79886,
+      "lng": -67.55224,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-008",
+      "lat": -17.15336,
+      "lng": -67.68289,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-009",
+      "lat": -14.95508,
+      "lng": -67.55218,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-010",
+      "lat": -14.99196,
+      "lng": -66.42019,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-011",
+      "lat": -17.92247,
+      "lng": -67.15145,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-012",
+      "lat": -14.00037,
+      "lng": -67.6251,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-013",
+      "lat": -15.39942,
+      "lng": -66.54692,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-014",
+      "lat": -15.39298,
+      "lng": -66.61442,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-015",
+      "lat": -14.20155,
+      "lng": -68.0016,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-016",
+      "lat": -17.91848,
+      "lng": -68.11904,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-017",
+      "lat": -17.49512,
+      "lng": -66.82635,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-018",
+      "lat": -15.74412,
+      "lng": -67.95509,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-019",
+      "lat": -15.20214,
+      "lng": -66.58275,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-11-020",
+      "lat": -17.32884,
+      "lng": -66.98188,
+      "region": "Altiplano",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-001",
+      "lat": -11.51245,
+      "lng": -47.54187,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-002",
+      "lat": -11.08419,
+      "lng": -44.14112,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-003",
+      "lat": -15.35141,
+      "lng": -47.89729,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-004",
+      "lat": -14.12826,
+      "lng": -45.29061,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-005",
+      "lat": -10.25096,
+      "lng": -46.41338,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-006",
+      "lat": -11.70991,
+      "lng": -47.69601,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-007",
+      "lat": -11.85631,
+      "lng": -45.49103,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-008",
+      "lat": -15.38859,
+      "lng": -44.91008,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-009",
+      "lat": -10.89824,
+      "lng": -45.59835,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-010",
+      "lat": -15.27367,
+      "lng": -44.06462,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-011",
+      "lat": -11.30419,
+      "lng": -46.61118,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-012",
+      "lat": -13.42973,
+      "lng": -46.51772,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-013",
+      "lat": -12.96424,
+      "lng": -46.63508,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-014",
+      "lat": -10.90255,
+      "lng": -44.71068,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-015",
+      "lat": -15.36677,
+      "lng": -44.15685,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-016",
+      "lat": -12.18649,
+      "lng": -44.68517,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-017",
+      "lat": -11.75615,
+      "lng": -46.25805,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-12-018",
+      "lat": -11.59723,
+      "lng": -44.13811,
+      "region": "Brazilian cerrado",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-001",
+      "lat": 22.16066,
+      "lng": -2.30161,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-002",
+      "lat": 24.30538,
+      "lng": -6.19803,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-003",
+      "lat": 23.4846,
+      "lng": -3.22769,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-004",
+      "lat": 22.14716,
+      "lng": -1.77944,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-005",
+      "lat": 26.64585,
+      "lng": -10.96005,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-006",
+      "lat": 27.05305,
+      "lng": -9.07364,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-007",
+      "lat": 23.71767,
+      "lng": -4.67602,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-008",
+      "lat": 23.03191,
+      "lng": -11.6556,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-009",
+      "lat": 26.80762,
+      "lng": -9.81792,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-010",
+      "lat": 21.69696,
+      "lng": -2.42601,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-011",
+      "lat": 22.72271,
+      "lng": -1.43616,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-012",
+      "lat": 25.60947,
+      "lng": -8.68478,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-013",
+      "lat": 20.08121,
+      "lng": -0.62325,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-014",
+      "lat": 20.6849,
+      "lng": -3.3591,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-015",
+      "lat": 23.90862,
+      "lng": -2.90202,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-016",
+      "lat": 25.52487,
+      "lng": -4.24917,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-017",
+      "lat": 23.92657,
+      "lng": -2.48481,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-018",
+      "lat": 20.74443,
+      "lng": -9.34084,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-019",
+      "lat": 25.5343,
+      "lng": -8.32553,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-020",
+      "lat": 24.65244,
+      "lng": -6.32087,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-021",
+      "lat": 24.24738,
+      "lng": -6.89395,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-13-022",
+      "lat": 25.96748,
+      "lng": -8.0305,
+      "region": "Sahara west",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-001",
+      "lat": 23.62284,
+      "lng": 5.251,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-002",
+      "lat": 20.01123,
+      "lng": 3.44787,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-003",
+      "lat": 19.54067,
+      "lng": 3.43466,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-004",
+      "lat": 22.28691,
+      "lng": 11.14628,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-005",
+      "lat": 19.4812,
+      "lng": 4.59662,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-006",
+      "lat": 21.87359,
+      "lng": 10.69502,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-007",
+      "lat": 25.81286,
+      "lng": 8.29564,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-008",
+      "lat": 20.26399,
+      "lng": 3.20631,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-009",
+      "lat": 19.55294,
+      "lng": 4.7298,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-010",
+      "lat": 19.43553,
+      "lng": 2.16978,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-011",
+      "lat": 22.27308,
+      "lng": 5.29174,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-012",
+      "lat": 25.79436,
+      "lng": 8.64031,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-013",
+      "lat": 23.57934,
+      "lng": 3.51535,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-014",
+      "lat": 24.94769,
+      "lng": 7.89054,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-015",
+      "lat": 24.98176,
+      "lng": 8.88877,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-016",
+      "lat": 21.75518,
+      "lng": 7.28563,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-017",
+      "lat": 19.47491,
+      "lng": 2.61652,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-018",
+      "lat": 25.52851,
+      "lng": 7.73275,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-019",
+      "lat": 24.57693,
+      "lng": 6.80849,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-020",
+      "lat": 18.59266,
+      "lng": 9.55335,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-021",
+      "lat": 18.42887,
+      "lng": 3.79037,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-14-022",
+      "lat": 22.50272,
+      "lng": 5.64603,
+      "region": "Sahara central",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-001",
+      "lat": 17.96351,
+      "lng": -2.98632,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-002",
+      "lat": 16.58666,
+      "lng": 5.3074,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-003",
+      "lat": 16.74444,
+      "lng": -1.16332,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-004",
+      "lat": 15.13544,
+      "lng": 2.65875,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-005",
+      "lat": 14.65633,
+      "lng": 9.62283,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-006",
+      "lat": 17.94019,
+      "lng": 0.19146,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-007",
+      "lat": 15.72616,
+      "lng": 5.36373,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-008",
+      "lat": 16.44054,
+      "lng": 11.10903,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-009",
+      "lat": 13.24673,
+      "lng": -1.41257,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-010",
+      "lat": 15.96257,
+      "lng": -2.33003,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-011",
+      "lat": 13.04288,
+      "lng": -3.7239,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-012",
+      "lat": 12.01605,
+      "lng": 2.65856,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-013",
+      "lat": 15.56287,
+      "lng": -0.04859,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-014",
+      "lat": 13.38886,
+      "lng": 7.01825,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-015",
+      "lat": 16.21793,
+      "lng": 2.71853,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-016",
+      "lat": 16.12431,
+      "lng": 10.70649,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-017",
+      "lat": 16.72697,
+      "lng": 5.62599,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-15-018",
+      "lat": 15.9671,
+      "lng": 10.87236,
+      "region": "Sahel",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-001",
+      "lat": 0.55083,
+      "lng": 22.3565,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-002",
+      "lat": 1.88581,
+      "lng": 25.26729,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-003",
+      "lat": 2.95979,
+      "lng": 18.57128,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-004",
+      "lat": -1.00446,
+      "lng": 20.46089,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-005",
+      "lat": 2.49375,
+      "lng": 22.55366,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-006",
+      "lat": -0.26834,
+      "lng": 18.99483,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-007",
+      "lat": 2.13207,
+      "lng": 23.59787,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-008",
+      "lat": 3.65606,
+      "lng": 22.00378,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-009",
+      "lat": 0.96277,
+      "lng": 18.64353,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-010",
+      "lat": -1.76084,
+      "lng": 21.45623,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-011",
+      "lat": -0.06607,
+      "lng": 20.00294,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-012",
+      "lat": -1.45204,
+      "lng": 25.69529,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-013",
+      "lat": 3.01575,
+      "lng": 22.60159,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-014",
+      "lat": 3.70472,
+      "lng": 25.99658,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-015",
+      "lat": 2.03369,
+      "lng": 20.15609,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-016",
+      "lat": -1.75861,
+      "lng": 24.05015,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-017",
+      "lat": 0.823,
+      "lng": 23.21208,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-16-018",
+      "lat": 3.49644,
+      "lng": 19.45191,
+      "region": "Congo basin",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-001",
+      "lat": -22.07335,
+      "lng": 23.80871,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-002",
+      "lat": -22.54137,
+      "lng": 20.54745,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-003",
+      "lat": -23.26019,
+      "lng": 21.99985,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-004",
+      "lat": -21.64933,
+      "lng": 25.1464,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-005",
+      "lat": -23.35098,
+      "lng": 24.16204,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-006",
+      "lat": -23.55891,
+      "lng": 25.67116,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-007",
+      "lat": -20.93217,
+      "lng": 23.30058,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-008",
+      "lat": -22.72587,
+      "lng": 21.8871,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-009",
+      "lat": -23.38363,
+      "lng": 25.82111,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-010",
+      "lat": -22.97912,
+      "lng": 23.08758,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-011",
+      "lat": -20.0594,
+      "lng": 23.94596,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-012",
+      "lat": -22.28703,
+      "lng": 22.47949,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-013",
+      "lat": -24.06209,
+      "lng": 22.17068,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-014",
+      "lat": -21.21778,
+      "lng": 23.75245,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-015",
+      "lat": -21.20005,
+      "lng": 21.22135,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-016",
+      "lat": -22.2539,
+      "lng": 25.56604,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-017",
+      "lat": -22.80942,
+      "lng": 24.1895,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-17-018",
+      "lat": -24.39287,
+      "lng": 25.83888,
+      "region": "Kalahari",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-001",
+      "lat": 8.65323,
+      "lng": 43.43578,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-002",
+      "lat": 5.95027,
+      "lng": 45.30503,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-003",
+      "lat": 8.31351,
+      "lng": 42.55926,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-004",
+      "lat": 10.95354,
+      "lng": 47.47758,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-005",
+      "lat": 7.76869,
+      "lng": 42.7048,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-006",
+      "lat": 9.99286,
+      "lng": 44.99025,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-007",
+      "lat": 9.29962,
+      "lng": 45.05323,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-008",
+      "lat": 6.64055,
+      "lng": 47.00834,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-009",
+      "lat": 10.88147,
+      "lng": 43.46239,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-010",
+      "lat": 8.30759,
+      "lng": 44.30152,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-011",
+      "lat": 10.53121,
+      "lng": 45.04945,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-012",
+      "lat": 10.27596,
+      "lng": 47.18416,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-013",
+      "lat": 6.65748,
+      "lng": 46.74004,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-014",
+      "lat": 7.48965,
+      "lng": 47.60549,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-015",
+      "lat": 8.04643,
+      "lng": 46.9233,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-016",
+      "lat": 6.69703,
+      "lng": 43.79134,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-017",
+      "lat": 8.52163,
+      "lng": 47.99341,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-18-018",
+      "lat": 7.93784,
+      "lng": 42.89157,
+      "region": "Horn of Africa interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-001",
+      "lat": 9.6929,
+      "lng": 38.03537,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-002",
+      "lat": 9.75959,
+      "lng": 38.63029,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-003",
+      "lat": 9.27672,
+      "lng": 37.96533,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-004",
+      "lat": 7.94326,
+      "lng": 39.0925,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-005",
+      "lat": 9.85899,
+      "lng": 37.70069,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-006",
+      "lat": 10.87772,
+      "lng": 37.13094,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-007",
+      "lat": 10.72353,
+      "lng": 39.11568,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-008",
+      "lat": 11.05704,
+      "lng": 38.15824,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-009",
+      "lat": 10.31844,
+      "lng": 39.46224,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-010",
+      "lat": 11.90409,
+      "lng": 38.48599,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-011",
+      "lat": 7.1851,
+      "lng": 38.50687,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-012",
+      "lat": 9.9509,
+      "lng": 39.6091,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-013",
+      "lat": 11.37095,
+      "lng": 38.32092,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-014",
+      "lat": 9.62976,
+      "lng": 38.37078,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-19-015",
+      "lat": 10.61222,
+      "lng": 38.22994,
+      "region": "Ethiopian highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-001",
+      "lat": -18.07131,
+      "lng": 44.61744,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-002",
+      "lat": -19.18306,
+      "lng": 47.87681,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-003",
+      "lat": -19.96863,
+      "lng": 46.77082,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-004",
+      "lat": -18.10098,
+      "lng": 47.40706,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-005",
+      "lat": -16.88595,
+      "lng": 47.43737,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-006",
+      "lat": -19.71994,
+      "lng": 45.26664,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-007",
+      "lat": -17.6877,
+      "lng": 47.03761,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-008",
+      "lat": -16.7657,
+      "lng": 44.1436,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-009",
+      "lat": -21.58948,
+      "lng": 46.52464,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-010",
+      "lat": -16.47443,
+      "lng": 47.9897,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-011",
+      "lat": -17.5194,
+      "lng": 45.73589,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-012",
+      "lat": -21.40934,
+      "lng": 46.53499,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-013",
+      "lat": -16.76452,
+      "lng": 45.77471,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-014",
+      "lat": -17.83599,
+      "lng": 47.6137,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-20-015",
+      "lat": -21.72405,
+      "lng": 47.18457,
+      "region": "Madagascar interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-001",
+      "lat": 19.46684,
+      "lng": 50.99873,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-002",
+      "lat": 18.72785,
+      "lng": 52.24933,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-003",
+      "lat": 20.82964,
+      "lng": 54.34016,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-004",
+      "lat": 18.84992,
+      "lng": 48.63175,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-005",
+      "lat": 22.3542,
+      "lng": 52.95768,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-006",
+      "lat": 19.20415,
+      "lng": 55.30263,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-007",
+      "lat": 18.71559,
+      "lng": 51.6892,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-008",
+      "lat": 19.26989,
+      "lng": 50.04261,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-009",
+      "lat": 18.04699,
+      "lng": 54.43706,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-010",
+      "lat": 22.50605,
+      "lng": 53.42089,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-011",
+      "lat": 18.78988,
+      "lng": 51.53384,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-012",
+      "lat": 19.72783,
+      "lng": 52.70057,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-013",
+      "lat": 21.19469,
+      "lng": 51.39447,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-014",
+      "lat": 19.25049,
+      "lng": 54.76243,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-015",
+      "lat": 18.99608,
+      "lng": 51.07755,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-016",
+      "lat": 20.41604,
+      "lng": 49.89765,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-017",
+      "lat": 20.85961,
+      "lng": 52.5985,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-018",
+      "lat": 22.96346,
+      "lng": 50.36185,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-019",
+      "lat": 22.88972,
+      "lng": 53.26584,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-020",
+      "lat": 19.3724,
+      "lng": 52.52743,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-021",
+      "lat": 21.429,
+      "lng": 53.95735,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-21-022",
+      "lat": 18.24522,
+      "lng": 52.85125,
+      "region": "Empty Quarter",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-001",
+      "lat": 32.98036,
+      "lng": 57.42493,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-002",
+      "lat": 31.71716,
+      "lng": 56.79316,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-003",
+      "lat": 33.64239,
+      "lng": 54.11393,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-004",
+      "lat": 33.81971,
+      "lng": 55.72535,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-005",
+      "lat": 34.06659,
+      "lng": 56.32557,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-006",
+      "lat": 33.95509,
+      "lng": 57.03002,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-007",
+      "lat": 33.76949,
+      "lng": 57.42042,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-008",
+      "lat": 33.87804,
+      "lng": 53.8536,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-009",
+      "lat": 32.64494,
+      "lng": 55.47744,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-010",
+      "lat": 34.39416,
+      "lng": 52.5408,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-011",
+      "lat": 31.77066,
+      "lng": 56.48489,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-012",
+      "lat": 31.05384,
+      "lng": 52.79296,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-013",
+      "lat": 33.23645,
+      "lng": 57.82894,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-014",
+      "lat": 33.18511,
+      "lng": 57.48092,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-015",
+      "lat": 34.98284,
+      "lng": 53.54182,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-016",
+      "lat": 34.94814,
+      "lng": 54.89109,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-017",
+      "lat": 34.83893,
+      "lng": 56.47936,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-22-018",
+      "lat": 32.03229,
+      "lng": 52.69102,
+      "region": "Iranian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-001",
+      "lat": 49.77736,
+      "lng": 63.40757,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-002",
+      "lat": 49.799,
+      "lng": 70.60141,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-003",
+      "lat": 48.3453,
+      "lng": 71.79942,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-004",
+      "lat": 49.80362,
+      "lng": 70.04588,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-005",
+      "lat": 46.19465,
+      "lng": 69.90682,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-006",
+      "lat": 44.08351,
+      "lng": 67.36572,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-007",
+      "lat": 46.72872,
+      "lng": 68.72828,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-008",
+      "lat": 48.03404,
+      "lng": 67.8456,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-009",
+      "lat": 48.9345,
+      "lng": 71.40292,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-010",
+      "lat": 44.65008,
+      "lng": 64.33822,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-011",
+      "lat": 44.15015,
+      "lng": 70.84235,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-012",
+      "lat": 47.36844,
+      "lng": 71.15256,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-013",
+      "lat": 45.3282,
+      "lng": 62.63217,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-014",
+      "lat": 48.94313,
+      "lng": 71.09388,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-015",
+      "lat": 45.81314,
+      "lng": 66.08296,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-016",
+      "lat": 44.83866,
+      "lng": 71.46262,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-017",
+      "lat": 45.82619,
+      "lng": 66.92625,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-018",
+      "lat": 44.58315,
+      "lng": 70.87259,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-019",
+      "lat": 44.81398,
+      "lng": 66.53644,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-020",
+      "lat": 48.02292,
+      "lng": 69.4314,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-021",
+      "lat": 49.67584,
+      "lng": 66.19127,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-23-022",
+      "lat": 48.45361,
+      "lng": 63.54523,
+      "region": "Central Asian steppe",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-001",
+      "lat": 61.31908,
+      "lng": 90.17848,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-002",
+      "lat": 61.91478,
+      "lng": 96.97855,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-003",
+      "lat": 65.61217,
+      "lng": 88.71976,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-004",
+      "lat": 60.96424,
+      "lng": 97.75443,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-005",
+      "lat": 65.60444,
+      "lng": 106.8199,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-006",
+      "lat": 58.79484,
+      "lng": 103.08497,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-007",
+      "lat": 62.35573,
+      "lng": 109.51254,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-008",
+      "lat": 60.86939,
+      "lng": 96.75907,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-009",
+      "lat": 59.51847,
+      "lng": 90.68751,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-010",
+      "lat": 64.78427,
+      "lng": 98.00378,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-011",
+      "lat": 63.30215,
+      "lng": 102.1175,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-012",
+      "lat": 62.77717,
+      "lng": 88.46986,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-013",
+      "lat": 64.29436,
+      "lng": 93.35852,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-014",
+      "lat": 59.00739,
+      "lng": 100.42072,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-015",
+      "lat": 58.54888,
+      "lng": 104.83346,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-016",
+      "lat": 59.65726,
+      "lng": 92.75093,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-017",
+      "lat": 64.95756,
+      "lng": 95.22831,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-018",
+      "lat": 59.18043,
+      "lng": 107.81168,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-019",
+      "lat": 58.02268,
+      "lng": 106.88493,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-020",
+      "lat": 59.1575,
+      "lng": 90.85983,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-021",
+      "lat": 60.00523,
+      "lng": 91.83894,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-022",
+      "lat": 63.28846,
+      "lng": 88.56716,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-023",
+      "lat": 58.11888,
+      "lng": 105.37966,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-024",
+      "lat": 59.90345,
+      "lng": 95.12297,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-025",
+      "lat": 59.39397,
+      "lng": 89.15278,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-026",
+      "lat": 63.93374,
+      "lng": 99.57388,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-027",
+      "lat": 63.96532,
+      "lng": 98.47741,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-028",
+      "lat": 64.22414,
+      "lng": 99.29124,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-029",
+      "lat": 58.87243,
+      "lng": 99.08445,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-030",
+      "lat": 65.56333,
+      "lng": 88.95403,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-031",
+      "lat": 64.26582,
+      "lng": 107.07358,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-24-032",
+      "lat": 62.17161,
+      "lng": 98.07694,
+      "region": "Siberia taiga",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-001",
+      "lat": 57.71221,
+      "lng": 128.85156,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-002",
+      "lat": 53.83186,
+      "lng": 133.62264,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-003",
+      "lat": 55.48878,
+      "lng": 134.86376,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-004",
+      "lat": 57.27761,
+      "lng": 129.02887,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-005",
+      "lat": 50.64632,
+      "lng": 136.51616,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-006",
+      "lat": 50.52546,
+      "lng": 131.85022,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-007",
+      "lat": 55.06461,
+      "lng": 135.67699,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-008",
+      "lat": 52.60148,
+      "lng": 141.92479,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-009",
+      "lat": 54.24445,
+      "lng": 134.35202,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-010",
+      "lat": 54.84341,
+      "lng": 129.3885,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-011",
+      "lat": 55.61424,
+      "lng": 139.9391,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-012",
+      "lat": 55.20733,
+      "lng": 138.76548,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-013",
+      "lat": 55.76672,
+      "lng": 131.01032,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-014",
+      "lat": 53.61244,
+      "lng": 131.19891,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-015",
+      "lat": 52.71145,
+      "lng": 134.34898,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-016",
+      "lat": 53.32792,
+      "lng": 129.3312,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-017",
+      "lat": 53.41411,
+      "lng": 137.31151,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-018",
+      "lat": 52.99441,
+      "lng": 130.13694,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-019",
+      "lat": 57.38388,
+      "lng": 128.93987,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-020",
+      "lat": 56.65418,
+      "lng": 129.30522,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-021",
+      "lat": 50.77252,
+      "lng": 138.34314,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-25-022",
+      "lat": 56.49415,
+      "lng": 135.78919,
+      "region": "Russian Far East",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-001",
+      "lat": 44.34586,
+      "lng": 104.49269,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-002",
+      "lat": 43.31858,
+      "lng": 100.97785,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-003",
+      "lat": 43.41439,
+      "lng": 105.32272,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-004",
+      "lat": 45.00114,
+      "lng": 106.94474,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-005",
+      "lat": 44.88424,
+      "lng": 107.74719,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-006",
+      "lat": 44.40164,
+      "lng": 102.81317,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-007",
+      "lat": 44.31167,
+      "lng": 101.70191,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-008",
+      "lat": 44.62695,
+      "lng": 101.79396,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-009",
+      "lat": 42.43287,
+      "lng": 106.76299,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-010",
+      "lat": 43.47024,
+      "lng": 106.10085,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-011",
+      "lat": 44.2964,
+      "lng": 106.45777,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-012",
+      "lat": 45.38062,
+      "lng": 107.79637,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-013",
+      "lat": 45.27371,
+      "lng": 104.90859,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-014",
+      "lat": 44.5708,
+      "lng": 100.21003,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-015",
+      "lat": 45.71634,
+      "lng": 106.63569,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-016",
+      "lat": 43.06979,
+      "lng": 101.44333,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-017",
+      "lat": 44.8108,
+      "lng": 102.47188,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-018",
+      "lat": 43.3593,
+      "lng": 100.04885,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-019",
+      "lat": 45.47945,
+      "lng": 104.53057,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-020",
+      "lat": 43.60314,
+      "lng": 101.135,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-021",
+      "lat": 44.53269,
+      "lng": 100.24526,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-26-022",
+      "lat": 44.98445,
+      "lng": 101.72106,
+      "region": "Mongolia Gobi",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-001",
+      "lat": 31.67933,
+      "lng": 88.04538,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-002",
+      "lat": 31.48021,
+      "lng": 90.32958,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-003",
+      "lat": 33.10734,
+      "lng": 89.40556,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-004",
+      "lat": 30.33983,
+      "lng": 86.31565,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-005",
+      "lat": 30.62964,
+      "lng": 89.70703,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-006",
+      "lat": 32.69587,
+      "lng": 87.63262,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-007",
+      "lat": 32.64775,
+      "lng": 88.91397,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-008",
+      "lat": 31.76818,
+      "lng": 87.639,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-009",
+      "lat": 33.01977,
+      "lng": 86.68291,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-010",
+      "lat": 31.71965,
+      "lng": 87.69948,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-011",
+      "lat": 32.71395,
+      "lng": 88.9198,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-012",
+      "lat": 32.66853,
+      "lng": 86.2725,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-013",
+      "lat": 31.58105,
+      "lng": 89.59595,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-014",
+      "lat": 30.03075,
+      "lng": 87.80852,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-015",
+      "lat": 30.84494,
+      "lng": 86.82341,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-016",
+      "lat": 31.02208,
+      "lng": 87.96873,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-017",
+      "lat": 30.03092,
+      "lng": 90.48208,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-27-018",
+      "lat": 30.70278,
+      "lng": 88.28124,
+      "region": "Tibet plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-001",
+      "lat": 40.81469,
+      "lng": 86.0021,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-002",
+      "lat": 41.33342,
+      "lng": 88.4496,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-003",
+      "lat": 38.2883,
+      "lng": 88.89411,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-004",
+      "lat": 38.16921,
+      "lng": 82.14993,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-005",
+      "lat": 41.68465,
+      "lng": 88.89688,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-006",
+      "lat": 40.30304,
+      "lng": 86.5872,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-007",
+      "lat": 40.838,
+      "lng": 85.34155,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-008",
+      "lat": 38.46069,
+      "lng": 82.16685,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-009",
+      "lat": 39.29907,
+      "lng": 88.41058,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-010",
+      "lat": 40.4725,
+      "lng": 88.65621,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-011",
+      "lat": 41.67908,
+      "lng": 82.70504,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-012",
+      "lat": 41.37794,
+      "lng": 83.94653,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-013",
+      "lat": 40.35549,
+      "lng": 86.1917,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-014",
+      "lat": 39.58307,
+      "lng": 84.4822,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-015",
+      "lat": 39.35805,
+      "lng": 84.66455,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-016",
+      "lat": 38.67253,
+      "lng": 86.08387,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-017",
+      "lat": 38.45611,
+      "lng": 86.07962,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-018",
+      "lat": 41.62369,
+      "lng": 84.795,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-019",
+      "lat": 40.90952,
+      "lng": 88.55159,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-28-020",
+      "lat": 41.26015,
+      "lng": 83.89015,
+      "region": "Western China desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-001",
+      "lat": -26.82845,
+      "lng": 129.16999,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-002",
+      "lat": -23.18081,
+      "lng": 135.36237,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-003",
+      "lat": -22.75593,
+      "lng": 128.94861,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-004",
+      "lat": -21.81722,
+      "lng": 132.43529,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-005",
+      "lat": -21.96443,
+      "lng": 135.35865,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-006",
+      "lat": -24.40876,
+      "lng": 137.1657,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-007",
+      "lat": -23.48407,
+      "lng": 133.98828,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-008",
+      "lat": -23.00383,
+      "lng": 136.50672,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-009",
+      "lat": -22.98226,
+      "lng": 128.66053,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-010",
+      "lat": -27.45371,
+      "lng": 131.86429,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-011",
+      "lat": -25.57744,
+      "lng": 130.02141,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-012",
+      "lat": -27.55062,
+      "lng": 132.58071,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-013",
+      "lat": -25.51674,
+      "lng": 131.97105,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-014",
+      "lat": -27.54488,
+      "lng": 136.14866,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-015",
+      "lat": -27.38615,
+      "lng": 136.50675,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-016",
+      "lat": -21.15765,
+      "lng": 133.76509,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-017",
+      "lat": -23.94346,
+      "lng": 132.08983,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-018",
+      "lat": -23.56547,
+      "lng": 135.71,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-019",
+      "lat": -20.83299,
+      "lng": 131.94707,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-020",
+      "lat": -21.52147,
+      "lng": 134.17021,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-021",
+      "lat": -25.42779,
+      "lng": 132.23192,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-022",
+      "lat": -26.79311,
+      "lng": 127.68061,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-023",
+      "lat": -27.17198,
+      "lng": 136.8904,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-024",
+      "lat": -25.2525,
+      "lng": 134.85747,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-025",
+      "lat": -23.96361,
+      "lng": 128.89815,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-026",
+      "lat": -26.01805,
+      "lng": 131.81534,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-027",
+      "lat": -24.48463,
+      "lng": 132.75023,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-028",
+      "lat": -26.73003,
+      "lng": 131.10137,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-029",
+      "lat": -25.73685,
+      "lng": 131.49646,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-29-030",
+      "lat": -25.29306,
+      "lng": 133.57674,
+      "region": "Australian outback",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-001",
+      "lat": -22.84309,
+      "lng": 126.58922,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-002",
+      "lat": -25.73635,
+      "lng": 124.37802,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-003",
+      "lat": -23.28648,
+      "lng": 125.13659,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-004",
+      "lat": -23.10507,
+      "lng": 126.62626,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-005",
+      "lat": -22.37463,
+      "lng": 127.49312,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-006",
+      "lat": -24.66655,
+      "lng": 126.33096,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-007",
+      "lat": -25.43429,
+      "lng": 125.39928,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-008",
+      "lat": -22.12921,
+      "lng": 126.79392,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-009",
+      "lat": -24.43217,
+      "lng": 126.38016,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-010",
+      "lat": -22.24799,
+      "lng": 125.23833,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-011",
+      "lat": -24.49328,
+      "lng": 127.16665,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-012",
+      "lat": -22.74726,
+      "lng": 126.68047,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-013",
+      "lat": -22.68416,
+      "lng": 126.9551,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-014",
+      "lat": -23.25834,
+      "lng": 126.10557,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-30-015",
+      "lat": -23.4159,
+      "lng": 125.69363,
+      "region": "Gibson desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-31-001",
+      "lat": -43.77634,
+      "lng": 169.90649,
+      "region": "NZ South Island alps",
+      "anchor": false
+    },
+    {
+      "id": "remote-31-002",
+      "lat": -44.13947,
+      "lng": 169.53548,
+      "region": "NZ South Island alps",
+      "anchor": false
+    },
+    {
+      "id": "remote-31-003",
+      "lat": -42.60466,
+      "lng": 170.21568,
+      "region": "NZ South Island alps",
+      "anchor": false
+    },
+    {
+      "id": "remote-31-004",
+      "lat": -44.04691,
+      "lng": 169.34391,
+      "region": "NZ South Island alps",
+      "anchor": false
+    },
+    {
+      "id": "remote-31-005",
+      "lat": -44.34567,
+      "lng": 171.11107,
+      "region": "NZ South Island alps",
+      "anchor": false
+    },
+    {
+      "id": "remote-31-006",
+      "lat": -44.29772,
+      "lng": 170.92719,
+      "region": "NZ South Island alps",
+      "anchor": false
+    },
+    {
+      "id": "remote-31-007",
+      "lat": -42.82976,
+      "lng": 171.20921,
+      "region": "NZ South Island alps",
+      "anchor": false
+    },
+    {
+      "id": "remote-31-008",
+      "lat": -44.42451,
+      "lng": 169.84191,
+      "region": "NZ South Island alps",
+      "anchor": false
+    },
+    {
+      "id": "remote-31-009",
+      "lat": -42.96738,
+      "lng": 169.32762,
+      "region": "NZ South Island alps",
+      "anchor": false
+    },
+    {
+      "id": "remote-31-010",
+      "lat": -43.74656,
+      "lng": 169.40562,
+      "region": "NZ South Island alps",
+      "anchor": false
+    },
+    {
+      "id": "remote-31-011",
+      "lat": -42.83731,
+      "lng": 170.92774,
+      "region": "NZ South Island alps",
+      "anchor": false
+    },
+    {
+      "id": "remote-31-012",
+      "lat": -42.88191,
+      "lng": 169.41385,
+      "region": "NZ South Island alps",
+      "anchor": false
+    },
+    {
+      "id": "remote-32-001",
+      "lat": -5.62465,
+      "lng": 145.23258,
+      "region": "PNG highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-32-002",
+      "lat": -5.14727,
+      "lng": 144.71259,
+      "region": "PNG highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-32-003",
+      "lat": -5.6116,
+      "lng": 144.85478,
+      "region": "PNG highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-32-004",
+      "lat": -5.00293,
+      "lng": 145.34678,
+      "region": "PNG highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-32-005",
+      "lat": -5.43198,
+      "lng": 144.9284,
+      "region": "PNG highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-32-006",
+      "lat": -4.88275,
+      "lng": 145.40705,
+      "region": "PNG highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-32-007",
+      "lat": -4.82977,
+      "lng": 145.10352,
+      "region": "PNG highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-32-008",
+      "lat": -4.60574,
+      "lng": 146.95332,
+      "region": "PNG highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-32-009",
+      "lat": -5.57664,
+      "lng": 144.84532,
+      "region": "PNG highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-32-010",
+      "lat": -5.73626,
+      "lng": 145.58238,
+      "region": "PNG highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-32-011",
+      "lat": -4.56746,
+      "lng": 146.45067,
+      "region": "PNG highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-32-012",
+      "lat": -4.89748,
+      "lng": 144.4152,
+      "region": "PNG highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-33-001",
+      "lat": 0.75001,
+      "lng": 115.92354,
+      "region": "Borneo interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-33-002",
+      "lat": 2.62235,
+      "lng": 115.66362,
+      "region": "Borneo interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-33-003",
+      "lat": 0.30777,
+      "lng": 116.53768,
+      "region": "Borneo interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-33-004",
+      "lat": 2.5535,
+      "lng": 114.85519,
+      "region": "Borneo interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-33-005",
+      "lat": 2.28935,
+      "lng": 114.81837,
+      "region": "Borneo interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-33-006",
+      "lat": 2.71592,
+      "lng": 114.44205,
+      "region": "Borneo interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-33-007",
+      "lat": 1.31242,
+      "lng": 116.83924,
+      "region": "Borneo interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-33-008",
+      "lat": 0.66611,
+      "lng": 115.35338,
+      "region": "Borneo interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-33-009",
+      "lat": 1.04876,
+      "lng": 114.08001,
+      "region": "Borneo interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-33-010",
+      "lat": 0.15977,
+      "lng": 115.50602,
+      "region": "Borneo interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-33-011",
+      "lat": 0.70733,
+      "lng": 116.98358,
+      "region": "Borneo interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-33-012",
+      "lat": 1.12474,
+      "lng": 114.08456,
+      "region": "Borneo interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-001",
+      "lat": 68.79248,
+      "lng": 27.35671,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-002",
+      "lat": 67.94988,
+      "lng": 27.16552,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-003",
+      "lat": 66.4128,
+      "lng": 25.14752,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-004",
+      "lat": 68.48928,
+      "lng": 26.78429,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-005",
+      "lat": 66.41638,
+      "lng": 26.82214,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-006",
+      "lat": 67.3458,
+      "lng": 24.021,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-007",
+      "lat": 66.23768,
+      "lng": 25.0237,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-008",
+      "lat": 68.50489,
+      "lng": 26.19522,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-009",
+      "lat": 68.1817,
+      "lng": 26.11109,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-010",
+      "lat": 66.33356,
+      "lng": 25.15241,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-011",
+      "lat": 66.90345,
+      "lng": 24.191,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-012",
+      "lat": 67.25948,
+      "lng": 27.1756,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-013",
+      "lat": 67.37134,
+      "lng": 24.44343,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-014",
+      "lat": 68.71544,
+      "lng": 26.38696,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-34-015",
+      "lat": 66.04931,
+      "lng": 26.0615,
+      "region": "Lapland",
+      "anchor": false
+    },
+    {
+      "id": "remote-35-001",
+      "lat": 57.36291,
+      "lng": -5.21285,
+      "region": "Scottish Highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-35-002",
+      "lat": 57.64386,
+      "lng": -4.27038,
+      "region": "Scottish Highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-35-003",
+      "lat": 57.36085,
+      "lng": -4.66686,
+      "region": "Scottish Highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-35-004",
+      "lat": 57.99656,
+      "lng": -5.32877,
+      "region": "Scottish Highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-35-005",
+      "lat": 58.46198,
+      "lng": -5.36464,
+      "region": "Scottish Highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-35-006",
+      "lat": 57.78909,
+      "lng": -4.48534,
+      "region": "Scottish Highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-35-007",
+      "lat": 58.4825,
+      "lng": -4.3917,
+      "region": "Scottish Highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-35-008",
+      "lat": 57.58568,
+      "lng": -4.55973,
+      "region": "Scottish Highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-35-009",
+      "lat": 57.95351,
+      "lng": -3.53792,
+      "region": "Scottish Highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-35-010",
+      "lat": 57.38048,
+      "lng": -5.46752,
+      "region": "Scottish Highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-35-011",
+      "lat": 58.18278,
+      "lng": -4.8104,
+      "region": "Scottish Highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-35-012",
+      "lat": 58.09941,
+      "lng": -4.24349,
+      "region": "Scottish Highlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-36-001",
+      "lat": 39.543,
+      "lng": 35.20556,
+      "region": "Anatolian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-36-002",
+      "lat": 38.66504,
+      "lng": 33.13301,
+      "region": "Anatolian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-36-003",
+      "lat": 39.09203,
+      "lng": 35.44053,
+      "region": "Anatolian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-36-004",
+      "lat": 38.35018,
+      "lng": 35.33743,
+      "region": "Anatolian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-36-005",
+      "lat": 38.92925,
+      "lng": 35.08617,
+      "region": "Anatolian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-36-006",
+      "lat": 39.26347,
+      "lng": 35.43449,
+      "region": "Anatolian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-36-007",
+      "lat": 38.1262,
+      "lng": 35.32857,
+      "region": "Anatolian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-36-008",
+      "lat": 38.91536,
+      "lng": 33.88033,
+      "region": "Anatolian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-36-009",
+      "lat": 38.08761,
+      "lng": 33.59841,
+      "region": "Anatolian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-36-010",
+      "lat": 38.08381,
+      "lng": 35.80011,
+      "region": "Anatolian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-36-011",
+      "lat": 39.03077,
+      "lng": 35.96737,
+      "region": "Anatolian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-36-012",
+      "lat": 39.08606,
+      "lng": 33.75994,
+      "region": "Anatolian plateau",
+      "anchor": false
+    },
+    {
+      "id": "remote-37-001",
+      "lat": 27.88323,
+      "lng": 70.57331,
+      "region": "Rajasthan desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-37-002",
+      "lat": 26.89244,
+      "lng": 72.34252,
+      "region": "Rajasthan desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-37-003",
+      "lat": 28.1645,
+      "lng": 70.99577,
+      "region": "Rajasthan desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-37-004",
+      "lat": 26.31119,
+      "lng": 71.10406,
+      "region": "Rajasthan desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-37-005",
+      "lat": 28.22372,
+      "lng": 72.22992,
+      "region": "Rajasthan desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-37-006",
+      "lat": 28.23659,
+      "lng": 71.15993,
+      "region": "Rajasthan desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-37-007",
+      "lat": 28.43431,
+      "lng": 71.48861,
+      "region": "Rajasthan desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-37-008",
+      "lat": 27.24381,
+      "lng": 72.77293,
+      "region": "Rajasthan desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-37-009",
+      "lat": 27.29819,
+      "lng": 72.40344,
+      "region": "Rajasthan desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-37-010",
+      "lat": 27.8177,
+      "lng": 70.23678,
+      "region": "Rajasthan desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-37-011",
+      "lat": 27.50613,
+      "lng": 72.46702,
+      "region": "Rajasthan desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-37-012",
+      "lat": 27.36369,
+      "lng": 70.96363,
+      "region": "Rajasthan desert",
+      "anchor": false
+    },
+    {
+      "id": "remote-38-001",
+      "lat": 25.20017,
+      "lng": 94.98276,
+      "region": "NE India hills",
+      "anchor": false
+    },
+    {
+      "id": "remote-38-002",
+      "lat": 25.76624,
+      "lng": 94.80786,
+      "region": "NE India hills",
+      "anchor": false
+    },
+    {
+      "id": "remote-38-003",
+      "lat": 26.06529,
+      "lng": 95.06929,
+      "region": "NE India hills",
+      "anchor": false
+    },
+    {
+      "id": "remote-38-004",
+      "lat": 25.87887,
+      "lng": 93.12707,
+      "region": "NE India hills",
+      "anchor": false
+    },
+    {
+      "id": "remote-38-005",
+      "lat": 27.17509,
+      "lng": 94.05768,
+      "region": "NE India hills",
+      "anchor": false
+    },
+    {
+      "id": "remote-38-006",
+      "lat": 27.49538,
+      "lng": 93.82367,
+      "region": "NE India hills",
+      "anchor": false
+    },
+    {
+      "id": "remote-38-007",
+      "lat": 27.45007,
+      "lng": 95.84371,
+      "region": "NE India hills",
+      "anchor": false
+    },
+    {
+      "id": "remote-38-008",
+      "lat": 25.1876,
+      "lng": 94.91254,
+      "region": "NE India hills",
+      "anchor": false
+    },
+    {
+      "id": "remote-38-009",
+      "lat": 25.90828,
+      "lng": 95.40329,
+      "region": "NE India hills",
+      "anchor": false
+    },
+    {
+      "id": "remote-38-010",
+      "lat": 26.69853,
+      "lng": 95.85837,
+      "region": "NE India hills",
+      "anchor": false
+    },
+    {
+      "id": "remote-38-011",
+      "lat": 25.35695,
+      "lng": 94.82272,
+      "region": "NE India hills",
+      "anchor": false
+    },
+    {
+      "id": "remote-38-012",
+      "lat": 26.95328,
+      "lng": 93.1044,
+      "region": "NE India hills",
+      "anchor": false
+    },
+    {
+      "id": "remote-39-001",
+      "lat": 43.10085,
+      "lng": 144.05703,
+      "region": "Hokkaido interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-39-002",
+      "lat": 43.54949,
+      "lng": 143.26571,
+      "region": "Hokkaido interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-39-003",
+      "lat": 43.85087,
+      "lng": 143.71019,
+      "region": "Hokkaido interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-39-004",
+      "lat": 44.01859,
+      "lng": 144.39765,
+      "region": "Hokkaido interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-39-005",
+      "lat": 43.55802,
+      "lng": 144.02617,
+      "region": "Hokkaido interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-39-006",
+      "lat": 43.86088,
+      "lng": 143.55892,
+      "region": "Hokkaido interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-39-007",
+      "lat": 43.59705,
+      "lng": 143.79912,
+      "region": "Hokkaido interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-39-008",
+      "lat": 43.37442,
+      "lng": 142.7269,
+      "region": "Hokkaido interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-39-009",
+      "lat": 44.10351,
+      "lng": 143.49809,
+      "region": "Hokkaido interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-39-010",
+      "lat": 43.58048,
+      "lng": 143.62335,
+      "region": "Hokkaido interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-39-011",
+      "lat": 43.39267,
+      "lng": 143.02058,
+      "region": "Hokkaido interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-39-012",
+      "lat": 43.66941,
+      "lng": 144.49273,
+      "region": "Hokkaido interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-40-001",
+      "lat": 23.78558,
+      "lng": 121.73318,
+      "region": "Taiwan central mountains",
+      "anchor": false
+    },
+    {
+      "id": "remote-40-002",
+      "lat": 23.9912,
+      "lng": 121.09811,
+      "region": "Taiwan central mountains",
+      "anchor": false
+    },
+    {
+      "id": "remote-40-003",
+      "lat": 24.35283,
+      "lng": 121.36163,
+      "region": "Taiwan central mountains",
+      "anchor": false
+    },
+    {
+      "id": "remote-40-004",
+      "lat": 24.39868,
+      "lng": 121.35609,
+      "region": "Taiwan central mountains",
+      "anchor": false
+    },
+    {
+      "id": "remote-40-005",
+      "lat": 23.58779,
+      "lng": 121.54554,
+      "region": "Taiwan central mountains",
+      "anchor": false
+    },
+    {
+      "id": "remote-40-006",
+      "lat": 24.34552,
+      "lng": 121.25567,
+      "region": "Taiwan central mountains",
+      "anchor": false
+    },
+    {
+      "id": "remote-40-007",
+      "lat": 23.84743,
+      "lng": 121.05195,
+      "region": "Taiwan central mountains",
+      "anchor": false
+    },
+    {
+      "id": "remote-40-008",
+      "lat": 24.04217,
+      "lng": 121.71307,
+      "region": "Taiwan central mountains",
+      "anchor": false
+    },
+    {
+      "id": "remote-40-009",
+      "lat": 24.35136,
+      "lng": 121.56945,
+      "region": "Taiwan central mountains",
+      "anchor": false
+    },
+    {
+      "id": "remote-40-010",
+      "lat": 24.42732,
+      "lng": 121.51016,
+      "region": "Taiwan central mountains",
+      "anchor": false
+    },
+    {
+      "id": "remote-41-001",
+      "lat": 56.17479,
+      "lng": 159.05253,
+      "region": "Kamchatka",
+      "anchor": false
+    },
+    {
+      "id": "remote-41-002",
+      "lat": 53.48545,
+      "lng": 157.20588,
+      "region": "Kamchatka",
+      "anchor": false
+    },
+    {
+      "id": "remote-41-003",
+      "lat": 53.55551,
+      "lng": 160.74224,
+      "region": "Kamchatka",
+      "anchor": false
+    },
+    {
+      "id": "remote-41-004",
+      "lat": 53.10514,
+      "lng": 159.32413,
+      "region": "Kamchatka",
+      "anchor": false
+    },
+    {
+      "id": "remote-41-005",
+      "lat": 54.47564,
+      "lng": 160.82197,
+      "region": "Kamchatka",
+      "anchor": false
+    },
+    {
+      "id": "remote-41-006",
+      "lat": 55.20659,
+      "lng": 159.67169,
+      "region": "Kamchatka",
+      "anchor": false
+    },
+    {
+      "id": "remote-41-007",
+      "lat": 53.34486,
+      "lng": 157.85574,
+      "region": "Kamchatka",
+      "anchor": false
+    },
+    {
+      "id": "remote-41-008",
+      "lat": 56.99838,
+      "lng": 160.31322,
+      "region": "Kamchatka",
+      "anchor": false
+    },
+    {
+      "id": "remote-41-009",
+      "lat": 55.10278,
+      "lng": 160.61499,
+      "region": "Kamchatka",
+      "anchor": false
+    },
+    {
+      "id": "remote-41-010",
+      "lat": 56.29336,
+      "lng": 156.4425,
+      "region": "Kamchatka",
+      "anchor": false
+    },
+    {
+      "id": "remote-41-011",
+      "lat": 56.88952,
+      "lng": 159.85403,
+      "region": "Kamchatka",
+      "anchor": false
+    },
+    {
+      "id": "remote-41-012",
+      "lat": 54.7999,
+      "lng": 160.08065,
+      "region": "Kamchatka",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-001",
+      "lat": 57.37806,
+      "lng": -83.2204,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-002",
+      "lat": 59.12105,
+      "lng": -85.60206,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-003",
+      "lat": 56.72785,
+      "lng": -82.33735,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-004",
+      "lat": 57.73047,
+      "lng": -82.89288,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-005",
+      "lat": 56.22165,
+      "lng": -90.75839,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-006",
+      "lat": 56.61206,
+      "lng": -90.35343,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-007",
+      "lat": 57.29064,
+      "lng": -84.90668,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-008",
+      "lat": 57.38409,
+      "lng": -82.59096,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-009",
+      "lat": 59.5797,
+      "lng": -83.54066,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-010",
+      "lat": 57.00242,
+      "lng": -85.64943,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-011",
+      "lat": 58.20337,
+      "lng": -90.7483,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-012",
+      "lat": 57.2113,
+      "lng": -86.66522,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-013",
+      "lat": 58.01029,
+      "lng": -90.31364,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-014",
+      "lat": 59.76643,
+      "lng": -90.45806,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-42-015",
+      "lat": 58.63493,
+      "lng": -84.79367,
+      "region": "Hudson Bay lowlands",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-001",
+      "lat": -67.76403,
+      "lng": 14.253,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-002",
+      "lat": -68.05467,
+      "lng": 12.52363,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-003",
+      "lat": -71.80139,
+      "lng": -65.45382,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-004",
+      "lat": -67.50982,
+      "lng": -12.32288,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-005",
+      "lat": -67.44209,
+      "lng": 6.6959,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-006",
+      "lat": -69.08389,
+      "lng": -6.10088,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-007",
+      "lat": -68.51373,
+      "lng": -7.2836,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-008",
+      "lat": -69.9723,
+      "lng": 25.66502,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-009",
+      "lat": -68.61939,
+      "lng": 10.46882,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-010",
+      "lat": -67.20506,
+      "lng": -40.25661,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-011",
+      "lat": -71.48919,
+      "lng": -64.0087,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-012",
+      "lat": -68.92276,
+      "lng": -21.57489,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-013",
+      "lat": -70.57184,
+      "lng": -9.33397,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-014",
+      "lat": -69.81192,
+      "lng": 1.83629,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-015",
+      "lat": -66.8606,
+      "lng": 16.07774,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-016",
+      "lat": -65.17238,
+      "lng": -56.92338,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-017",
+      "lat": -69.40622,
+      "lng": -13.83488,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-43-018",
+      "lat": -69.76619,
+      "lng": -23.35274,
+      "region": "Antarctica coast",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-001",
+      "lat": -80.1277,
+      "lng": -65.29136,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-002",
+      "lat": -81.32232,
+      "lng": -59.37032,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-003",
+      "lat": -79.31095,
+      "lng": -13.84716,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-004",
+      "lat": -80.26211,
+      "lng": 21.14305,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-005",
+      "lat": -80.8821,
+      "lng": -54.15899,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-006",
+      "lat": -77.95619,
+      "lng": -56.21991,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-007",
+      "lat": -76.65815,
+      "lng": -30.24282,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-008",
+      "lat": -78.39693,
+      "lng": -30.17364,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-009",
+      "lat": -79.84022,
+      "lng": -96.75532,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-010",
+      "lat": -75.38337,
+      "lng": -29.23778,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-011",
+      "lat": -75.23319,
+      "lng": -69.87978,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-012",
+      "lat": -79.52973,
+      "lng": -92.92434,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-013",
+      "lat": -78.53574,
+      "lng": 23.52753,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-014",
+      "lat": -77.42018,
+      "lng": -34.11784,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-44-015",
+      "lat": -78.24316,
+      "lng": 18.60413,
+      "region": "Antarctica interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-45-001",
+      "lat": 77.79278,
+      "lng": 20.82456,
+      "region": "Svalbard",
+      "anchor": false
+    },
+    {
+      "id": "remote-45-002",
+      "lat": 78.68252,
+      "lng": 19.63857,
+      "region": "Svalbard",
+      "anchor": false
+    },
+    {
+      "id": "remote-45-003",
+      "lat": 77.59781,
+      "lng": 16.00582,
+      "region": "Svalbard",
+      "anchor": false
+    },
+    {
+      "id": "remote-45-004",
+      "lat": 78.21084,
+      "lng": 13.94655,
+      "region": "Svalbard",
+      "anchor": false
+    },
+    {
+      "id": "remote-45-005",
+      "lat": 78.15967,
+      "lng": 12.73532,
+      "region": "Svalbard",
+      "anchor": false
+    },
+    {
+      "id": "remote-45-006",
+      "lat": 78.01277,
+      "lng": 19.64404,
+      "region": "Svalbard",
+      "anchor": false
+    },
+    {
+      "id": "remote-45-007",
+      "lat": 77.33916,
+      "lng": 21.89091,
+      "region": "Svalbard",
+      "anchor": false
+    },
+    {
+      "id": "remote-45-008",
+      "lat": 78.5412,
+      "lng": 13.18811,
+      "region": "Svalbard",
+      "anchor": false
+    },
+    {
+      "id": "remote-45-009",
+      "lat": 79.42525,
+      "lng": 15.93904,
+      "region": "Svalbard",
+      "anchor": false
+    },
+    {
+      "id": "remote-45-010",
+      "lat": 78.88469,
+      "lng": 15.39085,
+      "region": "Svalbard",
+      "anchor": false
+    },
+    {
+      "id": "remote-45-011",
+      "lat": 79.31685,
+      "lng": 19.54965,
+      "region": "Svalbard",
+      "anchor": false
+    },
+    {
+      "id": "remote-45-012",
+      "lat": 77.09717,
+      "lng": 17.09123,
+      "region": "Svalbard",
+      "anchor": false
+    },
+    {
+      "id": "remote-46-001",
+      "lat": 64.75012,
+      "lng": -18.86409,
+      "region": "Iceland interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-46-002",
+      "lat": 64.20555,
+      "lng": -18.00088,
+      "region": "Iceland interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-46-003",
+      "lat": 64.71062,
+      "lng": -17.62903,
+      "region": "Iceland interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-46-004",
+      "lat": 64.90939,
+      "lng": -17.45348,
+      "region": "Iceland interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-46-005",
+      "lat": 64.49195,
+      "lng": -17.1608,
+      "region": "Iceland interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-46-006",
+      "lat": 64.24375,
+      "lng": -16.02815,
+      "region": "Iceland interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-46-007",
+      "lat": 65.10898,
+      "lng": -18.1023,
+      "region": "Iceland interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-46-008",
+      "lat": 64.50456,
+      "lng": -16.51513,
+      "region": "Iceland interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-46-009",
+      "lat": 64.79851,
+      "lng": -16.87378,
+      "region": "Iceland interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-46-010",
+      "lat": 64.44969,
+      "lng": -16.55275,
+      "region": "Iceland interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-47-001",
+      "lat": 61.69469,
+      "lng": -6.69143,
+      "region": "Faroe Islands",
+      "anchor": false
+    },
+    {
+      "id": "remote-47-002",
+      "lat": 62.18392,
+      "lng": -6.79956,
+      "region": "Faroe Islands",
+      "anchor": false
+    },
+    {
+      "id": "remote-47-003",
+      "lat": 62.0374,
+      "lng": -6.62961,
+      "region": "Faroe Islands",
+      "anchor": false
+    },
+    {
+      "id": "remote-47-004",
+      "lat": 61.95043,
+      "lng": -7.46802,
+      "region": "Faroe Islands",
+      "anchor": false
+    },
+    {
+      "id": "remote-47-005",
+      "lat": 61.77967,
+      "lng": -6.33952,
+      "region": "Faroe Islands",
+      "anchor": false
+    },
+    {
+      "id": "remote-47-006",
+      "lat": 62.02632,
+      "lng": -6.56861,
+      "region": "Faroe Islands",
+      "anchor": false
+    },
+    {
+      "id": "remote-47-007",
+      "lat": 61.86211,
+      "lng": -6.63432,
+      "region": "Faroe Islands",
+      "anchor": false
+    },
+    {
+      "id": "remote-47-008",
+      "lat": 61.86682,
+      "lng": -7.29539,
+      "region": "Faroe Islands",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-001",
+      "lat": 2.0644,
+      "lng": -34.51282,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-002",
+      "lat": 5.45867,
+      "lng": 121.23402,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-003",
+      "lat": 2.89163,
+      "lng": 159.58173,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-004",
+      "lat": 7.17128,
+      "lng": 133.73448,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-005",
+      "lat": -7.697,
+      "lng": 66.48148,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-006",
+      "lat": -5.5771,
+      "lng": -57.86509,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-007",
+      "lat": -1.43396,
+      "lng": -85.74086,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-008",
+      "lat": 6.72834,
+      "lng": -118.02984,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-009",
+      "lat": 3.7734,
+      "lng": 149.44718,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-010",
+      "lat": -5.79068,
+      "lng": 101.57724,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-011",
+      "lat": -2.79921,
+      "lng": -48.53484,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-012",
+      "lat": 0.40763,
+      "lng": 66.46164,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-013",
+      "lat": -5.22908,
+      "lng": -131.00097,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-014",
+      "lat": -2.52277,
+      "lng": 53.08529,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-015",
+      "lat": 4.35184,
+      "lng": -67.90511,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-016",
+      "lat": 2.29295,
+      "lng": -58.79339,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-017",
+      "lat": 1.76123,
+      "lng": 106.55282,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-018",
+      "lat": -4.05569,
+      "lng": -14.16859,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-019",
+      "lat": -4.40213,
+      "lng": -151.06051,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-48-020",
+      "lat": -3.23817,
+      "lng": 74.62863,
+      "region": "Pacific atolls (land)",
+      "anchor": false
+    },
+    {
+      "id": "remote-49-001",
+      "lat": 35.51819,
+      "lng": 25.40998,
+      "region": "Mediterranean islands interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-49-002",
+      "lat": 35.7926,
+      "lng": 24.69761,
+      "region": "Mediterranean islands interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-49-003",
+      "lat": 37.33425,
+      "lng": 25.59081,
+      "region": "Mediterranean islands interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-49-004",
+      "lat": 35.68364,
+      "lng": 24.24375,
+      "region": "Mediterranean islands interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-49-005",
+      "lat": 36.69156,
+      "lng": 24.75939,
+      "region": "Mediterranean islands interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-49-006",
+      "lat": 37.4504,
+      "lng": 25.63675,
+      "region": "Mediterranean islands interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-49-007",
+      "lat": 37.38652,
+      "lng": 25.60923,
+      "region": "Mediterranean islands interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-49-008",
+      "lat": 35.72613,
+      "lng": 24.57526,
+      "region": "Mediterranean islands interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-49-009",
+      "lat": 36.78535,
+      "lng": 24.69273,
+      "region": "Mediterranean islands interior",
+      "anchor": false
+    },
+    {
+      "id": "remote-49-010",
+      "lat": 36.10594,
+      "lng": 24.51289,
+      "region": "Mediterranean islands interior",
+      "anchor": false
+    },
+    {
+      "id": "grid-0001",
+      "lat": -60.0,
+      "lng": -180.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0002",
+      "lat": -60.0,
+      "lng": -163.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0003",
+      "lat": -60.0,
+      "lng": -146.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0004",
+      "lat": -60.0,
+      "lng": -129.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0005",
+      "lat": -60.0,
+      "lng": -112.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0006",
+      "lat": -60.0,
+      "lng": -95.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0007",
+      "lat": -60.0,
+      "lng": -78.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0008",
+      "lat": -60.0,
+      "lng": -61.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0009",
+      "lat": -60.0,
+      "lng": -44.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0010",
+      "lat": -60.0,
+      "lng": -27.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0011",
+      "lat": -60.0,
+      "lng": -10.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0012",
+      "lat": -60.0,
+      "lng": 7.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0013",
+      "lat": -60.0,
+      "lng": 24.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0014",
+      "lat": -60.0,
+      "lng": 41.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0015",
+      "lat": -60.0,
+      "lng": 58.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0016",
+      "lat": -60.0,
+      "lng": 75.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0017",
+      "lat": -60.0,
+      "lng": 92.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0018",
+      "lat": -60.0,
+      "lng": 109.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0019",
+      "lat": -60.0,
+      "lng": 126.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0020",
+      "lat": -60.0,
+      "lng": 143.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0021",
+      "lat": -60.0,
+      "lng": 160.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0022",
+      "lat": -60.0,
+      "lng": 177.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0023",
+      "lat": -48.7,
+      "lng": -180.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0024",
+      "lat": -48.7,
+      "lng": -163.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0025",
+      "lat": -48.7,
+      "lng": -146.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0026",
+      "lat": -48.7,
+      "lng": -129.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0027",
+      "lat": -48.7,
+      "lng": -112.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0028",
+      "lat": -48.7,
+      "lng": -95.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0029",
+      "lat": -48.7,
+      "lng": -78.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0030",
+      "lat": -48.7,
+      "lng": -61.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0031",
+      "lat": -48.7,
+      "lng": -44.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0032",
+      "lat": -48.7,
+      "lng": -27.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0033",
+      "lat": -48.7,
+      "lng": -10.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0034",
+      "lat": -48.7,
+      "lng": 7.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0035",
+      "lat": -48.7,
+      "lng": 24.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0036",
+      "lat": -48.7,
+      "lng": 41.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0037",
+      "lat": -48.7,
+      "lng": 58.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0038",
+      "lat": -48.7,
+      "lng": 75.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0039",
+      "lat": -48.7,
+      "lng": 92.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0040",
+      "lat": -48.7,
+      "lng": 109.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0041",
+      "lat": -48.7,
+      "lng": 126.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0042",
+      "lat": -48.7,
+      "lng": 143.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0043",
+      "lat": -48.7,
+      "lng": 160.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0044",
+      "lat": -48.7,
+      "lng": 177.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0045",
+      "lat": -37.4,
+      "lng": -180.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0046",
+      "lat": -37.4,
+      "lng": -163.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0047",
+      "lat": -37.4,
+      "lng": -146.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0048",
+      "lat": -37.4,
+      "lng": -129.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0049",
+      "lat": -37.4,
+      "lng": -112.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0050",
+      "lat": -37.4,
+      "lng": -95.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0051",
+      "lat": -37.4,
+      "lng": -78.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0052",
+      "lat": -37.4,
+      "lng": -61.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0053",
+      "lat": -37.4,
+      "lng": -44.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0054",
+      "lat": -37.4,
+      "lng": -27.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0055",
+      "lat": -37.4,
+      "lng": -10.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0056",
+      "lat": -37.4,
+      "lng": 7.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0057",
+      "lat": -37.4,
+      "lng": 24.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0058",
+      "lat": -37.4,
+      "lng": 41.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0059",
+      "lat": -37.4,
+      "lng": 58.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0060",
+      "lat": -37.4,
+      "lng": 75.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0061",
+      "lat": -37.4,
+      "lng": 92.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0062",
+      "lat": -37.4,
+      "lng": 109.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0063",
+      "lat": -37.4,
+      "lng": 126.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0064",
+      "lat": -37.4,
+      "lng": 143.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0065",
+      "lat": -37.4,
+      "lng": 160.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0066",
+      "lat": -37.4,
+      "lng": 177.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0067",
+      "lat": -26.1,
+      "lng": -180.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0068",
+      "lat": -26.1,
+      "lng": -163.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0069",
+      "lat": -26.1,
+      "lng": -146.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0070",
+      "lat": -26.1,
+      "lng": -129.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0071",
+      "lat": -26.1,
+      "lng": -112.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0072",
+      "lat": -26.1,
+      "lng": -95.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0073",
+      "lat": -26.1,
+      "lng": -78.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0074",
+      "lat": -26.1,
+      "lng": -61.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0075",
+      "lat": -26.1,
+      "lng": -44.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0076",
+      "lat": -26.1,
+      "lng": -27.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0077",
+      "lat": -26.1,
+      "lng": -10.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0078",
+      "lat": -26.1,
+      "lng": 7.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0079",
+      "lat": -26.1,
+      "lng": 24.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0080",
+      "lat": -26.1,
+      "lng": 41.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0081",
+      "lat": -26.1,
+      "lng": 58.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0082",
+      "lat": -26.1,
+      "lng": 75.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0083",
+      "lat": -26.1,
+      "lng": 92.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0084",
+      "lat": -26.1,
+      "lng": 109.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0085",
+      "lat": -26.1,
+      "lng": 126.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0086",
+      "lat": -26.1,
+      "lng": 143.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0087",
+      "lat": -26.1,
+      "lng": 160.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0088",
+      "lat": -26.1,
+      "lng": 177.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0089",
+      "lat": -14.8,
+      "lng": -180.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0090",
+      "lat": -14.8,
+      "lng": -163.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0091",
+      "lat": -14.8,
+      "lng": -146.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0092",
+      "lat": -14.8,
+      "lng": -129.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0093",
+      "lat": -14.8,
+      "lng": -112.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0094",
+      "lat": -14.8,
+      "lng": -95.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0095",
+      "lat": -14.8,
+      "lng": -78.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0096",
+      "lat": -14.8,
+      "lng": -61.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0097",
+      "lat": -14.8,
+      "lng": -44.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0098",
+      "lat": -14.8,
+      "lng": -27.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0099",
+      "lat": -14.8,
+      "lng": -10.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0100",
+      "lat": -14.8,
+      "lng": 7.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0101",
+      "lat": -14.8,
+      "lng": 24.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0102",
+      "lat": -14.8,
+      "lng": 41.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0103",
+      "lat": -14.8,
+      "lng": 58.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0104",
+      "lat": -14.8,
+      "lng": 75.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0105",
+      "lat": -14.8,
+      "lng": 92.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0106",
+      "lat": -14.8,
+      "lng": 109.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0107",
+      "lat": -14.8,
+      "lng": 126.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0108",
+      "lat": -14.8,
+      "lng": 143.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0109",
+      "lat": -14.8,
+      "lng": 160.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    },
+    {
+      "id": "grid-0110",
+      "lat": -14.8,
+      "lng": 177.0,
+      "region": "Global sparse grid",
+      "anchor": false
+    }
+  ]
+}

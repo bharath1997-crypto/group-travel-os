@@ -416,7 +416,7 @@ After every feature change, update this section in .cursorrules:
 | Page / Feature | Status | Last Updated |
 |---|---|---|
 | Auth (JWT + OTP + Google OAuth) | Complete | 2025-06 |
-| Flights page (Duffel + Amadeus concurrent metasearch; Phase 2 trust UI; results funnel) | Modified | 2026-08 |
+| Flights page (Duffel + Amadeus concurrent metasearch; Phase 2 trust UI; results funnel) | Modified | 2026-09 |
 | Hotels page (Agoda) | Complete | 2025-06 |
 | Routes search | Complete | 2025-06 |
 | Activities (GetYourGuide) | Complete | 2025-06 |
@@ -424,11 +424,16 @@ After every feature change, update this section in .cursorrules:
 | Buddy Trips | Complete | 2025-06 |
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |
-| Explore page (destinations + events) | Complete | 2025-06 |
+| Explore hub v6 (loaded-scope counts; no AI fallback in /explore/events inventory) | Modified | 2026-09-23 |
+| Explore G01 Overture hot-index `/explore/places` (Postgres places.gers_id; no FS/OSM route fallback) | Complete | 2026-09-24 |
+| Explore G02 Overture ingest runs + R2 publish script (cold artifact contract) | Complete | 2026-09-24 |
+| Explore G08 unknown field states (price/photo/hours/availability; no stock photos on inventory) | Complete | 2026-09-24 |
+| Explore F14 ratings cleanup (Explore tree only; no pseudoRating on inventory surfaces) | Complete | 2026-09-24 |
 | Browse-first auth (Phase 1 — explorer default, no login wall) | Modified | 2026-07 |
 | Live POI category icons (churches, libraries, schools, parks, landmarks) | Complete | 2026-07 |
 | Live map terrain layer (Esri World Topo) | Modified | 2026-08 |
-| Rovvy UI design system (semantic tokens + shared primitives) | Modified | 2026-08 |
+| Rovvy UI design system (semantic tokens + shared primitives) | Modified | 2026-09 |
+| Global dashboard header (Explore chrome on all tabs; page sub-nav allowed) | Modified | 2026-09 |
 | Live map route persists across layer switches | Modified | 2026-07 |
 | Live map compass (top-right, transparent, expandable) | Complete | 2026-07 |
 | Live map zoom scale control (right edge slider) | Complete | 2026-07 |
@@ -456,6 +461,7 @@ After every feature change, update this section in .cursorrules:
 | Wayra agent orb + compact dock (tap-to-talk global voice, minimize keeps spoken answer) | Modified | 2026-09 |
 | Wayra Chrome panel (Instrument Serif prototype: ready / listening / places found) | Modified | 2026-09 |
 | Wayra voice wire + speaker toggle (browser STT/TTS, no paid live-audio API) | Modified | 2026-09 |
+| Wayra global orb (same draggable sparkle mark on Live, Explore, Trips) | Modified | 2026-09 |
 | Wayra DeepSeek cost (voice/nearby single-call, slim voice prompt, no Gemini hop) | Modified | 2026-09 |
 | Wayra preview-card scope (location binds to preview card, clears on close) | Modified | 2026-07 |
 | Live place card + Wayra chat layout (dock column, compact card, place-switch reset) | Modified | 2026-07 |
@@ -499,6 +505,11 @@ After every feature change, update this section in .cursorrules:
 | Live v3 convoy map pins (Seat Share drivers on map) | Complete | 2026-09 |
 | Live v3 seat join + pickup decrement (RTDB transactions, place pickup capture) | Complete | 2026-09 |
 | Split activities trip_id deep link (from Live Night Finished) | Complete | 2026-09 |
+| SeatShare tab (drive route preview + map/card selection, 200 mi cap, origin/dest confirm, Find/Offer/Your rides) | Modified | 2026-09-19 |
+| Collection / My Space (saved places API, paste-link stub, grid/map UI; Explore F34 hub save via saved_from) | Modified | 2026-09-25 |
+| Live PlacePanel (all picks, POI-only map tap, setup-dock hoisted route UI, deleted PlacePreviewCard) | Modified | 2026-09-17 |
+| Live place spine nearest lookup (`GET /places/spine/near`, 50 m fallback when tile lacks gers_id) | Complete | 2026-09-19 |
+| Live historic/scenic taxonomy + Parks & capitals discovery layer (zoom-tier capitals national→district, place preview labels) | Modified | 2026-09-20 |
 
 ---
 
@@ -512,6 +523,7 @@ Never hand-count; regenerate from the suites:
 
 | Suite | Modules | Tests | Result | Last Verified |
 |---|---|---|---|---|
-| Backend (pytest, tests/) | 79 | 693 | 689 passed, 4 skipped, 0 failed | 2026-08-17 |
-| Frontend (vitest) | 31 | 232 | 232 passed, 0 failed | 2026-08-17 |
-| Frontend types (`npx tsc --noEmit`) | — | — | 0 errors | 2026-08-17 |
+| Backend (pytest, tests/) | 80 | 698 | 698 passed, 0 failed | 2026-09-17 |
+| Frontend (vitest) | 75 | 349 | 349 passed, 0 failed | 2026-09-17 |
+| Explore hub Vitest (`app/(dashboard)/explore/__tests__`) | 20 | 113 | 113 passed, 0 failed | 2026-09-25 |
+| Frontend types (`npx tsc --noEmit`) | — | — | 0 errors | 2026-09-23 |

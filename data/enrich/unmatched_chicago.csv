@@ -1,0 +1,1422 @@
+reason,wikidata_qid,wikidata_name,overture_gers_id,overture_name,distance_m,score
+rejected,Q5033817,Cantigny,16038240-a3f4-49a3-a73a-194fb3a446e4,First Division Museum at Cantigny,128.0,39.0
+rejected,Q5061473,Central Music Hall,c765f658-7247-4c13-9baa-7a36a8f41972,Gene Siskel Film Center,99.7,48.8
+rejected,Q5087188,Chase Promenade,8c8b15ec-e620-4858-8fa7-1889da903bb6,Chase Promenade South,124.3,83.3
+rejected,Q5094649,Chez Paree,57d9ec94-6f2a-4a93-acd7-279bbe0e1d77,Market House Restaurant,52.2,54.5
+rejected,Q5095544,Chicago Club,94633bfc-5339-4a2f-8aea-a29c8ad8cfc0,Chicago Curry,69.7,80.0
+rejected,Q5095721,Chicago Opera House,8dcc13dc-ad31-4e4a-9096-898e48c303a5,Lotus Banh Mi - Chicago Loop,145.6,53.3
+rejected,Q5136192,Club DeLisa,433e867e-9136-490b-84f1-efbe3c0ee759,Evelyn's Food Love,88.9,34.5
+rejected,Q5154795,Winnetka Community House,7eab04ed-b754-4189-9c74-56602b15039c,Antiques + Modernism Winnetka,41.9,54.9
+rejected,Q5196985,Cutting Hall,dafc09b7-383d-454d-a556-e0ef331c77e7,Cutting Hall Performing Arts Center,4.5,51.1
+rejected,Q118142,"Museum of Contemporary Art, Chicago",b4e719e8-0a8d-445f-b553-29b8faeec076,The Lunchroom at SPACE 519,149.3,39.3
+rejected,Q358052,Adler Planetarium,19f16321-e493-4e3c-bd5b-990ce23acd5e,America's Courtyard,27.2,38.9
+rejected,Q588030,Pritzker Military Museum & Library,f10d601e-f557-4a31-8f9a-ee59853be2ac,Milenium Park Chicago,128.1,49.1
+rejected,Q840284,Museum of Broadcast Communications,d232ed91-6695-48e0-8335-c68003ca0392,House of Blues Chicago,111.9,53.6
+rejected,Q34819152,Bartlett Park,57594d5e-9a27-4dee-a7af-84ed48de8249,Jenotty's Snow Cones,47.5,24.2
+rejected,Q34819326,Kamen East Park,4d148ede-8334-4a69-927d-9d1b8b17a36b,Kamen Park,34.8,80.0
+rejected,Q34821282,Beacon Hill Park,25f67567-12ef-4723-b8da-b17ab8e15d87,Iron Oaks Event Center,117.3,36.8
+rejected,Q34826569,Belleau Woods County Forest Preserve,de2a50b6-ac2f-4ab9-b06c-2b7d19a76031,Belleau Woods,128.9,53.1
+rejected,Q34826865,Belmont Prairie Nature Preserve,01817e34-2af5-4906-8c6a-6550654fa1f8,Belmont Prairie,102.0,65.2
+rejected,Q34827257,Beverly Lawn Park,c1841219-aa58-4cba-acf7-79e3890592af,Patrick Sullivan Park,38.7,31.6
+rejected,Q34827862,Bieker Woods Park,fdf21f56-fd19-4358-8044-83b375ba5c8b,Center For Visual & Performing Arts,101.8,32.0
+rejected,Q34832409,Block Park,592983b2-92f9-49a7-856d-f330824e3a7f,Block,45.4,66.7
+rejected,Q34832920,Bock Park,f7688dad-c54f-4f02-b69f-03c2ffc95f74,"Kasey's Banquet Hall, Restaurant & Lounge",101.7,25.0
+rejected,Q34833588,Bogan Park,6ccdec0f-c06b-4b1e-8304-0bbcd2902271,Bogan Park Playground,66.8,64.5
+rejected,Q2154167,Symphony Center,664cb60e-b5eb-4764-a29f-43472d1699a1,Forte at Symphony Center,69.8,76.9
+rejected,Q2389341,Riverview Park,f7422cbe-f852-43c8-86e9-14ede806c3b3,Silver Plate Restaurant,128.4,53.8
+rejected,Q2412168,The Jazz Showcase,f4794d05-6ca0-4b30-92fc-f954ff9cbf46,Mastro's Steakhouse,42.7,43.8
+rejected,Q2902542,Bijou Theater,b14fc486-5b5f-4977-b036-daae2b86874c,The Scout Waterhouse + Kitchen,122.1,48.3
+rejected,Q34804113,Adams Park,e246b6c9-c5f3-48d6-994e-354b0c9d69ff,Addams/Medill Park,57.3,71.4
+rejected,Q34805042,Albion Avenue Park,c09b3fa0-7017-4faa-ba86-88a19d972d65,Albion Avenue,16.5,83.9
+rejected,Q34806691,Altgeld Park,ddca241d-0297-4d1b-a24c-08d3519f5deb,John Altgeld Park,62.3,82.8
+rejected,Q34807522,Amundsen Park,2e6febbf-9e53-4add-830f-e0b470aa75b7,Roald Amundsen Park,15.6,81.2
+rejected,Q1582905,Hull House,e04000ef-b7bf-4780-9b88-22d068313b3f,Jane Addams Hull-House Museum,45.2,51.3
+rejected,Q1833594,Civic Opera House,c697cf84-d2ac-4712-b5b7-e8cbfd9ed8d6,Lyric Opera of Chicago,13.3,61.5
+rejected,Q1906417,The Block Museum of Art,e9f5d6fa-2ef0-49c8-9842-89cbe494fb10,ARTica Studios,111.0,48.5
+rejected,Q1928054,Michael Jordan's Restaurant,2a027442-d74c-4adb-9fb1-f1457e084d0d,Lou Malnati's Pizzeria,114.4,42.1
+rejected,Q2123262,Lincoln Park,ad51ebbc-184f-4872-b561-a9cdd6bae186,AIDS Garden Chicago,118.9,38.7
+rejected,Q2143255,Renaissance Society,c8667837-f52b-40f3-bfec-5933d8b4560e,Deans Office,84.8,45.2
+rejected,Q929075,Brookfield Zoo,3db2b382-9c38-4952-8fd7-8524e457c588,The Swamp,128.3,0.0
+rejected,Q1062693,Burnham Park,504555e6-c61f-4241-a124-bd27a89ef74d,Set in Stone Gathering Space,118.4,25.0
+rejected,Q1122595,Field Museum of Natural History,c502a369-7e85-498d-84df-b2173eebf870,Field Museum Store,6.7,61.2
+rejected,Q1249616,Green Mill Cocktail Lounge,8dfc9c3f-e731-4497-ba73-33f2e0ea686a,The Green Mill,14.5,69.0
+rejected,Q1276053,"Institute for the Study of Ancient Cultures, West Asia & North Africa",4906edc1-cec6-4149-ac9e-e77d7d7c9c2f,Institute for the Study of Ancient Cultures Museum,45.6,75.9
+rejected,Q1336027,Allstate Arena,ab4d2e03-a648-4e4e-9703-a5d1d34710d3,Alltate Arena Chicago Illinos,12.5,60.5
+rejected,Q5310005,DuPage Theater,241a7a6c-96fe-4737-9949-81de28353afc,Rosemary and Jeans Public House,76.2,35.6
+rejected,Q5523989,Garrick Theater,5d1bbd9b-7a0d-4427-ba73-632cc1dc3f84,Goodman Theatre,86.8,60.0
+rejected,Q5527019,Gate of Horn,7ec42a53-5111-473c-975d-afbf35fc7dbf,The Modern Art Museum,131.9,48.3
+rejected,Q5527298,Copernicus Center with the Mitchell P. Kobelinski Theater,8235dc11-5a42-4c3b-972d-966fafe49a83,Copernicus Center,10.6,46.6
+rejected,Q5528839,Gaylord Building,c783ce2f-2720-402e-928c-bdbc0f6802a3,Lincoln Landing,22.7,51.6
+rejected,Q5563393,Giordano's Pizzeria,ad7f9d6e-87e0-4417-9895-4b697f06452a,Giordano's,5.8,69.0
+rejected,Q5584074,Goose Island Brewery,b06516c7-a2dc-46a8-b785-d75c180ae554,Goose Island,29.5,75.0
+rejected,Q5594116,Granada Theatre,012e4b16-f26a-4d25-89db-55cfec995ae5,Coca-Cola Freestyle,71.6,35.3
+rejected,Q5595146,Grand Theatre,2e6af3ab-593a-47eb-b761-a3794809d754,Shane's Deli,110.6,40.0
+rejected,Q5604167,Greenhouse Theater Center,333036bf-c080-4da7-ab8b-3e23970f3b0c,Organic Theater Company,9.0,54.2
+rejected,Q5645831,Hammond Civic Center,d0fde48b-bf81-48aa-a0f9-fbb6bc6ec941,City of Hammond Parks and Recreation,18.1,42.9
+rejected,Q23461308,5 Rabbit Cervecería,c637e3e5-e286-429b-b327-4414225bb6f4,5 Rabbit Brewery,27.3,74.3
+rejected,Q23461788,Minibar,e636e786-9a1f-4802-9672-9fc41585c9b1,Nookies Tree Restaurant,18.9,31.6
+rejected,Q24061530,Chicago Design Museum,c214767b-0a54-4f5a-b0f5-cbbfc178324c,Oriental Theatre Chicago,106.6,53.3
+rejected,Q24435784,Richard and Annette Bloch Cancer Survivors Garden,4d750048-a01f-4713-83d5-4f2c41be0244,Cancer Survivors Garden,0.0,63.9
+rejected,Q25344890,The Hideout Inn,8d7713fc-832c-4002-ae85-2dbe036565ac,The Hideout,11.9,77.8
+rejected,Q5294297,Donald E. Stephens Convention Center,f3843949-258f-4827-aa05-f144f898eca3,Great Expoteria,140.8,36.0
+rejected,Q34833799,Bohn Park,837d4f23-8525-4f1e-a5b6-8210010b3a37,Henry Bohn Park,38.9,75.0
+rejected,Q1423025,Warehouse,2291726c-5843-4ea1-a053-bf909f9d7a55,"Bravo Restaurants, Inc",79.1,33.3
+rejected,Q1456058,Friar's Inn,1ef312e2-5abf-43d7-bdef-2464da67a242,Artist's Cafe,144.9,52.6
+rejected,Q5597744,Graue Mill,9215622d-b74c-413b-8738-d84bdb91d13b,Graue Mill & Museum,2.1,74.1
+rejected,Q34845956,Campbell Park,35c3a024-77db-42b2-9a45-188b0eb40e22,Livingston Field Park,123.0,47.1
+rejected,Q34846034,Campus Green Park,69eadc15-3ff8-48cf-8471-719ae00975a0,Campus Greens,131.0,80.0
+rejected,Q3176658,Jefferson Park,7845fdaf-5d77-4c33-991b-a964dbf94d29,Thomas Jefferson Memorial Park,51.7,63.6
+rejected,Q3180096,Jay Pritzker Pavilion,a11c7d4e-7206-457e-9180-c7e588d4477d,Exelon Pavilion,118.8,50.0
+ambiguous,Q3241309,Lincoln Park Zoo,7951d4db-290c-48ec-96d2-4077dbb5bf09,Licoln Park Zoo,123.2,96.8
+ambiguous,Q3241309,Lincoln Park Zoo,5e91b53f-6a0e-4151-a88d-5fdf3088839c,Lincoln Park Zoo,30.1,100.0
+rejected,Q3329285,McDonald's #1 Store Museum,fdcdf1f9-fe39-418c-944a-24554877c6d5,Las Asadas Fresh Mexican Grill & Taqueria,85.0,28.1
+rejected,Q2919730,Chicago Botanic Garden,f1c6f627-e0fb-4026-adb6-fdd87943e572,English Walled Garden,66.6,46.5
+rejected,Q2934413,Calumet Park,43707314-8e54-4899-929a-f84ce9ae4c20,Calumet Bark,39.1,58.3
+rejected,Q2961232,Pavilion at Northerly Island,5bcba06e-7ba5-4127-8a0e-aa1d5ece6f86,Northerly Island Beach,118.0,72.0
+rejected,Q2964469,Chopin Park,4d3c72d5-3ab2-47db-9422-52af001a9161,Chopin (frederic) Park,48.2,71.0
+rejected,Q2993017,Congress Theater,8d58fa90-7fca-4a27-bcbd-78e2a4a00740,Taqueria Los Comales,87.5,55.6
+rejected,Q3040299,DuSable Museum of African American History,33568a8b-8914-4a24-bf60-22bef61f4828,The DuSable Black History Museum and Education Center,18.2,63.7
+rejected,Q3041211,Dunbar Park,da991e66-cc05-47e6-b384-c802f79ecce6,Dunbar (Paul Laurence),0.0,58.1
+rejected,Q3077068,Nederlander Theatre,45e640b9-a604-4aff-bda4-c2156a0ee96c,James M. Nederlander Theatre,14.0,82.6
+rejected,Q3098339,Garfield Park,b9e5a705-a24e-4f94-986b-5e067ea306ca,Garfield Park Conservatory,8.9,66.7
+rejected,Q3127746,Harris Theater,439a5ec1-0e55-437a-92a1-6782dee53142,Chicago Opera Theater,8.5,62.9
+rejected,Q4790333,Arie Crown Theater,d6f7fbbc-4217-45e4-b247-9b29a662633c,Connie's Pizza,64.9,31.2
+rejected,Q4823312,Austin Town Hall Park Historic District,e632970e-1e75-4c8b-bbf5-908c321079af,Chicago Park District Parks & Playgrounds,20.7,53.8
+rejected,Q4853170,Balzekas Museum of Lithuanian Culture,a64f9448-d140-4d9a-b135-81b27d50e113,La Fiesta Bakery,54.8,34.0
+rejected,Q4914863,Biograph Theater,2ad0585c-c716-44e0-a0df-4818cb505a12,Biograph Diner,14.6,73.3
+rejected,Q4922949,Blackhawk,9a03edd6-6dc9-4480-bee9-2c58763734f3,Starbucks,104.7,33.3
+rejected,Q4937134,Boeing Galleries,9833e364-34bd-4f43-bd49-82031997eb40,Boeing Gallery South,115.7,77.8
+rejected,Q4965779,Briar Street Theater,1b545c3b-ed40-4bb3-8440-fd18600e7502,Thaiday Street Cafe,70.0,58.8
+rejected,Q4972494,Broadway Playhouse at Water Tower Place,a88c66ce-233c-4e42-9612-d099382f876e,Broadway Playhouse,39.6,63.2
+rejected,Q5665149,Harris and Selwyn Theaters,5b6097ee-4766-496f-b7ae-aa5690482382,Intermission Bar and Kitchen,72.7,52.2
+rejected,Q5692816,Heartland Cafe,546ddd37-82b3-4cf2-8449-1359c8c96cf9,Heartland Café,24.0,78.3
+rejected,Q5940360,Humboldt Park,5af92417-9c0b-4884-bc32-02309961329a,Humboldt Park Boathouse,131.9,72.2
+rejected,Q3547881,Ukrainian Institute of Modern Art,84b32840-6ecd-4dcb-90c8-5a5771677ab2,"Star Lanigan &amp Associates, Llc",35.6,37.5
+rejected,Q3552649,Hawthorne Works,07de075e-65a9-412c-bef5-8e1df507f77d,Shiki Buffet & Hibachi Grill - Cicero.,94.3,20.8
+rejected,Q6019933,Indian Boundary Park,69438a61-f73a-49c7-a5f2-0219a6144831,Indian Boundary Park Community Garden,124.4,70.2
+rejected,Q6433027,Kosciuszko Park,cc3bc413-7f67-440b-9cc3-68c6f979ff6c,Kosciuszko (thaddeus) Park,55.0,76.9
+rejected,Q6783782,Masonic Temple Building,d32b2952-1a80-4472-9021-40cfd3030eeb,Ellas,99.1,21.4
+rejected,Q34809611,Armstrong Park,82a3f257-3354-4ed6-a3ed-97975d4d71db,Carol Stream Park District,13.8,50.0
+rejected,Q34810049,Artesian Park,d8856902-d077-4379-bbd6-7242704967e6,Artisan Lake Park,72.2,73.3
+rejected,Q34810529,Ashland Park,0c36c67e-0df3-4a01-a957-d00809fe040a,Jarvis Square Tavern,47.6,37.5
+rejected,Q3394265,Polish Museum of America,d7e5a0d2-d16a-4c40-8cff-e6b48b6eea3e,Roots & Culture,135.1,37.8
+rejected,Q3504614,Superdawg,5cc4ffab-d742-4d13-b55e-1a697842455a,Subway,41.0,40.0
+rejected,Q4683716,"Admiral Theatre, Chicago",062a1871-7193-445a-a0ff-85ff46357a39,Taqueria Morelia,50.8,46.2
+rejected,Q4745796,Ameristar Casino East Chicago,98e3c0a3-9052-4081-ab75-28ca83daefe7,Amerisports,76.0,40.0
+rejected,Q4780359,Apollo Theater Chicago,ab99b465-e38b-42c2-8d13-3b66b86792b7,Taste Of China,62.2,55.6
+rejected,Q7231440,Portage Theatre,10a5ff3c-3aa3-48ea-a46a-f30374a27a2a,The Gift Theatre,33.9,66.7
+rejected,Q7259213,Pulaski Park,eb8f676b-c3ad-4c3c-b32e-b5b4fd4d7ade,Pulaski (Casimer) Park,20.3,75.0
+rejected,Q7307925,The Regal Theater,a768ec69-fbf5-4aec-8d34-ee9be3480a59,Gallery Guichard,103.8,48.3
+rejected,Q7337009,Rive Gauche Nightclub,f0a3e6f9-84f2-4e28-adad-f6afdd28abe4,Taqueria Chingon,67.7,43.2
+rejected,Q34849738,Carver Park,8b32ac77-6827-4117-891c-7a11874e03a0,Beaubien Woods,134.0,24.0
+rejected,Q34852234,City Hall Park,2379efec-cafa-4401-bf50-b7d0f04b30e8,Veterans Park Gazebo,100.6,35.3
+rejected,Q34852478,City Park,f4ef198b-bcd0-4e26-9469-01dec38ea779,Irene King Park,20.3,50.0
+rejected,Q34852561,Cityfront Plaza,ad8c74e4-4d7b-41c6-b6ac-ab6869c0e39b,Qiao Lin Hotpot - Chicago Downtown,106.1,38.3
+rejected,Q34853330,Clarendon Park,944ed811-1055-46c0-bd26-dbac54b0035d,Clarendon Park Playground,72.8,71.8
+rejected,Q34853719,Claus Farm Recreation Area,bcce4dba-e53e-44d8-b0ad-60e5720563ba,Roselle Park District,141.4,38.3
+rejected,Q34854659,Clemente Park,f04fc390-6ae2-4bc7-b6ed-bf15e602b378,Roberto Clemente Park,121.1,76.5
+rejected,Q34856712,Cooper Park,450b9f01-ef12-43a1-a2d2-b7a9b3c156f1,Harvey Park District,126.0,45.2
+rejected,Q34857937,Corcoran Park,892285c3-ce7d-47da-be71-a65272dd9cb1,R.S. Corcoran Park/Vets Field,56.2,63.4
+rejected,Q34858028,Cornell Park,d17249f7-ff7c-4616-8661-d96526472493,"East Hyde Park, Chicago",123.9,47.1
+rejected,Q34859951,Cranberry Park,877f4a26-ce7a-4408-b966-bae087376c3a,Buena Circle Park,122.9,51.6
+rejected,Q34861628,Crete Park,a834df16-e477-4108-b826-8d0e8b1f8d60,Willard Wood Park Center,84.2,52.9
+rejected,Q34862941,Culver Park,58628de9-d102-4348-985b-cb483c429b3e,Culver Park Playground,82.3,66.7
+rejected,Q34863296,Cypress Park,dd2c1937-8733-47cd-a3f0-beeec4fa0f5b,Domino's Pizza,135.5,23.1
+rejected,Q34863619,Daley Plaza,4144c7bd-889f-4229-8ade-597e53769a91,Simply Thalia,130.2,41.7
+rejected,Q34865539,Deer Spring Park,af4abb59-4b74-44ba-9134-84591146daf9,Deerspring Park,35.7,64.5
+rejected,Q34810753,Aspen Park,f8223973-514c-4a85-be2f-97bb73724bcb,Vernon Hills Skate Park,87.7,36.4
+rejected,Q34811099,Athletic Field,2c070901-9c49-4aca-8563-ebeaaf33e6aa,Dripping Sticks,147.6,20.7
+rejected,Q34811118,Athletic Field,5cf98a20-a83d-49a9-b3a5-0f9428181608,Athletic Field Park,86.9,84.8
+rejected,Q34811839,Augusta Park,a1e4357d-6f3d-407c-9a12-8adc660e22d1,Augusta Playground,39.9,73.3
+rejected,Q34812266,Austin Gardens Park,b4061a7f-50eb-49b0-b426-b6be84d8c33b,Austin Gardens,5.9,84.8
+rejected,Q34812440,Avalon Park,7e7d888c-1643-4ebd-b4b7-dda6012b0faa,Chicago Park District Parks & Playgrounds,113.8,28.0
+rejected,Q34812948,Babe Ruth Park,74116935-966c-4e8c-8663-f0543597c985,Tropicana,82.1,17.4
+rejected,Q7354613,Rock N Roll McDonald's,171c6010-5ac8-4bcc-b9c8-fe2b046bbcf5,Hard Rock Cafe,97.2,45.2
+rejected,Q7355846,Rocky Miller Park,98431494-4e08-4af8-8aa9-4c9ce57955b1,Northwestern University Rocky and Bernice Miller Park,92.5,48.6
+rejected,Q7427647,Sauzer's Kiddieland,8c26a4e2-5e19-4680-8f58-df5c4b224097,Culver's,105.3,22.2
+rejected,Q7499315,Shivalya of Downtown Chicago,9cfcc2a0-7199-40e6-a921-909f2ded92fe,Ashley Eats Chicago,90.7,42.6
+rejected,Q7533033,Sixteen,040b6559-3f91-4eec-af46-226f4215d2f9,Great Street,144.6,42.1
+rejected,Q7545243,Smith Museum of Stained Glass Windows,5c32d4e3-65e3-4ff3-87a5-0550ae066eb8,City Cruises Chicago Navy Pier,147.1,29.9
+rejected,Q7568440,South Shore Cultural Center,4889aff5-b654-40e7-ab77-5c75f2601a58,71st Street Beach (South Shore Cultural Center),127.9,75.0
+rejected,Q7606936,Steinway Hall,71cbd502-d39e-4b58-bbea-e6bafff6ba65,Dixon Stein,88.7,50.0
+rejected,Q7611082,Steppenwolf Theatre Company,cd4d4d7e-305b-4c2c-9cd9-53472810801d,Royal George Theatre,45.1,51.1
+rejected,Q7703108,Terra Museum of American Art,c4a14e92-4ca0-4c63-ad3c-6d4bba547630,Museum Of Science And Industry,79.5,55.2
+rejected,Q42539052,Roma Theater,dad78a63-b00c-413f-b641-db1a47db11ab,Argo Tea,91.7,60.0
+rejected,Q42539060,Argmore Theatre,984dc860-84d0-4b86-82de-f490dc974943,Thai Pastry Restaurant,143.0,46.2
+rejected,Q42539067,Argyle Theater,984dc860-84d0-4b86-82de-f490dc974943,Thai Pastry Restaurant,143.0,56.0
+rejected,Q34803948,Academy Park,acaf149f-30cc-4fdf-9955-c9cb9cea4346,Lawson Field,3.9,25.0
+rejected,Q34843337,Busch Grove Community Park,14e004d9-98ee-4d25-abcd-f6fa3fccf6a8,Spray 'n Play,149.6,26.3
+rejected,Q34844227,Butler Field,78b4925d-0560-4352-8453-553395500ec6,Grant Park - Butler Field,54.1,68.6
+rejected,Q34844706,Butternut Playlot,b3f49b5f-02cb-4039-bc10-4541878d1500,Butternut Park,33.2,77.4
+rejected,Q3378479,Midway Plaisance,44f6cfbf-c550-4328-892a-3a81e4007a47,Bardavid,138.4,25.0
+rejected,Q3388707,Ping Tom Memorial Park,a07ba6d2-96b3-4e86-8460-e8a3e201ac61,Who Modern,118.5,37.5
+rejected,Q3157432,Jackson Park,6c230ab6-8dba-40d5-95dc-86c379480c67,Jackson Park Driving Range,122.0,63.2
+rejected,Q42539072,Carmen Theatre,3de69dc7-dbb6-45f5-8672-939cfce73d62,Carmen Park,61.1,72.0
+rejected,Q42539078,Clifton Theater,5bbc1b4f-b444-4a53-a4ad-b4d2e288940a,In-On Thai,130.3,56.0
+rejected,Q42539083,De Luxe Theatre,18f1e6d6-cb46-4f05-be6e-b0dcbe41a9a4,About Face Theatre Admin Office,129.0,52.2
+rejected,Q42539087,Kenmore Theater,c6f593cb-133b-430a-a186-c7b55ede7b38,Aster Park,145.4,40.0
+rejected,Q42539089,Lakeside Theatre,f48f04bb-4a0c-483d-9ddc-87ee95f998e9,Preston Bradley Center,139.5,42.1
+rejected,Q42539097,Pantheon Theatre,c6f593cb-133b-430a-a186-c7b55ede7b38,Aster Park,114.0,46.2
+rejected,Q42539102,Picture Palace Theater,d7b226e1-6728-445e-abe0-bbab8d961651,The Playground Theater,76.2,60.0
+rejected,Q42539110,Sheridan Theatre,b7fb586b-cf5a-4765-87a9-1f887a892a80,Sheridan Liquor & Lounge,143.2,51.6
+rejected,Q42539116,Wilson Avenue Theater,a0637251-c500-4fe8-918e-7262fb21bb07,Harold's Chicken,133.2,43.2
+rejected,Q42539121,Victor Theater,ac44b5a8-b3d1-4f90-8880-9ce8a9ad0673,Haven Entertainment Center,20.9,35.0
+rejected,Q42539131,Hiawatha Theater,e1eee107-b061-4bc1-bf7b-8e3b312f33b0,Akinwale Lifestyle Llc,99.2,36.8
+rejected,Q42539138,Michigan Theatre,203d5bce-cdc7-4894-a5a5-2d1936fe5aec,Chicago's Truck Stop,100.6,44.4
+rejected,Q42539142,Panorama Theatre,761e6ac1-f999-42e8-9f96-c71addef2e91,Daniel's Test Kitchen,111.0,41.4
+rejected,Q42536615,Coronado Theater,a3445e84-4324-4bf3-866a-dc37b1b2e242,Le Divas Catering,108.0,36.4
+rejected,Q42536621,Fountain Theater,629bde96-cba1-453a-8329-773603b4f779,Famentertainmenttheatercompany,111.0,56.5
+rejected,Q42536639,Studio Movie Grill Chatham,52340474-0556-4395-86b5-009c1f1df83c,Chatham 14 Theaters,67.4,44.4
+rejected,Q42536644,Hi-Way Theatre,dbdc067a-79f5-4162-adef-b05b1b269c26,Lupita's Snacks,72.7,34.5
+rejected,Q42536658,Lawn Theatre,5179c2e7-4734-4a0b-9d22-56322dbee877,Celis Nutrition,140.3,29.6
+rejected,Q42536667,Marquette Theater,3b5ed5f1-e376-4a1b-b56b-4e59aca22028,Teatro Tariakuri,133.9,54.5
+rejected,Q42536677,Majestic Midway Theatre,11417cb7-9773-48dd-ad72-3e5d9a490b80,Giorgino's Pizza,23.0,25.6
+rejected,Q42536683,"Crown Theatre, 4013 26th Street",f84439c7-cfe4-4a7a-9b3a-abdfbbdb7e25,Tacos y Tamales El Pollo,26.8,33.3
+rejected,Q42536702,Archer Theatre,41e20940-78f9-4684-8a9c-f55cfc4083a3,Starbucks,27.2,26.1
+rejected,Q42536710,Ashland Theatre,031d373f-80cd-4147-8051-4a3e6e4fffca,See Thru Chinese Kitchen,66.9,38.7
+ambiguous,Q18393977,Wilmette Theatre,56c326c8-0106-4956-b9b1-8b4095c05727,The Wilmette Theatre,24.5,100.0
+ambiguous,Q18393977,Wilmette Theatre,d70a7790-bdb2-4583-9572-994f45616a66,The Wilmette Theatre,20.1,100.0
+rejected,Q18589092,Sutherland Hotel,504919f7-37f6-4b07-8e84-fa9d7119528b,De Rice Asian Cuisine,27.3,21.6
+rejected,Q18748938,Berger Park,d44143d1-61fe-4bce-b1e4-99cff3dc26ff,Berger (albert) Park,49.8,75.9
+rejected,Q7768853,The Thirsty Whale,849b5daf-ee37-41ff-9865-1be07d94ec32,Former site of The Thirsty Whale,9.8,57.8
+rejected,Q42536748,Groveland Theater,7e41c424-cd76-47ac-97d4-99afdd3680b1,South Loop,134.7,29.6
+rejected,Q42536767,Louis Theatre,9e567e00-2a49-4f0f-b3d2-8fdc6a73bdd7,Newyork Food Market,68.4,31.2
+rejected,Q16960182,The Peace Museum,e620a6fc-cc38-467c-914a-6b040f8a7cad,Garfield Park Field House,137.9,32.4
+rejected,Q16993845,Frontier,d5e73847-3e69-479f-a831-54032b233e40,Frontier Chicago,4.2,66.7
+rejected,Q17032198,Sepia,68722869-0261-4a19-a177-870f34c9ad22,SaleroChicago,107.2,44.4
+rejected,Q17066093,Randolph Street Gallery,eb6a2176-8589-4edf-8b0c-8a777b1314e2,Walsh Gallery,32.7,61.1
+rejected,Q17080119,Maggie Daley Park,1414c89c-9ed3-49a3-8acc-1a905bce5f61,Tellin' Tales Theatre,122.9,43.2
+rejected,Q17182253,Pekin Theatre,66668a37-903f-4b23-bfba-45d68a321935,Pappadeaux,114.9,26.1
+rejected,Q17511563,Q17511563,075e739d-5d84-410f-a1ea-ef0198429523,Café 37,15.6,12.5
+rejected,Q17511973,Crosby's Opera House,d45b1d11-0f25-4bb9-b8a7-0b269feeeace,Frontera Fresco,99.8,45.7
+rejected,Q7777354,Theatre Building Chicago,d9bb156b-775f-4ad5-a55d-936c8f37ed56,Belmont Theater District,81.5,54.2
+rejected,Q7797478,Three Floyds Brewing,8ad0bbcf-001d-4d7c-84b9-098e42483b15,3 Floyds Distillery,18.2,41.0
+rejected,Q7810445,Tivoli Theatre,7f4a97f3-1906-43a4-a3de-5b5bf5d88892,Classic Cinemas Tivoli Theatre,35.3,63.6
+rejected,Q7899457,Uptown Theatre,5c3e72fa-e5cc-4fc2-837b-f92dd825cf44,Uptown Theatre - Chicago,16.1,77.8
+rejected,Q7810449,Tivoli Theatre,7c62c706-b899-4bc6-b7c8-3815cd2b932d,Daley's Restaurant,133.8,28.6
+rejected,Q7919410,Velvet Lounge,a2dacbbd-0475-498d-bf33-d36a1f09f9cf,Solette,145.7,46.2
+rejected,Q7994550,White City,d739d5c1-8195-4880-8f51-757184efee44,Flying Wok N' Grill,146.5,27.3
+rejected,Q7998336,Wicker Park,a944f347-13c7-4116-a63b-153d53637337,The Violet Hour,136.3,36.4
+rejected,Q7999624,Wiggly Field,be01bef4-a0fb-48c5-8881-8df76288b17b,Wiggly Field Dog Park,39.5,72.7
+rejected,Q7999741,Wigwam,43c91899-e8f8-4108-9cf7-9e96cac29e5a,Chicago Riverwalk,90.9,34.8
+rejected,Q8001101,Wilder Park Conservatory,4ed6f831-c5c6-4882-9be8-2c6468334683,Wilder Park,96.0,62.9
+rejected,Q14687486,Driehaus Museum,1a1967ec-7c77-4364-aa48-2ce299cd0e1e,Friends Sushi,133.7,50.0
+rejected,Q14687511,Germania Club Building,0df7fc24-0266-4d19-9922-aa3c2097b851,Tiparos Thai Cuisine & Sushi Bar,58.4,41.7
+rejected,Q14687867,Medinah Temple,9de2560f-05e7-4eb7-9826-ad0c64eb3a09,Tre Denari,37.8,50.0
+rejected,Q14687881,Midwest Athletic Club,11b9751d-30c5-4907-bf9b-6c46221b4313,Wileys Chicken and Ribs,132.5,45.5
+rejected,Q8031784,Wonder Works,39c53b8d-144f-4632-9275-7f3252ed2d84,Wonder Works Children's Museum,7.5,57.1
+rejected,Q8033281,Woods Theatre,62515389-040d-4bad-a510-390bf6a697db,United Artists Theatre,98.2,51.4
+rejected,Q15961515,Lillstreet,07dc53bb-9b28-4e32-9513-d8427fcd8666,Lillstreet Art Center,4.6,64.5
+rejected,Q16891552,Gary Public Schools Memorial Auditorium,20c4ce5f-bf8d-458e-b4d0-61a851b590b3,Steel & Spice Caribbean Cuisine,138.4,38.2
+rejected,Q34808491,Apollo Park,be288381-6dcf-4d93-a891-f301cc3cfc63,Apollo Park Playground,63.9,66.7
+rejected,Q34809013,Archer Park,dc475fa9-83bf-41c5-b941-6dac9b249cb1,Archer Park Playground,113.2,66.7
+rejected,Q34809363,Arlington Greens Park,0678fe3e-d743-48c8-8415-bfafd52337e5,Greens Park,83.8,68.8
+rejected,Q42536778,Monogram Theatre,41e20940-78f9-4684-8a9c-f55cfc4083a3,Starbucks,134.5,24.0
+rejected,Q42536795,States Theatre,41e20940-78f9-4684-8a9c-f55cfc4083a3,Starbucks,57.8,34.8
+rejected,Q42539155,President Theater,3671d664-4507-4ed2-934a-ed87ecbdce1a,Lake Park Associates,140.6,37.8
+rejected,Q17513369,"Old Town Ale House, Chicago",5bcc629f-a5d1-4692-b4e0-0a7f3a2ce662,Old Town Ale House,15.3,81.8
+rejected,Q16919553,West End,98306b56-b914-43de-8a1a-338bb9596021,Moe's Southwest Grill,117.1,52.2
+rejected,Q34872348,East View Park,f7256536-4f2b-4ef2-8779-6eba326097fe,Sedgwick Park,25.0,51.9
+rejected,Q34872435,Eastern Park,53b665d6-9e6d-4259-bcbf-40e07eda4362,Steeves Park,29.0,33.3
+ambiguous,Q34873050,Echo Point Park,51a9a851-6139-48dd-8389-077c334b065e,Echo Point Park,116.6,100.0
+ambiguous,Q34873050,Echo Point Park,a736104e-6b6d-4229-876f-af1be74e13bf,Echo Point Park,14.4,100.0
+rejected,Q34873377,Elizabeth Boynton Harbert Park,04201c57-29a7-4a5f-973b-8d21af1bc5f3,Harbert Payne Park,24.0,50.0
+rejected,Q34873807,Ellendale Park,cc9cebc3-21c5-49bc-a579-cfcdb97c4adc,Markley Park,18.7,61.5
+rejected,Q34873856,Elliot Park,49b1cef4-b6cd-4428-9b52-a66a94824302,Evanston Lee Beach,110.0,20.7
+rejected,Q34873935,Elks Park,d50d4fb5-9920-4963-af2a-764a165cd4ca,Elks Play Lot Park,16.3,66.7
+rejected,Q34874093,Eton Park,91524f26-de43-41a2-bd53-b17e63afb1bc,Seminole Park,25.3,36.4
+rejected,Q20710657,Irazu Costa Rican Restaurant,05a09a9a-8fac-4823-b3c5-0add608d80be,Irazu,5.9,45.5
+rejected,Q20710978,Chicago Little Theatre,d724acdd-5c50-44f7-80b0-dfbb80794fe7,Chicago Opera Theater,7.1,74.4
+rejected,Q20711319,Legoland Discovery Center Chicago,a68e075c-2dc4-4684-ab3d-2aa01e9f0649,Cream Bar Custom Ice Cream Sandwiches,95.3,40.0
+rejected,Q21410985,The Great Gritzbe's Flying Food Show,cf5b215b-a2ca-4985-9561-0b9dbba8cb7d,Md's & We're Not Doctors Inc,128.4,44.8
+rejected,Q34867316,Devon Avenue Park,aa5e0e8b-3ce9-49f8-9c2d-4bbbbc11dd2c,Devon Avenue Beach,18.4,68.6
+rejected,Q34867353,Devonshire Park,00ae953a-7c1d-4bef-b320-538c134806b6,Weber Park Cafe,106.2,32.0
+rejected,Q34867724,Dickinson Park,450be101-d83e-42d9-84e8-8483bb1e83af,Arthur Dickinson Park,6.4,80.0
+rejected,Q34869329,Drexel Square,baef6fec-5d0b-4e37-bea9-e61041a88437,Hydepark Food Center,140.7,30.3
+rejected,Q34869552,Dropseed Prairie Nature Preserve,9948b456-bed8-4973-9e9f-341f4fcd24d8,Markham Shkode Prairies - Dropseed Prairie Nature Preserve,27.3,72.7
+rejected,Q34807759,Anderson Park,644f5370-77bd-4b7e-a4b7-fab779a0cbe9,Francis Toby Anderson Park,129.6,66.7
+rejected,Q34807767,Anderson Park,7f427083-e9b9-42ff-baa2-c5ea5492b1ce,Andersen Center and Park,39.8,64.9
+rejected,Q42536828,Washington Theater,41e20940-78f9-4684-8a9c-f55cfc4083a3,Starbucks,134.3,29.6
+rejected,Q42536840,Francis Theatre,a4fd1dd3-05e9-4ac5-85a4-f6fd42f27a55,Mr B Flavors,20.4,37.0
+rejected,Q42536848,Garfield Theatre,a4fd1dd3-05e9-4ac5-85a4-f6fd42f27a55,Mr B Flavors,140.1,28.6
+rejected,Q42536857,Harrison Theatre,0b61ea8e-e64b-4d0a-b3e6-e900def8a9d7,Pete's Place Restaurant,147.1,28.6
+rejected,Q42536869,Kedzie Theatre,7651bec2-a047-41e8-8966-a13b9cefaa81,Garfield Workforce Center,71.4,30.8
+rejected,Q42536881,Senate Theatre,6bdc1a22-f006-4d0c-aecf-a8f66e5f8d80,Edna's Restaurant,102.7,40.0
+rejected,Q42536891,Eastside Theater,81150688-e923-4b39-915f-11125b0e78b0,LMP East Side-Chicago,73.7,43.2
+rejected,Q42536899,Ewing Theatre,2c156c1d-3b07-47ea-925e-0a2952343215,Gerardo's Bakery,50.2,34.5
+rejected,Q42536908,Balmoral Theatre,c8c09708-544a-449a-b7d5-7de09934e3a1,Phase One Llc,61.8,41.4
+rejected,Q42536912,Broadway Theatre,b35ad8d0-8f75-483c-84b2-cc6e0bd2b250,Baskin-Robbins,90.8,26.7
+rejected,Q42536921,Bryn Mawr Theatre,4f3c7a28-b8a6-450d-92f4-6cf070498ea2,Bryn Mawr Restaurant Corp,70.9,61.9
+rejected,Q42536932,Devon Theatre,80743923-e1bf-494f-96cf-3d6582891eda,Ann Sather,65.0,52.2
+rejected,Q42536943,Edgewater Theatre,20c6c806-b421-4199-bc34-ea2d5d393536,Edgewater Tacos,111.8,75.0
+rejected,Q42536952,Granville Theatre,7d7daf2e-c67a-47e0-81af-ed21643faae8,Granville Anvil,45.4,56.2
+rejected,Q34837004,Bremen Heights Park,18a9a2a7-fec5-4dfd-93e4-e97dc8458f70,Mr. Submarine,136.9,32.3
+rejected,Q34838253,Brookside Park,d6825423-fb27-40f9-8bc0-643c6f532e66,Michelle Bingham Park,120.1,45.7
+rejected,Q34841735,Burlington Park County Forest Preserve,beba3bad-1c80-479d-8133-82735972887b,Burlington Park,62.8,56.6
+rejected,Q42536957,Hollywood Theater,f9131482-3c79-477c-951b-ed4d95a8457f,The Vic Theatre,137.3,42.9
+rejected,Q42536962,Thelma Theatre,7d3de0ce-c6a5-43c0-bfb2-1199160b469f,Interrobang Theatre Project,76.9,48.8
+rejected,Q42536970,Thome Theater,c3b65f13-88cc-4f40-9260-ee50b954eea3,Coffee & More,63.3,41.7
+rejected,Q42536991,Bona Ventura Theater,a1f2326c-d928-4d5a-87ad-927dfc71684b,Dream Cafe Grille,6.5,32.4
+rejected,Q42537002,Empress Theatre,df4908be-695e-438e-9a2f-cbbc58acc3f7,Starbucks,63.8,33.3
+rejected,Q42537011,Englewood Theatre,a57cae8c-5987-4f99-b887-5f26d4637f83,Sharks fish and chicken,124.4,35.0
+rejected,Q42537023,Halsted Theatre,a1f2326c-d928-4d5a-87ad-927dfc71684b,Dream Cafe Grille,65.7,43.8
+rejected,Q42537042,Kim Theatre,8e1ad2da-6af7-4f7a-a9e7-2890c966e52f,Sikia,126.9,37.5
+rejected,Q42537052,Linden Theater,df4908be-695e-438e-9a2f-cbbc58acc3f7,Starbucks,109.3,26.1
+rejected,Q42537063,Lynn Theater,cdf1b04f-f9ea-4a4a-9a6c-94344f3f1c02,Momentum Coffee Englewood,135.9,21.6
+rejected,Q42537089,Model Theatre,8474df36-a3d6-4147-9dc7-82b6515caad9,Kusanya Cafe,14.8,10.0
+rejected,Q42537100,Ramona Theatre,cf79051f-7a98-453f-b28f-1266a9b7492f,Seafood Shack And Steak,67.3,43.2
+rejected,Q42537124,Southtown Theatre,3b344122-bf67-4ac8-844b-53a516311caf,Subway,69.6,34.8
+rejected,Q42537129,Stratford Theater,8e1ad2da-6af7-4f7a-a9e7-2890c966e52f,Sikia,113.6,18.2
+rejected,Q42537139,Alma Theatre,23dd88d0-72df-4e59-995e-5b34df78eb50,Game Stop,66.4,38.1
+rejected,Q42539163,Columbus Theater,642748c1-d421-47fa-ad48-dcab0924b9ae,D's Roti & Trini Cuisine,36.2,36.8
+rejected,Q42539168,Crystal Theatre,15cc5163-01da-4d99-bce7-2cae79f05383,African Jerk,68.1,37.0
+rejected,Q42539178,Neighborhood Theater,642748c1-d421-47fa-ad48-dcab0924b9ae,D's Roti & Trini Cuisine,54.6,33.3
+rejected,Q42539186,Ogden Theatre,00ea5ebd-197b-4386-b098-1ddd3c4f0e72,Rich Planet Cafe,137.3,33.3
+rejected,Q42539198,Schell Theater,e351191f-01ea-43f7-8cd6-1fd94eac4f5b,White Castle,109.5,46.2
+rejected,Q42539205,Alex Theater,20897ca8-7531-45e1-b639-302c95d754c3,Sister And Brother Enterprises Llp,111.0,34.8
+rejected,Q42539209,Crawford Theater,dab5ef73-6a6d-487e-9779-3b342c10d225,T&T Red Hot's,148.5,41.4
+rejected,Q42539214,Cupid Theater,6fefa71b-044b-4a6b-95a9-97adbea33134,Taste Bud 1,144.0,58.3
+rejected,Q42539219,Lexington Theatre,c0bbbe25-e617-4b95-b413-a81b02588c5f,Duwell’s,128.0,16.0
+rejected,Q42539225,Marbro Theatre,6fefa71b-044b-4a6b-95a9-97adbea33134,Taste Bud 1,40.2,48.0
+rejected,Q42539230,Savoy Theatre,10620c29-fbbe-4809-a4e5-62e091f67d62,Kostner Food Basket,108.7,37.5
+rejected,Q42539232,AMC Ford City 14,e3c4271f-e494-46ea-a31e-3fd34c0cf7c1,Chick-fil-A,44.6,44.4
+rejected,Q42539236,Ashland Theater,e1acbe1a-6d62-4f65-aa41-da938fa5ef52,Slightly Toasted,122.4,51.6
+rejected,Q42539251,Verdi Theater,9abe708c-b3d3-4d72-b59a-051d3af5cf99,Gonnella Baking Company,105.5,16.7
+rejected,Q42539256,Cine Theatre,2e314db2-0d1c-471f-bd59-0f240491c45b,Tiffin The Indian Kitchen,68.0,48.3
+rejected,Q42539260,Nortown Theater,e4d1ce08-45ad-4fbc-8a05-9d359246d558,Hot Rod Grill,149.1,36.4
+rejected,Q34874410,Evergreen Park,ac3bdca5-6e71-46ce-b93d-bc8e7d261b35,Klein Park,32.7,58.3
+rejected,Q34874424,Evergreen Park,c2a4a6fe-b68d-411c-850c-68c752267903,Brendan's Pub,121.2,37.0
+rejected,Q34874907,Fair Oaks Park,9ec09088-0cb5-41d3-ac83-16cda0bc7fd2,Fair Oaks Park Central,37.0,77.8
+rejected,Q34875813,Fieldcrest Park,7456620d-f784-470f-8247-2d370f13fdf5,Oak Forest Park District - Don Gorman Fieldhouse,34.6,45.9
+rejected,Q42539265,Plaza Theatre,85c2a76f-05ec-4bb9-b36a-2c8ce84faf69,Shore Galleries,25.2,35.7
+rejected,Q42539271,Alameda Theatre,10044ed0-3699-4921-82f9-4f59c418f2ac,The Alley Cat Bar,101.5,50.0
+rejected,Q42539280,Ashland Theatre,54644204-9a3a-42a7-9e10-67467cda26e1,Ashland Ave Hospitality,65.7,57.9
+rejected,Q42539287,Banner Theatre,5d3b3342-6c58-48a3-86a7-497bbccfec99,Refuge Theatre Project,79.1,55.6
+rejected,Q42539292,California Theatre,32f92e02-8d30-4c32-8845-a567bc92575a,Café Marie Jeanne,24.2,45.7
+rejected,Q42539296,Cameo Theatre,71ac2e6b-cb62-4516-8add-ec2a407c1c83,Gallery Chicago,54.3,42.9
+rejected,Q42539301,Chicago Avenue Theater,0cb0632a-421c-4f36-8c42-062d3e23f611,Dicey's Pizza Tavern - Chicago,36.6,52.0
+rejected,Q42539309,Crystal Theater,250ee35b-2470-4605-86c8-f1df62a4e2ab,Ian Sherwin Gallery,68.6,41.2
+rejected,Q42539315,Eagle Theater,71ac2e6b-cb62-4516-8add-ec2a407c1c83,Gallery Chicago,25.8,42.9
+rejected,Q42539319,Florence Theater,53d68390-dd60-43a6-8774-1e422746b164,Dark Matter Coffee - The Mothership,49.4,36.7
+rejected,Q42539323,Harmony Theatre,f82f41a0-6452-4d84-b998-374c3353e20a,UrbanTheater Company,58.8,57.1
+rejected,Q42539327,Home Theater,23462734-31b5-4d90-80dc-41315183611a,Lake & Homan,141.6,54.5
+rejected,Q42539332,Hub Theatre,bb7195c6-01e1-44aa-b335-85188ec93e2f,The Humboldt Park Area,74.6,41.4
+rejected,Q42539338,Idle Hour Theatre,afae2465-c78e-414a-96a7-4b0fdd479ce0,La Cosecha Del Paseo Boricua,64.0,35.6
+rejected,Q42539349,Iola Theatre,cae6a4cd-3874-401b-8c15-022592fc3727,Iron Age Korean Steakhouse,80.1,42.1
+rejected,Q42539355,Kosciuszko Theater,d5e73847-3e69-479f-a831-54032b233e40,Frontier Chicago,17.3,41.2
+rejected,Q42539362,Liberty Theater,ad3b4f6e-a2f1-416d-bc8d-de90a028ce4b,Chopin Theatre,44.2,55.2
+rejected,Q42539369,Lyric Theater,ad3b4f6e-a2f1-416d-bc8d-de90a028ce4b,Chopin Theatre,54.1,59.3
+rejected,Q42539375,Monarch Theater,5aaa7df8-e1d1-4a25-a888-871115e0ee81,Queen Mary Tavern,5.7,50.0
+rejected,Q42539382,Oakley Theater,15b82b00-a3f2-4b7d-a35d-94ca42a53726,Fatso's Last Stand,61.2,31.2
+rejected,Q34877030,Forest Park,b4503f83-6ed5-4a8a-ba92-389f29dedb38,Park District of Forest Park,20.6,56.4
+rejected,Q34877052,Forest Park,cc6e4839-895b-4e33-88ff-faf3914e8b1f,Forest Park Beach,103.6,78.6
+rejected,Q34878352,Fosco Playground,b83debe1-7b21-49c1-a62f-8d5fb0dc31fe,Fosco Park,61.6,69.2
+rejected,Q34878442,Foster Field,88a34488-37ef-4d7e-9b23-17f62f49ae25,Free Flow Kitchen,106.0,47.6
+rejected,Q34878464,Foster Park,a632d242-66b2-4d98-8c7e-953f5c4a4c11,Foster Park Fieldhouse,22.2,66.7
+rejected,Q34878538,Founders Common,a167f11c-04a1-4410-b7c0-322ccdeb8bf8,Greenleaf Foods,133.1,33.3
+rejected,Q42539639,Town Theater,396c8be6-75d5-43b9-bc2c-83868e9fdd64,Monica Duarte De Dominguez,140.6,36.8
+rejected,Q42539643,Villas Theater,e828578a-7004-4ffd-a083-b52ccf5bf1a9,El Paraiso Bakery,41.1,45.2
+rejected,Q42539737,Marcus Country Club Hills Cinema,ac2360df-6dcc-476c-8cfb-10251930af1c,Cajun Restaurant Hills Llc,116.0,44.8
+rejected,Q42539744,AMC Loews Crestwood 18,b7e8d163-f38d-4003-93d9-095c93d58025,Hook & Reel Cajun Seafood & Bar,111.9,35.6
+rejected,Q42539764,New Cuba Theater,655e24c4-25c2-48da-9fb6-5a4890a9101a,Beatrix,148.0,43.5
+rejected,Q42539941,Century 16 Deer Park Town Center,d13fccc0-65e9-46b2-a6b9-e7bef94d7d85,Century 16 Deer Park,6.7,76.9
+rejected,Q42539946,Deerbrook Cinema,c00a7d94-5300-4c1b-b323-64d26683f2bb,Tropical Smoothie Cafe,35.9,30.3
+rejected,Q42540002,Echo Theatre,f19a726c-fc27-423c-bace-99fa75a55f35,Mexico Restaurant,18.0,33.3
+rejected,Q42540025,Dolton Cinema,0b95e6ca-54ab-41ef-97cf-5a41a7d5c666,N'zuri Entertainment Center,29.0,30.0
+rejected,Q42540031,Curtiss Theatre,def32023-66e3-419b-93cf-252fe94cc86e,Smokey Tomato Cafe & Catering,146.2,38.1
+rejected,Q42540029,Lund's Hall,0b95e6ca-54ab-41ef-97cf-5a41a7d5c666,N'zuri Entertainment Center,42.4,21.1
+rejected,Q42540040,Grove Cinemas,c39ff3ad-2e76-46cc-9f88-8628553ca6d0,Shikara Restaurant,51.3,30.0
+rejected,Q42540401,Elk Grove Theater,e84c0feb-6f68-4bc1-8873-45f0d44de6bc,Classic Cinemas Elk Grove Theatre,0.1,64.0
+rejected,Q42540404,York Theatre,1d3d5832-431a-4aed-8ef6-5c88f7bec9bb,Classic Cinemas York Theatre,3.6,60.0
+rejected,Q42540408,Elm Theater,230043ea-beca-4201-b69a-19c410289921,Ashley’s Café and Tap,43.1,31.2
+rejected,Q42540414,Mercury Theater,e85d094e-71af-48ef-a34a-362bc689470f,The Great American Bagel,123.5,45.7
+rejected,Q42540435,Century 12 Evanston and Century CineArts 6,ac488d2b-759d-4343-beeb-8f88e5dc9800,Century 12 Evanston / CinéArts 6 and XD,52.5,83.5
+rejected,Q42540441,Coronet Theatre,07d569b7-eefc-4d7f-b45d-0ba7da4e3b24,Brothers K Coffeehouse,140.0,37.8
+rejected,Q42540445,Evanston 5 Theaters,cc41fa4e-9a63-4142-8821-650aa1722d17,The Danon Gallery,34.4,50.0
+rejected,Q42540455,Hoyburn Theatre,b2ee415e-d6e4-4ce0-9ffd-cf47adb14cca,Harand Camp of the Theatre Arts,105.0,47.8
+rejected,Q42540460,New Campus Theatre,b2ee415e-d6e4-4ce0-9ffd-cf47adb14cca,Harand Camp of the Theatre Arts,92.1,61.2
+rejected,Q42540466,Valencia Theater,42b3c9b2-9e2c-4e6b-a4bd-db6e16fc2bcb,La Macchina,127.3,44.4
+rejected,Q6783783,Masonic Temple Building,8885e840-ae67-4de0-b0f3-d0f6f2d2dd7e,Hemingway District,149.6,39.0
+rejected,Q6819718,Merle Reskin Theatre,e6a5243e-c70d-4729-8f02-593898c98378,Feinberg Theatre,83.3,61.1
+rejected,Q6824526,Metro Chicago,9be8d8a6-b05b-4ba4-a7a5-93f55d8d8826,Metro,30.8,55.6
+rejected,Q6843282,Midway Gardens,0c5f355d-0005-4ff4-99ff-52aa5c18bd76,ZENSHI Handcrafted Sushi,40.0,36.8
+rejected,Q6851757,Milford Theatre,121b23bf-139b-41a0-9768-3ef72ae033c8,Heladeria y Paleteria El Tamarindo Loco,114.4,33.3
+rejected,Q6880159,Mister Kelly's,9e35ae4b-c0ff-4fb2-bac3-c40e0bb729e2,Lou Malnati's Pizzeria,141.0,44.4
+rejected,Q42539387,Paulina Theater,adcc5887-b95d-4901-b73f-599904c7a4ef,The Den Theatre,51.0,61.5
+rejected,Q42539393,Premier Theatre,ad3b4f6e-a2f1-416d-bc8d-de90a028ce4b,Chopin Theatre,144.0,69.0
+rejected,Q42539397,Queen Theatre,2fa45e5c-55d0-4cd1-a6bd-478cb6facc34,Trike Thai Noodles & Sushi,25.8,43.2
+rejected,Q42539402,Royal Theater,4bbc4d61-ac84-4e33-919e-1cd5740d4cbf,Firebrand Theatre,139.7,60.0
+rejected,Q42539407,Royal Theatre,a9053079-f6ee-44b8-97f1-54cf5a1c37a5,Fonda Frontera,75.5,44.4
+rejected,Q42539415,Schindler's Theater,cdb63cc9-7011-4a11-8164-a24552217188,The Red Canary,64.7,34.5
+rejected,Q6917958,Moto,ce8d26ed-fb8c-4f95-806e-0d13f28691b3,Cold Storage,56.8,37.5
+rejected,Q6978444,National Shrine of St Therese,91e2d0f1-1b2e-4d57-bab3-fd1d48e01fb9,National Shrine and Museum of St. Therese,19.3,84.1
+rejected,Q6979302,National Veterans Art Museum,d3ce773a-4232-43ec-b9aa-1f88bc4f6a8d,Keith House Chicago,139.5,34.0
+rejected,Q6982678,Navy Pier Auditorium,893db8d9-b6c5-4297-aa15-a88f43381997,Navy Pier Beer Garden,81.5,58.5
+rejected,Q7053331,Norris University Center,249f92b0-5f64-462e-b112-41b899388c55,Northwestern University Choirs,105.2,66.7
+rejected,Q7088579,Olson Park and Waterfall,5a4a9006-322b-4aba-bf5a-9386b57ce429,Golden Nugget Pancake House,104.3,39.2
+rejected,Q42539419,Shapiro Ballroom,4f97e503-fefe-4dc1-a1c6-6bcbbc6293c8,Patron Gallery,4.8,53.3
+rejected,Q42539426,Strand Theatre,d3e4546c-de32-43be-8b6a-23294f383489,Armand's Pizzeria,19.5,45.2
+rejected,Q42539433,Try-It Theatre,adcc5887-b95d-4901-b73f-599904c7a4ef,The Den Theatre,19.7,64.0
+rejected,Q42539439,Vision Theater,eea9630e-aef0-4fa9-a5cb-c0ac9c5ce64b,Best Submarine,137.2,42.9
+rejected,Q42539443,Warsaw Theater,08c37e97-ff25-4873-825f-daa3e2f6d9eb,Seven22 Eatery,80.6,50.0
+rejected,Q42539451,White Front Theatre,cae6a4cd-3874-401b-8c15-022592fc3727,Iron Age Korean Steakhouse,43.3,44.4
+rejected,Q42539455,Wicker Park Theater,79e13fc9-7dac-4c20-a2ae-f93a262de306,Paulie Gee's Wicker Park,23.3,65.1
+rejected,Q42539460,Ashland Theatre,cae6a4cd-3874-401b-8c15-022592fc3727,Iron Age Korean Steakhouse,34.3,39.0
+rejected,Q42539465,Bismarck Theatre,908a24fb-1f17-436b-b81c-594fcfa5928e,HEYDAY EATERY,139.7,41.4
+rejected,Q42539472,Crown Theatre,ad3b4f6e-a2f1-416d-bc8d-de90a028ce4b,Chopin Theatre,74.2,81.5
+rejected,Q42539476,Fairyland Theater,cae6a4cd-3874-401b-8c15-022592fc3727,Iron Age Korean Steakhouse,44.0,46.5
+rejected,Q42539486,Oriental Theater,ef50c976-fd93-4d39-a6d3-5a819615e270,Barbaro Taqueria,56.4,43.8
+rejected,Q42539496,Winchester Theater,e8801d78-c181-4617-b6e3-b560df253581,Dante's Tavern,14.1,50.0
+rejected,Q7126191,Palace Theater,20c4ce5f-bf8d-458e-b4d0-61a851b590b3,Steel & Spice Caribbean Cuisine,73.8,37.2
+rejected,Q7134366,Paradise Theatre,06804a6d-170d-4a80-a589-42907a5542fe,Raymond's Tacos,94.6,45.2
+rejected,Q7137749,Park Grill,1397c78f-f27b-4f55-82e2-c6e65743dc9d,Chicago Park,138.4,50.0
+rejected,Q42540474,Varsity Theater,bee109d9-e1ba-432a-8a45-cb3a7038826c,Varsity Theatre - Evanston,40.7,71.8
+rejected,Q42540479,Evergreen Theater,ad732730-5f8c-461b-8aca-d2602cf4b037,Ichiddo Ramen,107.5,20.0
+rejected,Q42540550,Forest Park Mall Cinema,8b5238c1-137a-4e27-8054-0ff6b951b547,Harvest 365 Restaurant & Fresh Grill,123.5,39.2
+rejected,Q42540555,Forest Theatre,5b981cfc-e417-4ebb-8416-0d42ccb0894c,Coral Sushi & Thai,66.1,46.7
+rejected,Q42540559,Lil Theatre,6ed2affe-0a0f-4706-91b7-3e4daa2608b6,Petra Falafel,119.7,50.0
+rejected,Q42540800,Glencoe Theatre,d4d22d03-cdaa-4f09-8f27-f41a8e4a8b57,Little Red Hen,75.4,48.3
+rejected,Q42540805,ArcLight Cinemas Glenview,a9b1db19-159d-4637-b9e5-0a3fbf887093,Arclight Cinemas,34.1,78.0
+rejected,Q42540599,Rose Theatre,f4df715f-2293-4788-bf36-3b10a68abed8,Little Pearl Park,115.3,34.5
+rejected,Q42540912,Tradewinds Cinemas I & II,afaa088f-10bb-4a3c-8258-7d1f8295cc21,Taqueria Los Comales,64.0,46.5
+rejected,Q42540962,Brandt Theatre,7a18c295-023e-4be9-b127-faec9cef9a6a,Irene's Bakery,27.5,35.7
+rejected,Q42540970,Era Theatre,7a18c295-023e-4be9-b127-faec9cef9a6a,Irene's Bakery,43.6,40.0
+rejected,Q42540982,Harvey Theatre,69b7a085-b276-4fe1-8751-3b3b81393646,Gus International Harvey Il,103.5,53.7
+rejected,Q42541010,Cinema I & II,9ba2c706-1979-4ab4-81e5-8b30a36a8830,Domino's Pizza,108.8,40.0
+rejected,Q42541018,Pearl Theatre,d5ce1410-75c1-4fb2-96e9-46acc12907c4,Tamales Mexican Restaurant,141.8,42.9
+rejected,Q42541020,Renaissance Place Cinema,88e70f57-a009-421d-9ca9-565717a1a86b,Panera Bread,82.8,44.4
+rejected,Q42541032,Bartlett Theatre,267edf97-cf79-433c-babb-f2cb72fde308,Short Story Theatre,37.2,62.9
+rejected,Q42541054,Hillside Mall Cinemas,24a24332-d65a-4b06-bf7c-d9f2f9b13bb4,Hillside Bowl,79.3,52.9
+rejected,Q42539612,Annetta Theatre,11003fd0-7e79-416b-bbc3-d0d8dda06c3c,Paletas y Nieves El Valle de Michoacan,88.7,34.0
+rejected,Q42539619,Grant Theatre,8c634ce8-2d24-4e34-ae0c-e7452beb45b5,La XHULA Michoacana,116.1,31.2
+rejected,Q42539625,Hawthorne Theatre,72cc8bc4-53cc-42cf-96a6-f655cfb438ae,Worst Post Office In America,87.2,31.1
+rejected,Q42539631,Olympic Theatre,927036ca-7d65-4839-b4b7-2abedcfe9bf5,La Michoacana,125.8,42.9
+rejected,Q42539629,Morton Park Theater,d17d931f-0790-4621-bc29-1f993a9f7c36,Torres Fresh Market,146.5,42.1
+rejected,Q42539634,Palace Theatre,d17d931f-0790-4621-bc29-1f993a9f7c36,Torres Fresh Market,90.0,36.4
+rejected,Q34875922,Fiftyninth and Main Park,860cf4cd-d172-4f7d-ba1f-1583f1352f2c,Ebersold Park,46.9,32.4
+rejected,Q42539506,Amo Theatre,facc1839-842d-453d-9132-501a1f299f79,2 Potz and A Pan Eatery,66.7,35.3
+rejected,Q42539511,Ark Theatre,da349117-aebb-443d-acd2-03931aeb150c,Conscious Plates,99.7,29.6
+rejected,Q42539519,DeLuxe Theatre,7c62c706-b899-4bc6-b7c8-3815cd2b932d,Daley's Restaurant,70.7,38.1
+rejected,Q42539526,Imperial Theatre,7d6eed99-f408-4b68-b0b3-40ff8f1dc30c,Robust Coffee Lounge,58.4,20.7
+rejected,Q42539532,Kimbark Theatre,7d6eed99-f408-4b68-b0b3-40ff8f1dc30c,Robust Coffee Lounge,128.5,14.3
+rejected,Q42539538,Lexington Theatre,7d6eed99-f408-4b68-b0b3-40ff8f1dc30c,Robust Coffee Lounge,79.1,20.0
+rejected,Q42539544,Maryland Theater,da349117-aebb-443d-acd2-03931aeb150c,Conscious Plates,46.9,31.2
+rejected,Q42539549,Midway Theatre,7c62c706-b899-4bc6-b7c8-3815cd2b932d,Daley's Restaurant,46.5,38.1
+rejected,Q42539566,Woodlawn Theatre (1918–),da349117-aebb-443d-acd2-03931aeb150c,Conscious Plates,85.4,21.6
+rejected,Q42539604,AMC Showplace Cicero 14,43c36887-6454-4757-a913-2a668cc909f5,Hoots Cicero,58.6,51.4
+rejected,Q42537164,Acadia Theater,66b1ac3f-9300-49bb-8d35-1d7ed67abe49,La Casa De Samuel,12.7,45.2
+rejected,Q42537172,Colony Theater,ba69ff4f-d3d3-4c8a-a72a-afa31ce71df2,Chinese #1 Kitchen,120.6,34.8
+rejected,Q42537178,Gage Park Theater,c45768ee-6a2c-47ce-98ca-facd67e686b0,Paleteria Flamingos,54.3,50.0
+rejected,Q42537184,Garden Theatre,e5358871-aa8c-4a2d-a202-6ff8b986b8cd,The Green Lady,84.9,50.0
+rejected,Q42537193,"Garfield Theatre, South Halsted Street",dc96b8ea-a43e-4a79-a31f-ea4e70138299,Emerald Park,112.3,28.6
+rejected,Q42537201,Abbey Theater,fd3820f0-4f82-4600-8ee5-1e599dad7594,Two Fish Crab Shack,142.6,37.5
+rejected,Q42537211,Angelus Theatre,e0806124-31f4-4434-a966-ed9dda16d3cc,Little Wok Chinese Restaurant,80.6,42.4
+rejected,Q42537219,"Apollo Theatre, 47th Street",147fcb2a-2e45-4a00-bff0-d9d67502f896,Jacks 47 Llc,68.8,31.6
+rejected,Q42537237,Indiana Theatre,a8ada5d0-1685-4e1f-b708-4f231e8ea8f4,Le Fleur de Lis,128.3,33.3
+rejected,Q42537247,Metropolitan Theatre,8f4ee01f-64c0-4dc8-a186-3a99d0e2640f,Jokes And Notes,80.8,34.3
+rejected,Q42537272,Park Theatre,7f5f63fa-20a2-4d5a-873e-ec3c5d22ff01,Little Sandwich House,45.5,24.2
+rejected,Q42537279,Public Theater,45a8b4c2-54d6-4743-ac09-c64d4b274a88,Pinky's Treats,64.7,50.0
+rejected,Q42537285,Revelry Theatre,3b9eca8e-b8c0-4f47-8cbc-afac96e7e2b4,Renaissance Bronzeville,143.6,42.1
+rejected,Q42537301,Virginia Theater,b2ef7eef-c039-4f32-bf80-4207a9c14f0f,Windy City Cigar Lounge,92.6,37.5
+rejected,Q42537310,Willard Theatre,4d17c0b7-553e-4aaa-aaa2-745b81becf47,Hyde Park,136.9,41.7
+rejected,Q42537317,Brookline Theatre,86eae734-eecf-4a76-a892-9214aaee3f1d,JJ Fish & Chicken,41.0,25.0
+rejected,Q42537324,Chatham Theater,f3ea3065-02a0-455b-a70c-3cca16dfa546,Royal caribbean jerk,61.5,34.3
+rejected,Q42537347,Grove Theatre,2a0d2cf0-b0c7-4b1b-bc13-1dedef2afdc0,Best Gyros,87.0,26.1
+rejected,Q42537364,Rhodes Theater,72f0347c-8404-4fc8-915e-61511faa75e9,Firehouse,109.5,43.5
+rejected,Q42542386,Elmwood Theater,724e0a8e-2b7f-4080-8b38-3935d2d98323,Church of Beethoven - Oak Park,123.5,27.9
+rejected,Q42542392,Lake Theatre,8b06301b-1167-44a7-a2b0-8d8ae5516725,Lake Street Kitchen + Bar,83.0,69.6
+rejected,Q42542399,Lamar Theater,174aa215-5e3c-40eb-9fb5-a1f4aa964508,Kalamata Kitchen,139.0,57.1
+rejected,Q42542404,Playhouse,3038bc5a-42cc-4b7a-bd55-b6cefa0601e0,Connolly's Public House,20.2,43.8
+rejected,Q42542409,Southern Theatre,8597be57-fdfe-4200-80e1-09f1ec0c1433,Kettlestrings Tavern,115.0,44.4
+rejected,Q42542415,Warrington Opera House,eb3c2832-d086-4c90-a49c-fec887b8f1f4,Wild Onion Tied House,44.7,51.2
+rejected,Q42542521,Pal Theater,acdbd3ca-f26b-4021-905b-7eaa18876fde,Hawthorne Park,134.2,48.0
+rejected,Q42542571,Holiday Star Theater,c1313675-44a1-4037-93d0-a8ca3b97a668,Spaa Theater,104.2,62.5
+rejected,Q42542574,Park Ridge Theatre,1efb463c-4488-407e-b5e2-bb566b9723c8,Pickwick Theatre,87.3,64.7
+rejected,Q42542579,Ridge Theatre,86933aff-e7fd-49d4-8e72-473fea2938a0,Hodges Park,51.8,50.0
+rejected,Q42542988,Palwaukee Theater,569c5fbf-30bd-46e1-964a-a3c421472f66,Coopers Hawk Wheeling Il,128.3,39.0
+rejected,Q42543126,River Terrace Theatre,f7447d06-8e88-4feb-ac10-fe514e1965bc,River Grove Historical House and Barn,63.4,41.4
+rejected,Q42543135,Dale Theater,6670525c-dc06-40ff-9e3e-bf212e306579,Francis Cakery & Catering,147.3,40.0
+rejected,Q42543143,Halsted Twin Outdoor Theatre,f710659b-da03-4abc-ba86-8acce913dfd3,Joey's Riverdale,115.8,31.8
+rejected,Q42543364,Meadows Theatre,9b304e3e-8ded-4f27-a12e-207a0410ad5f,AMF ROLLING MEADOWS LANES,110.9,45.0
+rejected,Q34880198,Garfield Square,cefbb503-0d04-42c6-8420-f1fda547e64c,The Franklin,78.3,17.4
+rejected,Q42543371,Rolling Meadows Theater,b12796de-df06-4140-b046-fb0338282efc,Grande Jakes Fresh Mexican Grill,135.0,32.7
+rejected,Q42543539,AMC Streets Of Woodfield 20,fa81fd09-435b-4f46-94cd-c0abcd8b116b,TE'AMO Boba & Dessert - Schaumburg,114.6,38.6
+rejected,Q42543549,Improv Comedy Club Chicago,eba764ff-1cd3-474b-9698-b56e0cb15f66,The Cheesecake Factory,31.5,36.4
+rejected,Q42543557,One Schaumburg Place Cinemas,c8e1fb33-102e-4a65-b6f4-cd91300cb8d9,GameWorks Chicago – Schaumburg,35.9,64.3
+rejected,Q42543570,Woodfield Theatres 3 & 4,df110230-67cf-4d6f-a0f7-32fafb33c672,Olive Garden Italian Restaurant,102.1,33.3
+rejected,Q42543630,AMC Loews Gardens Cinemas at Old Orchard 1-6,72f244f6-e367-4a1f-94a7-510db1e26638,Cmx Cinemas Old Orchard Market,125.5,62.2
+rejected,Q42543639,AMC Loews Gardens Cinemas at Old Orchard 7-13,72f244f6-e367-4a1f-94a7-510db1e26638,Cmx Cinemas Old Orchard Market,122.0,61.3
+rejected,Q42543644,AMC Showplace Village Crossing 18,72b9cdfd-e30f-4853-8297-04f768b07f7c,Shallots Bistro,69.6,33.3
+rejected,Q42543652,Old Orchard Theater,fc81e8b5-efa7-4a31-a3c1-87863ecb5f9d,Pin Chuan International Inc,111.4,34.8
+rejected,Q42543657,Skokie Theatre,a299a74e-468d-4c06-8531-82dd973ed462,Skokie Theatre - Performing Arts Center,13.5,54.9
+rejected,Q42543987,Steger Theatre,8bb90f0a-82dd-4513-b858-10b700202d6a,Aged 2 Perfection,80.7,38.7
+rejected,Q42544035,Streamwood Theater,ed96839a-3254-4ac1-879b-87ccdcb00ed2,Los Burritos Tapatios,61.6,35.9
+rejected,Q42544135,Bremen 4,b2fe7ebe-bfcc-4b49-bfb8-caa3e2792191,Smoothie King,134.6,28.6
+rejected,Q42544218,AMC Hawthorne 12,e371fa64-82df-4853-ad66-af2d26ce17e6,Nirvana Kitchen & Wine Bar,131.4,33.3
+rejected,Q42537551,Hedwig Theater,5708da45-5017-4ec1-bcab-d4a42a1c388b,Tijuanas bar & Grill Chicago,65.3,30.0
+rejected,Q42537559,Irving Theatre,02c36b2d-0839-4d3f-a153-da4ebd5f1bb4,"3932 W. Irving Park, Inc",76.9,50.0
+rejected,Q42537564,Monticello Theatre,b25a7e8d-5336-410b-9d82-01ab134fba8e,Buona Terra,40.2,41.4
+rejected,Q42537570,Palm Theatre,8dd4ebaf-d56e-481f-ae5d-f3ae1265a7d3,INDIE Park Chicago,124.1,33.3
+rejected,Q42537577,Plaisir Theatre,bb12f0d6-5bd1-45ac-9fcf-1a38a4c730d4,Stay & Play Game Cafe,113.4,41.4
+rejected,Q42537582,Revue Theatre,699d3fd8-d5cb-4f40-9ca3-5c18ef0b348e,Hearth & Crust,111.5,56.0
+rejected,Q42537589,Rivoli Theatre,de3d0f8d-3bcf-4b26-8d64-c60a3822cc88,Avenida del Sabor #2,31.8,36.4
+rejected,Q42537594,Times Theatre,2c9350e9-c7a7-4987-9280-549a1440d896,Henry's Shaved Ice,117.4,45.2
+rejected,Q42537598,Beach Theatre,53e55468-c6e3-493f-942c-14de06860c88,Chicago Beach Hotel,134.0,62.5
+rejected,Q42537604,Ken Theatre,b67bfcd7-58dc-4be7-bf5c-ea45da066d9a,Gorée Cuisine,140.6,33.3
+rejected,Q42537609,Piccadilly Theatre,e0a52e61-97c7-4bf0-9fa2-125cb47a6102,Chemistry Chicago,118.3,34.3
+rejected,Q42537614,Victory Theater,0c530766-5e16-434f-a43d-9fda3050ad33,Moore Poppin Chicago Gourmet Popcorn,118.4,31.4
+rejected,Q42537619,Barry Theater,11807ef0-4e27-49d6-89fd-7687bcd34d9e,Touch Ibar,122.1,52.2
+rejected,Q42537624,Belmont Theater,2fb4e27e-9cd6-498f-9175-a456fc7b7f83,Late Night Thai,35.3,46.7
+rejected,Q42537630,Buckingham Theatre,3f4a9418-1c4e-4acd-aecc-b072c12c61f4,Chazui Tea Tower,99.6,52.9
+rejected,Q42537635,Century Centre Cinema,76244f4b-a967-452c-bd33-e5285492b6d3,Landmark's Century Centre Cinema,25.0,79.2
+rejected,Q42537642,City Theater,fd8cc117-d466-4275-aa7d-a6b7f97f0df8,Entente,71.8,42.1
+rejected,Q42537647,Clarendon Theatre,14c1abee-8538-4af4-8c42-105c93db9c6d,Mary Arrchie Theatre,85.2,59.5
+rejected,Q42537653,Clermont Theatre,c6b8ffb3-d36c-4d5f-bb10-c25694f4c777,Annoyance Theatre & Bar,90.2,60.6
+rejected,Q42537659,Comet Theater,c9ccf55e-edab-4023-b0db-517bb299cb52,CSz Theater Chicago,25.8,62.5
+rejected,Q42537665,Esthena Theatre,debef141-9573-4bfe-8be7-3ae205768220,Music Box Theatre,66.5,56.2
+rejected,Q42537669,Glenwood Theater,e8667333-53c9-4ddb-b93d-8675920a3d53,Taste Of New York Bagels & Deli,124.6,53.3
+rejected,Q42537677,Guild Theatre,14c1abee-8538-4af4-8c42-105c93db9c6d,Mary Arrchie Theatre,61.8,54.5
+rejected,Q42537682,Julian Theater,c9ccf55e-edab-4023-b0db-517bb299cb52,CSz Theater Chicago,65.9,60.6
+rejected,Q42588093,Griffith Theatre,6a455f28-41f9-4044-a34f-db77e612b149,Gelsosomo's Pizzeria Griffith,37.6,48.9
+rejected,Q42588106,Calumet Theater,e7d7575c-9e53-4df6-bbe3-aa686da59fae,Just Tonis Bar,81.7,32.0
+rejected,Q42588109,DeLuxe Theater,4d75bb55-0bed-434f-8d6f-00049e76e00a,Beatles Fest,73.7,46.2
+rejected,Q42588119,Hammond Twin Outdoor,0361a0bf-c2a4-4b10-b15d-76e746f36639,Dunkin',149.7,30.8
+rejected,Q42588127,Kennedy Theater,19b5dd7d-eee5-43f9-b13e-a94a12b95f28,Kennedy House of Pancakes,87.0,50.0
+rejected,Q42588125,Hohman Theatre,03cbc904-4475-44ba-8df2-e3c09005ff64,Cj's Muzic Company - The Spot,108.8,39.0
+rejected,Q42588133,Maywood Theatre,27de7ad9-ee26-41cb-856e-e3f3da4814e0,Tooties Chicken and Fish,31.2,35.9
+rejected,Q42588139,Paramount Theatre,830128d4-15a1-4a99-9de8-172f8078ab67,Don Andres Restaurant,68.3,29.6
+rejected,Q42588137,Orpheum Theatre,f2a74eb5-b4d7-4d4a-852d-7b0c4ff0ef12,Hammond Party Banquet Hall,33.6,24.4
+rejected,Q42588145,Parthenon Theatre,4d75bb55-0bed-434f-8d6f-00049e76e00a,Beatles Fest,144.5,41.4
+rejected,Q42588152,State Theatre,1a3ba750-c73b-4890-952a-53c2303338db,Just 1 More,62.8,41.7
+rejected,Q42588163,Highland Cinema,0feb65e8-8801-43c9-8981-2176a6eb0a4b,Marco's Pizza,48.5,35.7
+rejected,Q42588167,Town Theatre,3c0afbca-88c6-47d7-b8c1-a0a2445f518f,Cakes By Karen,63.1,38.5
+rejected,Q42588177,Strand Theatre,573274a4-9874-4cfb-b2d3-5519f727abeb,Art Theater,25.3,64.0
+rejected,Q42589168,Crossroads Cinema,99db1724-ae17-47f8-a2ae-8a84c99fb9bb,Iron House Coffee Supply,92.1,39.0
+rejected,Q42589754,AMC Showplace Schererville 12,32b3deab-7ba1-4345-b5ce-513580e35148,Amc Schererville 12,10.0,79.2
+rejected,Q42589759,AMC Showplace Schererville 16,1e630c8d-9388-42bc-9013-6a3553084096,Amc Schererville 16,143.8,79.2
+rejected,Q49480289,Cosley Park,df8b67ab-e248-4f24-b026-97c13fdbb276,Cosley Zoo,79.6,66.7
+rejected,Q49481374,Cumnor Court Park,31885e3e-56f7-4237-83d0-545ef3560774,Purple Park,114.0,35.7
+rejected,Q42542281,AMC Norridge 6,4e3b0acf-2683-434c-a5bd-c3ccee09a027,Banda Burrito,44.8,37.0
+rejected,Q42542285,Harlem Outdoor Theater,aeac6368-dc2a-4c31-af85-87b227a245af,LongHorn Steakhouse,135.7,43.9
+rejected,Q42542306,Harlem-Cermak Theaters,e6698fc2-737d-4bf1-994e-312f10cc96b2,Yia Yia's Pancake House,132.1,31.1
+rejected,Q42542311,North Riverside Mall Theatre,529dcfa5-1be1-46b9-8349-1b661099c09f,North Riverside (North Riverside Park Mall),87.7,69.6
+rejected,Q42542324,Edens I & II Theaters,bf5cbea3-62d7-4525-919d-7deaf5b986ae,Charlie Beinlich's,98.0,43.2
+rejected,Q42542348,AMC Oakbrook Center 12,eb05e6b7-9f59-425c-b02c-7e09ac528bee,Piccolo Buco by Cooper's Hawk,104.2,39.2
+rejected,Q42542352,AMC Oakbrook Center 4,ee007fda-a26b-4012-a0f2-de97d9d2becb,Tuscany Oak Brook,140.9,26.3
+rejected,Q42542360,Oak Brook Theatre,b78ec792-609e-45f8-8ebc-5df26155f1b2,Violí Oakbrook,114.4,45.2
+rejected,Q42542369,UA Cinema,d6afc144-b9ca-4616-af99-d5e7a06b4bae,Alter Brewing + Kitchen Oak Brook,123.3,25.0
+rejected,Q42542377,Coral Theatre,de3fdd26-0fdf-40dc-accd-b0375611ba1b,Cupid Candies,104.4,23.1
+rejected,Q42542381,Oak Lawn Theater,be8880b4-84f5-4bbe-b9fa-dd3b46c135f4,La Michoacana Pedir a Boca,136.1,42.9
+rejected,Q34885850,Hainesworth Park,8a9c6cd5-487e-484b-b320-42791560e72a,Community Park District,77.5,46.2
+rejected,Q34885936,Hale Park,9ea6bab5-b115-431c-bf6b-948548facf6e,Nathan Hale Park,137.3,72.0
+rejected,Q34885985,Half Day County Forest Preserve,7b2d88a7-6ca9-4fe1-88a2-db5e5bde3176,Daniel Wright Forest Preserve,116.3,60.0
+rejected,Q34886554,Hartigan Park,c75c5d4f-fbf9-478c-bc65-066c20165377,Hartigan Beach Park,45.9,81.2
+rejected,Q34900469,Blackhawk Park,740be490-8c81-474f-a0dc-1dedb9482f4b,HE Parks Wolf Pack Hockey,35.1,46.2
+ambiguous,Q34900692,Blackwelder Park,01609b57-a674-4e1e-8e00-1a6420311ec3,Blackwelder Park,40.7,100.0
+ambiguous,Q34900692,Blackwelder Park,7542d04d-0555-49b2-9992-dfcf8496dffd,Blackwelder Park,138.6,100.0
+rejected,Q49552760,Rockwell Park,93c36c20-28c7-4a0c-ac11-aadd467c3f43,West End,118.4,28.6
+rejected,Q49553027,Roesner Park,ea838a0f-3804-44e2-89e7-5c84f76852dd,Markham Park District,77.1,30.3
+rejected,Q49553147,Rogers Park,4a711cea-b13a-4f26-a3f1-f9452bcfe328,Rogers School Park,85.3,75.9
+rejected,Q49553347,Romeoville Prairie Nature Preserve,919be9ce-409c-4733-8d48-32b3a85b0b79,Isle a la Cache County Forest Preserve,122.0,44.4
+rejected,Q49553445,Roosevelt Park,53d133bb-4510-4984-a3e9-883ba713953b,Maple Park,76.1,33.3
+rejected,Q42537964,"Apollo Theatre, Randolph Street",c214767b-0a54-4f5a-b0f5-cbbfc178324c,Oriental Theatre Chicago,122.9,55.6
+rejected,Q42537970,Astor Theatre,1afbaf6d-28cf-48b7-a2ae-c31a4769e54e,Thrive360 Eatery,96.9,55.2
+rejected,Q42537973,Band Box Theatre,99b67b0f-6678-4355-9e19-374004049f20,Einstein Bros. Bagels,107.6,50.0
+rejected,Q42537983,Boston Theatre,c800884f-6c12-4678-9e8f-abaa7e7bf5a8,Silk Road Theatre,114.5,64.5
+rejected,Q42537980,Bijou Dream Theater,f2e1c030-e933-4bf7-a047-b5e15d4d41d9,CIBC Theatre,142.6,51.6
+rejected,Q42537989,Burnham Plaza Cinemas,0b8f2d58-caa0-47be-a701-492f65316b7b,"Millinium Park, Chicago",112.6,41.9
+rejected,Q42537993,Casino Theatre,c800884f-6c12-4678-9e8f-abaa7e7bf5a8,Silk Road Theatre,117.5,71.0
+rejected,Q42538001,Castle Theatre,f2e1c030-e933-4bf7-a047-b5e15d4d41d9,CIBC Theatre,120.4,69.2
+rejected,Q42538006,Clark Theater,c800884f-6c12-4678-9e8f-abaa7e7bf5a8,Silk Road Theatre,72.7,60.0
+rejected,Q42538011,Colonial Theatre,5d1bbd9b-7a0d-4427-ba73-632cc1dc3f84,Goodman Theatre,93.5,71.0
+rejected,Q42538015,Cozy Theatre,1d13b9bb-2acc-47f5-a70a-6d51b3f7301f,Rosebud Theater District,123.3,50.0
+rejected,Q42538020,Fashion Theater,03d9a41e-5957-46fa-98b6-0bc62863bf1f,Thai Spoon,146.2,56.0
+rejected,Q42538026,Fischer's Paramount Theatre,f2e1c030-e933-4bf7-a047-b5e15d4d41d9,CIBC Theatre,82.7,51.3
+rejected,Q42538029,Follies Theater,73a56ff0-588b-410e-88df-24c9fad7fa2c,Panera Bread,74.5,37.0
+rejected,Q42538034,Illinois Theatre,8578a00f-689c-457d-a62c-ff34545e9ba2,Russian Tea Time Restaurant,133.0,50.0
+rejected,Q42538039,Joyland Theatre,03d9a41e-5957-46fa-98b6-0bc62863bf1f,Thai Spoon,136.8,48.0
+rejected,Q42538043,Loop Theater,b08f588d-c2ef-4ad7-92a4-e9168864b20a,The Lion Theater,116.1,83.3
+rejected,Q42538049,"Lyric Theatre, State Street",5b00c636-d23f-473a-84dd-c4ff2725a1d5,Asado Coffee Roasters,109.3,38.3
+rejected,Q42538054,Madison Theatre,8ce0cd77-d3cc-4421-a555-6bf6dd2da647,Madison Street Cafe,122.0,75.9
+rejected,Q42538059,McVickers Theater,f2e1c030-e933-4bf7-a047-b5e15d4d41d9,CIBC Theatre,138.1,69.0
+rejected,Q42538065,National Theater,03d9a41e-5957-46fa-98b6-0bc62863bf1f,Thai Spoon,135.6,46.2
+rejected,Q42538075,Orpheum Theatre,f2e1c030-e933-4bf7-a047-b5e15d4d41d9,CIBC Theatre,82.0,59.3
+rejected,Q42538080,Paris Theater,636e82d8-b040-4a1b-965e-7bbe9522619d,pitabelly,103.5,45.5
+rejected,Q42538085,Pastime Theatre,c800884f-6c12-4678-9e8f-abaa7e7bf5a8,Silk Road Theatre,109.7,68.8
+rejected,Q42538091,Powers' Theatre,d89724e8-008a-466f-b471-7395609508a0,Cadillac Palace Theatre,109.9,54.1
+rejected,Q49485772,Edgewood Park,42f130ed-bb8f-445d-a6d6-c2af2173a7aa,Nick Corwin Park,139.1,41.4
+rejected,Q49485832,Edison Park,bab5ba6a-c4c6-4620-9562-d4c873cde148,Snuggery Edison Park,144.7,71.0
+rejected,Q49486019,Eggerman Woods County Forest Preserve,f2b8a235-d26a-4313-bd98-358fa70c9260,Egermann Woods,46.7,51.0
+rejected,Q49486047,Eiden Park,067f896a-3782-4d04-b645-2a91cc439db9,Charles B. Eiden Park,12.0,66.7
+rejected,Q49486295,Elder Lane Park,ee1369ca-5c7d-4063-acf7-8f0522537e67,Elder Lane Park and Beach,33.3,75.0
+rejected,Q42537840,Bowmanville Theater,43668306-1161-41d0-b6eb-d2480dc40af1,Tacos Don Misael,44.4,40.0
+rejected,Q42537849,Lawrence Theater,63acc04e-44c6-474d-bcfe-5034fb10d9e2,Chicago-W Lawrence,27.8,52.9
+rejected,Q42537853,Leland Theater,cc028f44-9815-43a4-9078-8e8f952fe6a2,Leland Tap,110.9,75.0
+rejected,Q42537857,Album Theater,90942683-bf6e-46bb-b75e-79cb4731dd4c,Estrella Negra,47.8,37.0
+rejected,Q42537864,Armitage Theatre,7449da95-3135-41dd-9040-67909bbba9d0,La Ultima Barca,53.6,38.7
+rejected,Q42537870,Avaloe Theater,27bb047b-1457-4ebd-b148-3465c4d66ded,Za’atar Mediterranean Grill,30.6,40.0
+rejected,Q42537876,Avon Theatre,d6b0b67a-1a4f-45cb-a50a-5a4ff5338047,MeLatte Coffee Shop,60.7,38.7
+rejected,Q42537882,Cortland Theatre,eb7864a7-a970-43ea-8ee5-f08e1dc12905,Continental Lounge,14.3,44.4
+rejected,Q42537893,Glen Theater,b4bec6e9-67da-41a0-876e-5d15440f74bf,Osteria Langhe,96.1,53.8
+rejected,Q42537898,Harding Theatre,363e9259-6646-4210-bce3-a27642212b37,The Harding Tavern,22.0,75.9
+rejected,Q42537902,Jingles Theater,c2341df1-d7a4-4078-b9be-2fb8509408a2,Big Cat Press,130.7,42.9
+rejected,Q42537910,Kimball Theater,cdd99469-7854-4240-a386-e5097d588965,El Habanero,49.3,46.2
+rejected,Q42537917,Liberty Theatre,2740edbc-b3d1-4919-9841-7787725ff03d,L' Patron,123.2,43.5
+rejected,Q42537926,Magnet Theater,aebcbf13-99e5-4216-a306-f9e9da80d34b,The Logan Theatre,65.4,66.7
+rejected,Q42537932,Magnolia Theatre,bd39224f-651d-45b5-a743-ab82703c9515,"The Chicago Diner, Logan Square",124.7,42.9
+rejected,Q42537933,Mars Theatre,bad72b06-6828-48da-bbca-1dd0f0426431,Andros Taverna,16.7,53.8
+rejected,Q42537937,Myrtle Theater,21b81ada-0084-4d23-b4b7-3db7f8ceb353,Taqueria Moran,104.4,50.0
+rejected,Q42537942,Regal City North,d1c60635-69e4-48c5-8fba-c11a80ab2273,"Regal Theater, Chicago",11.0,48.6
+rejected,Q42537941,Oak Theatre,6620675d-0c8b-450e-9a19-328f45db070f,O's Tap,131.6,44.4
+rejected,Q42537945,Rogers Theatre,7b053d43-aa64-479f-8840-2f898297c2f6,Ackerman Clarke,96.2,41.4
+rejected,Q42537948,Webster Theater,cc6ba7c5-c5f1-4d2a-a633-a0fd9c5cca70,ARC Gallery,32.9,38.5
+rejected,Q42537954,Adams Theatre,8578a00f-689c-457d-a62c-ff34545e9ba2,Russian Tea Time Restaurant,113.3,48.3
+rejected,Q42537959,Alcazar Theatre,c800884f-6c12-4678-9e8f-abaa7e7bf5a8,Silk Road Theatre,120.8,62.5
+rejected,Q34881470,Gillson Park,08220676-acc2-4f83-a4b0-075eeda516be,Gilson Park Tot-Lot,69.5,71.0
+rejected,Q34882088,Glen Oak County Forest Preserve,e14fa37f-3ca5-4667-96a6-1356826aae5c,Glen Ellyn Park District,98.1,43.6
+rejected,Q34882175,Glen Park Optimist Club Ball Park,820306bc-4344-40e2-8cad-d68d62535b07,"Glen Park East, Gary",141.1,46.2
+rejected,Q42537379,Villa Theater,238ae730-cab0-48d6-abf2-2ddb666c9852,Ithaki Estiatorio,17.8,46.7
+rejected,Q42537388,Hegewisch Theatre,9d782564-071a-4d96-beeb-e28238b644a6,Hegewisch Nutrition,13.4,66.7
+rejected,Q42537394,Empress Theatre,557f818c-6b8b-4530-9e70-be22a341e0f2,Pizzeria Martellos,54.8,42.4
+rejected,Q42537402,Hermosa Theatre,1d192548-f7ef-4045-a589-75d830c54ab9,Costa Alegre Restaurant,92.8,44.4
+rejected,Q42537409,Karlov Theatre,9787b2fa-1672-4faa-abc4-1d32213f767f,Taqueria Nuevo Jalisco,120.2,44.4
+rejected,Q42537415,Edna Theatre,31e32e8d-e987-48fc-916c-b68fde6c233d,El Buen Valle,71.0,48.0
+rejected,Q42537412,Alamo Theater,f5fc2101-91c5-4817-95bc-b7c561e9f836,Pizz A Cake,51.1,33.3
+rejected,Q42537422,Evelyn Theater,503ba84d-2ee3-4a3d-8edf-5bd032409dc8,Suncatcher Brewing,135.9,43.8
+rejected,Q42537430,Famous Theatre,ce526632-9e8a-4978-83d4-941733161850,Whale Fish & Chicken,132.6,37.5
+rejected,Q42537437,Grand Theater,5a096617-0dc9-4717-a205-7014725b22f2,La Encantada Restaurant,37.9,40.0
+rejected,Q42537442,New Apollo Theatre,8bfe5bf5-689a-4a51-b281-49fbf78e0f82,Pozoleria San Juan Inc.,51.9,35.0
+rejected,Q42537452,New Rex Theater,1c92c41f-4f6c-4da3-ad88-9a183faba67f,Lite Inn,124.9,34.8
+rejected,Q42537456,Park Theatre,f6b462a8-2d66-4ca3-a7c2-59a85ad3c6ac,ArePA George,88.4,50.0
+rejected,Q42537464,Rosebud Theater,066e4029-ab41-4d9b-bf94-8848b7d44f90,Garfield Square,121.5,40.0
+rejected,Q42537471,Tiffin Theatre (1922–1988),d21bff81-ed00-487b-b04d-0ae4f591604d,Stewarts Coffee,103.4,30.8
+rejected,Q42537478,Tiffin Theatre (1913-1922),d21bff81-ed00-487b-b04d-0ae4f591604d,Stewarts Coffee,102.0,30.8
+rejected,Q42537498,Harding Theatre,48e50b43-c895-4909-9cf5-8dc927bc698e,Nichols Park South Fountain,30.7,33.3
+rejected,Q42537505,Harper Theater,f9982821-80ec-4817-b215-e3ec3544afe4,ACX Harper Theater- Hyde Park,25.0,66.7
+rejected,Q42537516,Hyde Park Theatre,212cadf5-bd47-492c-80af-3b9f1503236c,Cholies Pizza Hyde Park,67.5,55.0
+rejected,Q42537521,Jefferson Theater,5c826673-dcc1-4ee9-866e-be5cc359f07a,Bonjour Cafe Bakery,45.3,38.9
+rejected,Q42537533,Monroe Theater,48e50b43-c895-4909-9cf5-8dc927bc698e,Nichols Park South Fountain,44.7,29.3
+rejected,Q42537537,Nickelodeon,d7909308-9aaa-4871-99dc-b9d375150663,Reggie's On The Beach,87.6,25.0
+rejected,Q42537546,Commodore Theatre,e2845509-2473-4946-ac36-057e794ba406,Dharma Garden,8.9,40.0
+rejected,Q42537696,Lincoln-Belmont Theatre,f65ba55b-6dc8-415a-b8b3-f4c42abd383b,LifeStyle Physical Therapy & Balance Center,98.2,43.8
+rejected,Q34880809,George Washington Monument,4d17c0b7-553e-4aaa-aaa2-745b81becf47,Hyde Park,37.0,17.1
+rejected,Q34880973,German Park,8f5418d9-3a2e-4d90-bbdc-88d51971840f,Frank Bill German Park,17.0,66.7
+rejected,Q42537702,Mercury Theatre,debef141-9573-4bfe-8be7-3ae205768220,Music Box Theatre,37.8,62.5
+rejected,Q42537707,Mode Theatre,634a6947-93b3-4c70-bd27-9c3fddff76cc,Fornello Trattoria,127.1,46.7
+rejected,Q42537712,Stevens Theatre,14c1abee-8538-4af4-8c42-105c93db9c6d,Mary Arrchie Theatre,133.7,51.4
+rejected,Q42537726,Vogue Theatre,14c1abee-8538-4af4-8c42-105c93db9c6d,Mary Arrchie Theatre,103.3,42.4
+rejected,Q42537730,Aardvark Cinematheque,317141a7-fe49-4540-975a-9b1097841b69,Kanela Breakfast Club,87.9,38.1
+rejected,Q42537734,ArcLight Chicago,d922d932-e944-4d82-9f32-6aa441cb3d6d,ArcLight Cinemas,29.4,75.0
+rejected,Q42537740,Aristo Theatre,c7e4cc9f-e2fe-42a5-b77a-0a9e975f49a4,Pat's Pizza and Ristorante,106.7,45.0
+rejected,Q42537747,Arrow Theatre,4c593033-6f33-4dbe-95b0-5bcb964f3e86,The Arrogant Frog Bar,146.8,53.8
+rejected,Q42537753,College Theatre,fead653c-9591-4d8a-9597-8e3f5a481905,Mcgee's Tavern & Grille,56.1,50.0
+rejected,Q42537759,Covent Theater,949eb211-6dfe-4c72-83a9-615afe1e49cc,Cocina Tarascas,105.7,48.3
+rejected,Q42537766,Devon Theater,e26b7294-dce3-478f-b164-27c4b7d72852,Children's Fountain,12.5,37.5
+rejected,Q42537770,Easterly Theatre,504e2dbd-93c9-4cbe-98c2-20494ce65c23,Batter & Berries,39.1,53.3
+rejected,Q42537778,Holly Theatre,a5d6e60a-4ab6-4d1f-b44b-85331b10e069,Ringo ~ By Hemmi,67.1,37.0
+rejected,Q42537784,Ideal Theatre,3bdabfd0-d699-48a6-ae3e-79eedc9c218c,Hot Ones,91.7,28.6
+rejected,Q42537789,Little Paramount Theatre,da129669-c182-49c8-9fcf-d57e3f647b82,CityGrounds Coffee Bar,147.4,42.9
+rejected,Q42537795,Orsini Theater,7bb66536-2843-4ff9-bffd-a04b8f24ac44,Platt Fine Art,98.8,42.9
+rejected,Q42537801,Parkway Theatre,dee2ec7a-1e3e-42de-88fc-2c73c5accdf1,Firken And Pheasant,137.0,47.1
+rejected,Q42537807,Piper's Alley Theatre,d0092fb4-7a97-4fde-88e5-1262188113b4,Piper's Alley,43.5,76.5
+rejected,Q42537811,Plaza Theatre,5f418d55-a2cc-45f8-86d1-5e92d009a07a,e.t.c. Theater,103.4,53.8
+rejected,Q42537824,Star Theater,ddd47e28-fa52-46b2-b7ca-38181982bacb,The Beer Bistro North,8.2,41.4
+rejected,Q42537828,Sylvia Theater,17de7db1-22e8-4192-94d1-6ec53e501b00,Headquarters Beercade,73.5,45.7
+rejected,Q42537832,Alpha Theater,2563b8cc-a83a-49a1-a9aa-cd5f9356eabe,Aroy Thai Restaurant,91.9,45.5
+rejected,Q42537836,Bertha Theatre,2ec9a9d9-9598-444a-86d9-5f9ec9689cec,Pastores Brunch,75.9,55.2
+rejected,Q42541068,Hinsdale Theater,a839466f-8253-4e2e-874d-d17db583b7e9,Hinsdale Prime Steak,87.6,66.7
+rejected,Q42541075,AMC Loews Quarry Cinemas 14,cdb8be11-ea4c-4fdb-8880-a5874d109b9b,AMC Entertainment,54.3,36.4
+rejected,Q42541082,Barrington Square Theaters,8b4bc6b7-b35d-4272-ac1d-52cc1eb2970d,Wildberry,105.4,17.1
+rejected,Q42541087,Thunderbird Theater,ac683430-db9f-46e7-883d-1f10b32ad093,Taste of Thai,43.4,50.0
+rejected,Q42541095,Hometown Cinema,8b94c80d-315a-4cac-8ed5-b3261b361ac7,Hometown Tap,107.3,59.3
+rejected,Q42541098,Diana Cinemas,1d65351f-50d6-4274-b1c2-e32f6d1e64de,Chipotle Mexican Grill,54.8,48.3
+rejected,Q42541104,Homewood Theatre,04c530bf-56c3-4554-9157-0ebacac712d3,Stoney Point Grill - Homewood,139.3,55.8
+rejected,Q42541259,Cork Cinema,f5fa6144-6757-4e02-839e-7068f05e65d6,Henry's Tacos,81.9,33.3
+rejected,Q42541356,LaGrange Theatre,98ed464a-d5e6-444a-9deb-b4cba15bdbf9,La Grange Theatre,32.0,84.8
+rejected,Q42541362,Park Theatre,9960ac10-64c7-4d26-8268-c5c000799c5d,Marconi's Ristorante,123.7,43.8
+rejected,Q42541377,Deerpath Theatre,c768ecd6-7fe4-4f19-94c0-b935cb265954,The Peanut Gallery,112.2,40.0
+rejected,Q42541411,Cinema 8 Lansing,32970119-62c9-4425-9b03-55965f73a804,Olive Garden Italian Restaurant,104.6,38.9
+rejected,Q42541420,Lans Theatre,fa4c23ed-d203-4d7e-9be0-829922f9f1c6,Bakers Square,83.0,48.0
+rejected,Q42541462,Arthur Theatre,64317c6b-fa99-4b39-84f1-0ddfdbc9984f,Barrel & Vine,42.4,40.0
+rejected,Q42541517,Regal Cinemas Lincolnshire Stadium 21 & IMAX,c40263ad-1b0c-4383-9221-cdcaf2883076,Big Bowl Lincolnshire,145.4,47.6
+rejected,Q42541541,Roxy Theatre,baf38cef-2f85-4eb6-b269-5a0b33ab5041,Paradise Bay Bar and Grill,49.0,37.5
+rejected,Q42541564,Parkside Theatre,48f2cd43-9d52-4b25-9f50-6ebda56613b6,Afterthought Brewing Company,88.8,31.8
+rejected,Q42541580,Lyons Theater,e01ded31-d3e9-44f0-bc56-ffec23995778,God Shiva Inc,74.2,38.5
+rejected,Q42544229,Rivertree Court Cinemas,e8c467fb-8bbf-44d3-b2a0-4c68af135561,Chuck E. Cheese's,103.3,41.0
+rejected,Q42544247,Villa Oaks 1 & 2,5afa96b4-12b9-4e13-969e-0bd3706a5331,Stella's Place,127.4,42.9
+rejected,Q42544244,Park Theatre,08989018-0ac0-4675-b591-70ac34c0d3cc,Park Boulevard Tavern,116.0,48.5
+rejected,Q42544253,Villa Park Cinemas,148bae2c-f548-4ba7-9c33-0d42a894fae6,Portillo's Villa Park,34.8,51.3
+rejected,Q42544258,Villard Theatre,f587cc8c-695a-4842-89d8-1733e828f832,Tribute Villa Park,92.2,60.6
+rejected,Q42544283,Regal Cantera Stadium 17 & RPX,abbf5404-2f65-4388-b29d-9105c9f9f33f,Regal Cantera,0.1,63.4
+rejected,Q42544379,Lyceum Theater,166e87e7-0034-4ad0-9943-6b82303ab808,"""paleteria """"rosy"""" Ice Cream Shop""",58.0,41.9
+rejected,Q42544385,Roxy Theatre,80a581bf-9772-43f1-9aca-43caff9b4764,Tastee Freez,63.2,50.0
+rejected,Q42544429,Studio Eleven Cinemas I & II,9b2e1723-c72a-4e23-846b-19d15fb98e2a,Lux Cafe,82.6,13.8
+rejected,Q42544435,Westmont Theatre,e95c4038-f532-43cd-9f4b-572864bf0a99,La Petite Sweet,54.6,45.2
+rejected,Q42544441,Studio Movie Grill Wheaton,17f872bd-fba1-4046-aa26-1f5723aaf25a,Cold Stone Creamery,85.8,40.0
+rejected,Q42544462,Teatro del Lago,f5ff4155-c444-4f5e-9065-4546d50aea26,Jewel-Osco,65.7,40.0
+rejected,Q42544506,Hollywood Blvd. Cinema,013dabed-04a2-4230-8943-e501617c4da3,Noodles & Company,44.6,38.9
+rejected,Q42586701,Ridge Road Drive-In,3e173950-0272-4dd4-bcdc-c98c077204ad,Griffith Park Department,50.9,41.9
+rejected,Q42586827,Dunes Drive-In,9eb4e228-1642-4ca3-87df-2ad3a5b9e7d7,Country Pride Restaurant,44.9,29.6
+rejected,Q42586884,Y & W Drive-In,bd1345dd-1140-40f7-b925-5bcb8e24e8ba,The Merrillville Parks and Recreation Department,104.1,28.6
+rejected,Q42587540,American Theater,fb21c28f-e73c-4367-bc2d-2427fd5f857e,Nanas Sweets Bakery & Cafe,26.2,45.7
+rejected,Q42587545,Broadway Theatre,fb21c28f-e73c-4367-bc2d-2427fd5f857e,Nanas Sweets Bakery & Cafe,25.5,40.0
+rejected,Q49479488,Commissioners Park,8a09a071-508f-4d99-9006-0b2f1653a304,Bannes Park,112.5,55.2
+rejected,Q42538621,Palace Theatre,215f7a2f-6df1-4d5e-8729-23344efe2c4b,Genesis Bakery,96.0,35.7
+rejected,Q42538627,Peoples Theater,51bcd12e-a4c8-44f0-a69c-9d2ccb7ffa50,Par E Come,76.4,48.0
+rejected,Q42538628,Radio Theatre,ad0a59de-29bc-4c0b-b95b-2203dd5a6fa5,S2 Grills - Halsted,42.1,46.7
+rejected,Q42538638,Norshore Theatre,786a0e9b-36fa-4fe0-b853-c8655fea19be,Hard Water Bar and Grill,77.1,47.1
+rejected,Q42538636,"Normal Theatre, South Halsted Street",8474df36-a3d6-4147-9dc7-82b6515caad9,Kusanya Cafe,114.8,14.3
+rejected,Q42538643,Advance Theater,4919ec3a-6719-4208-b7a5-ddc46c7d00e4,About Face Theatre Offices,124.4,53.7
+rejected,Q42538649,Bugg Theatre,4919ec3a-6719-4208-b7a5-ddc46c7d00e4,About Face Theatre Offices,144.0,52.6
+rejected,Q49555225,S W Park,278e8971-e59f-415d-bcb8-192e0eb47590,Southwest Park,38.1,63.6
+rejected,Q49555319,Sacramento Square,ac59e8c8-b691-40aa-a0b7-0a61665ec4e4,Goose Island Barrel Warehouse,55.0,39.1
+rejected,Q49556313,Saint Vincents Circle,a1780888-3811-4093-bc1f-e526c14b98de,"Depaul University, Lincoln Park Campus, Main Office, Food Service",72.2,36.1
+rejected,Q49486655,Elm Park,e2590cb5-4f09-4586-b15f-00a27befda36,Johns Park,37.8,55.6
+rejected,Q49486994,Emmett Whealan Swimming Pool,f02d6b69-524f-4768-b589-f5feb45a294d,"Norwood Park, Chicago",119.0,20.8
+rejected,Q49487285,Erickson Park,d53760fd-3be5-4cd0-8187-1cedeb8b45b2,Brooks Cafe,48.4,31.6
+rejected,Q49488762,Felpro Park,3036e343-ed75-43cb-9004-fd721c36d57b,Modern Wall Art,133.4,30.8
+rejected,Q42538615,Olympia Theatre,fa6ace64-beff-4d1f-9f39-0baae4c53e5f,Trino's Pizzeria,63.9,38.7
+rejected,Q42538656,Favorite Theatre,a4d848a6-8031-4f81-bc0d-b0ae5d9bd97b,The Western Bar & Kitchen,125.0,44.4
+rejected,Q42538663,Glee Theater,181c50ed-84d3-4de6-93c8-52259dde1e06,Orange Garden Restaurant,117.2,40.0
+rejected,Q42538669,Hoyne Theatre,4dcfa3ba-c32c-45ea-b485-d8db9ff986cd,Dhanteraz,25.1,45.5
+rejected,Q42538674,North Center Theatre,9508d09f-cfb7-431d-9d57-d55ae964e7d3,Pupuseria el Centroamericano,91.7,45.8
+rejected,Q42538683,Roscoe Theatre,cf46d2a6-add8-4886-8c70-8da4ae736668,Roscoe Street-ery,138.9,64.5
+rejected,Q42538680,Republic Theater,95a276b7-bd6a-4413-95b9-cd2744c7eb4a,C'est Bien Thai,59.5,45.2
+rejected,Q42538689,Rosewood Theatre,ffa01685-2e24-4de2-bb27-2e03cb7a3ffb,The Ravenswood Tavern,90.4,60.6
+rejected,Q42538697,20th Century Theatre,fe6e9b6e-6682-4409-87b6-3854fe7ce738,Rothschild Liquor Marts,12.9,27.9
+rejected,Q42538703,Central Park Theatre,fe6e9b6e-6682-4409-87b6-3854fe7ce738,Rothschild Liquor Marts,29.2,32.6
+rejected,Q42538709,Circle Theatre,5a22c6da-e70f-46bc-8756-75cd98c3680d,Jack's Fish Chicken N More,146.3,45.0
+rejected,Q42538718,Gold Theater,48471ecf-de8b-4504-8f7a-66dee8d6a2ea,Star Gyros,42.9,54.5
+rejected,Q42538724,ICE Lawndale 10,b8f2e298-6816-4f81-b164-7beae7d95285,Lawndale Cinemas Entertainment,0.8,53.3
+rejected,Q42538730,Lawndale Theatre,a02e28af-57c0-4022-aeb7-55c0bc13f4c6,Lawndale Theatre Chicago Il,43.3,74.4
+rejected,Q42538742,Millard Theater,18c49a51-0407-4cee-8a7f-26d344fe1b41,Short Fella's,38.5,42.9
+rejected,Q42538749,Rand Theater,0214989b-6cd0-47fa-9c6e-068901abfdc6,New Pine Valley Restaurant,138.1,37.0
+rejected,Q34891097,Independence Park,c056d705-e707-4b98-a0c5-bcd5b694e8fc,Portage Tire &amp Auto Service Inc,80.5,36.0
+rejected,Q34895605,Beilfuss Park,f739e50d-007a-4298-ace4-6676dad33126,Albert W Beilfuss Park,46.1,74.3
+rejected,Q34897036,Bensley Park,041b24a6-ecf9-4da9-9bbe-f41516fc71be,Bradley Park,83.7,75.0
+rejected,Q34897302,Berens Park,c09ee8e5-a641-45a7-8545-835c8f2904ff,The Hub at Berens Park,15.8,75.9
+rejected,Q34897373,Berger Park,d44143d1-61fe-4bce-b1e4-99cff3dc26ff,Berger (albert) Park,108.4,75.9
+rejected,Q34897902,Berwyn Park,46cbc031-afb6-4898-b224-3a8289937901,Proksa Park,48.6,45.5
+rejected,Q34899239,Birchwood Park,6a70d2a6-4532-4df6-9a6b-9c3f2d0027a7,Palatine Park District,139.5,44.4
+rejected,Q49560552,Shawmut Park,7ae97374-f6ad-4004-8399-c8f6aa1d5914,Gordon Park,125.1,34.8
+rejected,Q49560652,Shedd Park,44b2f2fc-ace8-41d0-8c0c-e2f2c6a55802,Shedd Park Fieldhouse,54.1,64.5
+ambiguous,Q49560857,Shepard Park,e55feb0b-7d57-4863-a6a4-04de35363f57,Shepard Park,25.4,100.0
+ambiguous,Q49560857,Shepard Park,ebe2046e-8fe5-4039-aa0a-b588cc6b6502,Shepard Park,144.6,100.0
+rejected,Q49560945,Sheridan Park,93f3822d-0a82-4685-99f7-38828974df62,Sheridan McGuane Park Baseball & Softball,29.5,50.0
+rejected,Q49561140,Sherwood Park,b797d88b-d755-435c-8609-bfd6caf615f8,Dona Paty's,123.6,33.3
+rejected,Q49561179,Shewbridge Field,b0adadf7-40d2-46fb-9a1f-c2744558b513,The Black Chicago Museum Inc.,86.1,30.0
+rejected,Q34882342,Glenlake Avenue Park,7ffc7a9e-6715-4fd0-9673-1bd62c5ef9b4,Glenlake Avenue Beach,18.7,73.2
+rejected,Q34882926,Gorell Park,5379579d-12af-45f6-9698-fb4441aefc26,Beck Park,139.1,60.0
+rejected,Q34883174,Goudy Square Park,7b9a9869-c0c0-43c2-97ca-3411f98df539,Goudy (William) Square Park,29.5,81.0
+rejected,Q34884898,Grove Park,b7ad79e7-2e15-47fd-a83a-13c655f5dedb,McCarthy Park,109.1,52.2
+rejected,Q42541684,Lincoln Mall Cinema,aeacd242-4708-499c-b56e-3fcb4213d361,Pizza Hut Express,99.0,22.2
+rejected,Q42541713,Lido Theater,c14b6a7f-c021-4f69-9c84-3ac9ab01920b,Best Braiders,95.1,32.0
+rejected,Q42541718,Maywood Theater,13e6c531-e584-450b-9280-096c062fd1dd,Pumpkin's Place,122.2,13.3
+rejected,Q42541720,Strand Theater,941e3b9c-4277-48a7-9775-c4849d06c679,Taqueria El Duranguito,44.1,44.4
+rejected,Q42541725,Yale Theater,bb01eb1d-cf52-4881-85b9-21d8153fbebf,Yours Cafe and Bistro,136.1,36.4
+rejected,Q42541760,Broadway Theatre,32625e28-4097-4f78-838e-b89ae3192df0,110 on Broadway,49.3,58.1
+rejected,Q42541773,Melrose Theatre,44a23085-cc66-439d-a291-d42cb8e26eca,Melrose Park Eagles,96.9,58.8
+rejected,Q42541820,Towne Theatre,a5b4754a-3c80-4e42-a37b-89e28cbe311a,Jack's Place,82.2,24.0
+rejected,Q42542031,Morton Grove Theatre,c4a8b2bf-780a-4bf4-95ce-9b8359d2e7bd,Friends House Bakery and Restaurant,104.4,31.8
+rejected,Q42542103,AMC Randhurst 12,a4d73a08-df40-443b-9182-bcf491eb63ec,House Of Szechwan,59.4,24.2
+rejected,Q49479493,Commissioners Park,536ed668-9c30-44cc-ba65-3121b1e08adb,Bridgeview Park District,73.8,42.9
+rejected,Q49479562,Community Park,db39e4ba-b69b-4c42-8e9f-34a78982cdde,Community Playfield,88.7,72.7
+rejected,Q49479785,Conkey Park,c7afcf35-4f96-44ad-828d-d95db5ba092e,Quan”s BBQ SMOKE PITT L.L.C,142.4,26.3
+rejected,Q49479814,Connelly Park,cb8155cd-8cbb-470c-a8bb-fa0988a7c485,Le Bon Bon Grill,122.2,34.8
+rejected,Q49479954,Thornton-Lansing Road Nature Preserve,51c4e1f1-5099-42c2-91e9-9cea8657a28b,Cook County Forest Preserve,5.3,43.8
+rejected,Q49554006,Roswell B Mason Playground,0214989b-6cd0-47fa-9c6e-068901abfdc6,New Pine Valley Restaurant,141.4,34.1
+rejected,Q49554472,Rowan Park,8c36181f-6560-495f-8d79-414f6a09cd28,Rowan (William) Park,51.2,71.4
+rejected,Q49554856,Runyon County Forest Preserve,dd3c8a91-1f13-4cf7-b832-3fecc1bd2cdd,Runyon Preserve,72.3,68.2
+rejected,Q49554982,Russell Park,619e03a7-78ec-4fa7-966c-8ca5af941cd6,Russell Square Park,138.7,77.4
+rejected,Q49562123,Sixtythird Street Park,e1537f28-819b-495b-b7e5-8ee1da8df571,63rd Street Park,58.8,57.9
+rejected,Q49562196,Skinner Park,615b90ed-06db-4216-8519-ca4fe4bd07cd,Skinner Park Playground,76.7,68.6
+rejected,Q49562210,Skokie Northshore Sculpture Park,e3eef4fa-8107-45e2-ba8f-81a593a90e3e,Gorell Park,42.1,37.2
+rejected,Q42542109,Mount Prospect Cinema I & II,35ca3720-c157-4102-bef4-8519a86cafc4,Bowlero Mount Prospect,100.8,66.7
+rejected,Q42542115,Prospect Theatre,5fae0f07-c152-4ac9-a705-fcefb5e66457,The Prospect,72.9,66.7
+rejected,Q42542176,Naper Theater,c1eb955a-c4dd-4a15-ba86-50ddf4898add,Nando's PERi-PERi,51.7,53.3
+rejected,Q42542183,Ogden 6 Theatre,a422236b-e00c-4f61-98b3-596e4a42ce70,Joy Yee,120.8,36.4
+rejected,Q42542242,Golf Mill Theatres 1-2-3,b98f9f2a-d504-4e52-9c61-a1b199c4dfea,Niles Grill & Diner,96.2,39.0
+rejected,Q42542257,Niles Square Cinema,d92b4cb7-cc4f-4ad0-8353-2c4eb45bb970,Village Creamery,44.5,45.7
+rejected,Q42587550,Forsythe Theatre,8651173e-ae2d-44e7-8171-f480c05697f8,Casa Blanca,87.3,14.8
+rejected,Q42587553,Garden Theater,2b9291ba-270d-40b0-b54c-490470e3ecb3,El Patio,110.2,36.4
+rejected,Q42587568,Vic Theatre,2b9291ba-270d-40b0-b54c-490470e3ecb3,El Patio,49.9,42.1
+rejected,Q42587575,Voge Theatre,79eee099-dc71-4682-9e7c-ffff7f09dcfa,El Malecon Mariscos ,68.6,32.3
+rejected,Q42587944,5th Avenue Theatre,30807ca6-9cd3-4156-9e4a-1a4b067a6e36,Rees Park,86.0,29.6
+rejected,Q42587951,Gary Theater,506a0b3a-fdb0-49f4-8a1e-e61c963e1a50,Eat Your Heart Out Deli Cafe,35.9,40.0
+rejected,Q42587959,Grand Theatre,a1ee9559-cd35-4a60-b6a5-d97e176507f1,Loft Adiq Ultra Lounge,65.9,42.9
+rejected,Q42587964,Indiana Theatre,0cd09f1f-243e-4266-affa-0ed11990f317,Z's Shakes And Cakes,105.4,40.0
+rejected,Q42587972,Lake Theatre,1348a012-3dd8-43c0-89d6-3f8bc7c08ee7,The Centennial at 504,126.0,34.5
+rejected,Q42587977,Miller Theatre,481cb461-d0d3-48bc-accb-2cbca309cc3e,Test Business,130.5,44.4
+rejected,Q42587983,Ridge Plaza I-II,e0b4f077-5485-4447-b97a-1d73f0c045a7,Sharxs Fish & Chicken,142.6,34.3
+rejected,Q42587987,Roosevelt Theatre,99921b39-a491-4665-a5ea-ad3bd1f5e5b6,Physician Coding & Education Solutions Llc,61.9,24.6
+rejected,Q42587991,Roxy Theatre,835c08b1-0fd8-4b29-ba05-871df5c429b2,Glen Theatre,41.2,66.7
+rejected,Q42587995,State Theatre,a1ee9559-cd35-4a60-b6a5-d97e176507f1,Loft Adiq Ultra Lounge,110.7,35.7
+rejected,Q42588090,Griffith Park Cinema I-II,6300a387-fd1b-4d6f-a065-63728cd37c40,"Linda B. Angell, Inc",90.3,37.2
+rejected,Q42590140,Capitol Theater,14ce332f-6bf3-46f9-a9f7-8961e24c9154,Hoosier Theatre,36.8,53.3
+rejected,Q42590148,Princess Theater,d651e1c7-91cf-4675-976c-8a58b824bc7f,Marian Theater Guild,124.5,61.1
+rejected,Q42538104,Princess Theatre,b5543d2d-30f9-41db-9424-f67ced281103,Sky Ride Tap,87.6,50.0
+rejected,Q42538111,"Rialto Theatre, 336 State Street",6a945b74-7339-46bb-8e8b-59c06e53076c,Brando's Speakeasy,123.8,40.8
+rejected,Q42538108,Randolph Theatre,0a4422a0-5518-4efa-8e04-183b2b31d34f,Gotham Theatre,105.9,66.7
+rejected,Q48815906,Spiaggia,8e3c298e-cee0-4f58-a825-fa5f0cf47f82,Cafe Spiaggia,10.9,76.2
+rejected,Q48977112,Illinois Aviation Museum at Bolingbrook,48b9773b-3651-4d94-822f-3d05131ef710,Illinois Aviation Museum,7.6,76.2
+rejected,Q49478690,Clyde Park,5563b0d7-57f3-4971-a4f3-4e9e461f075f,Clyde Park District Pool,29.9,58.8
+rejected,Q49478728,Coast Guard Park,5bee4064-79e4-434c-846a-8c42ea8d3632,Northbrook Dog Park,67.0,45.7
+rejected,Q49479254,Colony Lake Park,6e4f88d8-53d9-4449-9e83-582100da89d0,Colony Lake,66.6,81.5
+rejected,Q42538099,Premier Theater,b2819288-0482-4953-b662-91a08590a010,Hero Coffee Bar,137.2,46.2
+rejected,Q42538118,"Rialto Theatre, 546 State Street",7cbcb06f-fe8d-4ee5-985b-c91f39a33600,Bar Pasticceria Caffetteria Roma,103.2,34.9
+rejected,Q42538125,RKO Grand Theatre,c800884f-6c12-4678-9e8f-abaa7e7bf5a8,Silk Road Theatre,91.8,76.5
+rejected,Q42538133,Roosevelt Theater,62515389-040d-4bad-a510-390bf6a697db,United Artists Theatre,126.0,51.3
+rejected,Q42538138,Rose Theatre,c800884f-6c12-4678-9e8f-abaa7e7bf5a8,Silk Road Theatre,125.1,75.9
+rejected,Q42538143,Shangri-La Theater,f7c0f6ea-f42c-49e6-ad4f-43099e2159ea,Chicago Theater,103.9,66.7
+rejected,Q42538148,Sheldon Theater,f2e1c030-e933-4bf7-a047-b5e15d4d41d9,CIBC Theatre,149.0,51.9
+rejected,Q42538154,Star Theater,1d13b9bb-2acc-47f5-a70a-6d51b3f7301f,Rosebud Theater District,14.4,61.1
+rejected,Q42538160,State-Congress Theatre,e038c81d-105f-4f0f-bfe4-9aa0cb2240f1,Panda Express,32.1,40.0
+rejected,Q42538167,Strand Theatre,e6a5243e-c70d-4729-8f02-593898c98378,Feinberg Theatre,130.4,60.0
+rejected,Q42538165,State-Lake Theater,501b5c69-91ec-4850-8597-0892b25ffab4,State and Lake Chicago Tavern,63.3,63.8
+rejected,Q42538171,Studebaker Theater & Playhouse Theater,0e1de39d-77ea-4d07-8c63-28c152e74124,Studebaker Theater,3.7,66.7
+rejected,Q42538173,Theatorium,b08f588d-c2ef-4ad7-92a4-e9168864b20a,The Lion Theater,112.5,54.5
+rejected,Q42538176,Today Theater,4964f806-c3eb-4a65-984b-d5adb6045b1c,Grandma Gebhard,101.9,42.9
+rejected,Q42538180,Unique Theatre,e2d2100e-0711-473b-892d-e4ad847c4fc1,Lime Leaf,53.4,43.5
+rejected,Q42538185,World Theatre,62515389-040d-4bad-a510-390bf6a697db,United Artists Theatre,70.1,51.4
+rejected,Q42538188,Ziegfeld Picture Palace,b0a0cfc9-3e88-4ae9-aa53-ec1f3f85691f,Shedd Acuarium Chicago,107.0,40.0
+rejected,Q42538195,Eighteenth Street Theater,94d9fa88-55a4-43c5-abc0-bca85a4222a9,Auto Net Trade,113.5,41.0
+rejected,Q42538192,Dandy Theater,11992837-1fc7-4ffe-8f1d-ab1d8eb1e96c,Wagner's Bakery,24.9,42.9
+rejected,Q42538199,Gem Theatre,f3da04dd-3380-4d17-8f3b-6fe30442bbf5,Take Me Out,55.3,45.5
+rejected,Q42538203,Violet Theatre,fd96e7e8-9bf7-415b-bddd-e0cec646dd27,Pilsen Breakfast & Grill,122.8,46.7
+rejected,Q42538347,Europa Theater,3ff1269f-4add-4744-86d4-ca1ebe5babc5,Marcellos Father & Son Restaurant,71.0,35.3
+rejected,Q42538352,Marina Cinemas,f773e062-abb8-4c0f-948f-32a6242becd2,Dsv Chicago Inc,95.4,48.3
+rejected,Q42538357,McClurg Court Cinemas,3c981d35-549d-46e6-84bf-877e9ccf2f9d,Robert's Pizza Co.,86.9,42.1
+rejected,Q42538361,Mohawk Theatre,27e21d1f-266e-42c4-b3e0-95ea890945f0,Terrys Drive In,111.8,27.6
+rejected,Q42538364,Newberry Theatre,f93e6844-fa51-43d6-8b18-0d93e79a0be9,Park Newberry Condominium Association,112.8,41.5
+rejected,Q42538370,Orchard Theatre,3ff1269f-4add-4744-86d4-ca1ebe5babc5,Marcellos Father & Son Restaurant,69.2,40.0
+rejected,Q42538374,Rush Theatre,84dadc16-5a66-49fe-bfed-edc4e77afe86,Argo Tea,28.6,50.0
+rejected,Q42538380,Sandburg Theatre,83a71c8a-fbe4-4b1b-a05a-bcd0f2ca822e,Chicago Teahouse,118.4,43.8
+rejected,Q42538387,Sheerin Theatre,8515346f-d399-41b7-b47a-0571595056c2,Taketei Sushi River North,70.1,45.0
+rejected,Q42538390,Standard Theatre,f26adde6-74ef-4cb9-9379-0340ff5a6aac,Woodhaven Bar and Kitchen,122.3,54.5
+rejected,Q42538399,Windsor Theatre,4c44e0e3-a2b1-4345-a977-8cd0634687de,The Original Mother's,147.0,50.0
+rejected,Q42538396,Village Art Theatre,f3150a5f-c9eb-4c04-9896-310f99443346,Star Of The Gold Coast Inc,24.2,35.6
+rejected,Q42538404,Q42538404,798a175b-d8bc-4626-90fb-ae0786945ba6,Freshii,132.4,0.0
+rejected,Q42538411,Wabash Theater,b6fea026-491f-4af8-9632-a309b7459e87,Opart Thai House,145.8,40.0
+rejected,Q42538416,4 Star Playhouse,6d2aa4fc-62e1-49ac-9506-931346ab0826,Sain Park,136.4,40.0
+rejected,Q42538424,Academy Theatre,50f17ae2-4192-46fc-b279-454d4d7c28c2,Red Star Bar,90.7,43.5
+rejected,Q42538431,Alice Theatre,50f17ae2-4192-46fc-b279-454d4d7c28c2,Red Star Bar,134.6,47.6
+rejected,Q42538435,American Theatre,ba3e9a19-26c6-43a7-be91-ae52f7f77713,La Cuchara,125.6,38.5
+rejected,Q42538439,Ashland Theatre,51cdae1f-3f93-4627-8a37-8cc2f2787320,Billy Goat Tavern (near United Center),112.5,35.3
+rejected,Q42538444,Bell Theatre,8f28ff60-a106-470b-81b6-0e8ebe62cc0b,Imax Theatre,41.9,66.7
+rejected,Q42538450,Bishop Theatre,70864be1-3112-4b9b-8586-dc44ba142974,Dunkin',116.3,10.0
+rejected,Q42538455,Broadway Strand Theatre,0d188181-2a47-4d56-83ee-e41ee8ac4236,Baskin-Robbins,75.7,32.4
+rejected,Q42538459,Center Theatre,4833c504-728c-4737-8f39-41c7fbd030c4,Third Rail Tavern,87.6,45.2
+rejected,Q42538463,Century Theatre,a8376dd5-3983-4852-a95a-b8ac27cfc4db,The Stanley Club,106.4,44.4
+rejected,Q42538992,Victoria Theatre,21a39531-0776-4fcc-9a12-5bb744b8d17a,Taquizas Vista Hermosa,92.0,47.4
+rejected,Q42538998,West Theatre,21a39531-0776-4fcc-9a12-5bb744b8d17a,Taquizas Vista Hermosa,93.4,41.2
+rejected,Q42539003,Hamilton Theatre,24422872-cca9-46f2-a71b-b9bc30e3fade,South Merrill Community Garden,115.9,30.4
+rejected,Q42539011,Jeffery Theater,ca7b99b8-42b6-4228-9c4a-cdaec9dd09f7,Jeffery Pub,80.1,61.5
+rejected,Q42539009,Jackson Park Theatre,e93be17f-3c05-4e1d-b9cb-85c3bc9fd0a1,See Thru Chinese Kitchen,56.8,38.9
+rejected,Q42539016,Ray Theater,03e465e8-3569-43bf-b0d3-804a170c2bdf,Grand Rising Cafe,70.0,34.8
+rejected,Q49483642,Dolton Park,a037148b-3389-421a-9562-ad71bedf392d,Dolton Park District Main Field House,93.5,45.8
+rejected,Q49483760,Donovan Playground,64c9a718-faf3-47f3-9fc5-6fa3938fdacd,Donovan Volleyball Court,50.4,47.6
+rejected,Q49483767,Dooley Park,ce66a215-223c-4ea0-9ccb-a98da22ff79f,Thomas Dooley Park,70.2,75.9
+rejected,Q49483975,Douglas Monument Park,0dc1f48b-a5e9-46c4-b204-9b9438eb55e3,Bronzeville Historical Society,61.5,27.5
+rejected,Q49484332,Dubkin Park,4eb29920-e578-4c8d-9b31-260c2aa36806,Dubkin (Leonard) Park,32.0,73.3
+rejected,Q49484464,Dunbar Park,da991e66-cc05-47e6-b384-c802f79ecce6,Dunbar (Paul Laurence),86.5,58.1
+rejected,Q49484622,Durkin Park,0ec84dcc-e193-49b1-b00f-9b6094f58e96,Durkin (Martin),17.3,75.0
+rejected,Q49484628,Durso Park,733eeb81-f6e8-43d7-b0a7-afdb0b1f7f4a,Panera Bread,149.9,45.5
+rejected,Q34917331,Centennial Park,b8e03717-dc38-4383-a3ee-cdc25ad25e14,Centennial Beach,101.5,64.5
+rejected,Q34917360,Centennial Park,63afb9a4-1e7c-44b8-a88d-c3279a356abc,Sarlas Music,82.7,29.6
+rejected,Q34918388,Central Park,c7a049eb-06cc-4cfe-aa72-ac5877d5f02c,Oak Forest Park District,113.5,50.0
+rejected,Q34918428,Central Park,000e931f-6487-404b-8941-91365d217d6a,Village of Lincolnwood Central Park,57.2,51.1
+ambiguous,Q34918441,Central Park,dbdde3ae-1021-4faf-aa8a-10605051a9c4,Central Park,1.9,100.0
+ambiguous,Q34918441,Central Park,d6587377-4e2c-408d-8b11-760a49f93118,Central Park,54.3,100.0
+rejected,Q34918466,Central Park,9c7a18ae-68cb-4490-8253-bc347aa0b4b5,Central Tot Lot,8.3,59.3
+rejected,Q34918710,Central Park,2c75405c-0e9c-479e-b19b-4f73c0cbc57a,"Central Park, Bolingbrook Park District",77.8,48.0
+rejected,Q42539025,Stony Theater,ad89ccdd-52bd-49b3-933c-120585ad1a04,Red's The New Generation,96.0,37.8
+rejected,Q42539030,Garden Theater,8cbfeac0-b807-4f89-9e48-93d9ec2ad90f,Gathers Tea Bar,26.6,56.0
+rejected,Q42539038,Irving Theater,06e63d61-8bd6-4526-b06c-3f556b8c7015,Starlight Inc,64.9,44.4
+rejected,Q42539041,Joy Theatre,f381aeeb-2bc3-4d72-b76c-5d88e0a3fd35,Roosevelt Street Development Inc,130.9,27.9
+rejected,Q49494610,Goodrich Woods County Forest Preserve,9d64e7b9-a19a-410b-915c-9198ed006e6c,Goodrich Woods,143.6,54.9
+rejected,Q49496008,Greenfields Park,53e015ba-ca16-4523-9346-9489d541c85e,Lindberg Park,22.7,48.3
+rejected,Q49496540,Gross Park,fc9b997c-7441-4770-8cab-5f165d617c94,Theodore Gross Park,20.0,69.0
+rejected,Q34888441,Hitchcock Woods County Forest Preserve,a8be15f3-42da-4424-866e-2b54b2d807e3,Hitchcock Woods,18.0,56.6
+rejected,Q34888566,Hoard Park,937369c1-effa-4cc0-981c-6dd1fba5ff7f,Hoard (Edison) Park,22.8,74.1
+rejected,Q34888878,Hobson Pool Park,3b2ba7a7-187a-43f1-b0e3-8ed44710119b,Hobson Corner Park,134.2,64.7
+rejected,Q34888891,Hobson West Park,aa35dd20-aec4-4dc4-b45a-cfb062a61d2b,Hobson West Ponds,80.9,78.8
+rejected,Q34889026,Hodgkins Park,0ac8618e-9195-4e0a-9fa9-8726dc3a8527,Hodgkins Park District,51.6,74.3
+rejected,Q34902324,Jay Cee Park,0cfd58cf-d161-4e9f-b739-d354e2ad22a7,Jaycee Park,21.2,69.6
+rejected,Q34903540,Bosley Park,b61ce118-f670-4e03-addf-a38945b6189d,Bosley Park Fieldhouse,18.6,66.7
+rejected,Q34904190,Boundary Hill Park,f108d410-c779-43d5-83b8-b4baab33c9be,Boundary Hill Woods,51.9,75.7
+rejected,Q34904637,Boyce Playground,e62b1d3f-2d48-42ba-bac0-f0279ef09d42,Taylor Lauridsen Park,37.8,32.4
+rejected,Q42538208,Illington Theatre,a9590321-b991-476b-9be4-5ce99634ebd8,Doña Torta Chilanga,89.8,44.4
+rejected,Q42538215,Lion Theatre,b4b70044-6c9a-4019-8a58-3e2d8e83d2b9,Luciano's Grocery Store,11.2,40.0
+rejected,Q42538219,Overland Theatre,0d4a7a20-c1a5-4cdf-a98b-ad7171a9b2a5,Al Teatro Ristorante,147.4,55.6
+rejected,Q42538225,Palace Theater,32f255c3-9d55-494b-80c4-de1dab78b9cd,House of the Apocalypse,82.5,48.6
+rejected,Q42538230,Robey Theater,7cf7f485-e60d-4d78-86d0-fdd1179a66d3,La Central Bakery,54.8,46.7
+rejected,Q42538235,Rosette Theatre,64ca37d3-f7f5-4165-8a2c-6d53899929d6,Ghin Khao Eat Rice,68.8,42.4
+rejected,Q42538240,Stadium Theatre,94d9fa88-55a4-43c5-abc0-bca85a4222a9,Auto Net Trade,135.5,48.3
+rejected,Q42538254,Villa Theater,43e3f054-0f2e-4b76-8a4a-3d59ad06dce8,Azteca Bakery Llc,76.0,53.3
+rejected,Q42538259,White Eagle Theatre,63c69715-4ce5-4957-a9b8-989af35d554e,Taqueria El Tacotote,121.2,51.3
+rejected,Q42538261,"Lyric Theatre, West 22nd Street",f79b6bdc-de8e-44e4-a28c-2bb24580fa32,Las Quince Letras,117.3,34.0
+rejected,Q42538266,Grand Theatre,8133ba98-84ec-471c-9975-4f0e5aaf8adb,New Archview Restaurant,132.6,32.0
+rejected,Q42538269,Midwest Theatre,d68b919e-b908-4079-a545-24873563dee9,Taqueria Los Comales #8,140.0,37.8
+rejected,Q42538275,152 Theater,092b5d64-5393-4ecf-be61-fa4bd67e83e5,The Glunz Tavern,92.0,43.5
+rejected,Q42538273,Montclare Theatre,fd7be5d9-2c32-450f-aa4c-fe90d251154a,Carby Eats,86.0,51.9
+rejected,Q42539020,Shore Theatre,f3726049-fd4b-48f8-a7de-4dd0db530799,Ask A Chef Chicago,29.1,38.7
+rejected,Q42538280,900 North Michigan Theaters,c7e731bd-e605-43b5-81a6-db62d75ba438,John Hancock Observatory,130.4,43.1
+rejected,Q42538298,Bijou Theater,b14fc486-5b5f-4977-b036-daae2b86874c,The Scout Waterhouse + Kitchen,118.5,48.3
+rejected,Q42538306,Carnegie Theatre,fd843de6-e4f5-4489-8687-da7bfc87d034,Carmine's,83.2,48.0
+rejected,Q42538312,Chestnut Station Cinemas,f93e6844-fa51-43d6-8b18-0d93e79a0be9,Park Newberry Condominium Association,146.2,32.8
+rejected,Q42538316,Cinema Theater,f78f6d52-e238-40b7-a3bb-ce08a33bfa30,League of Chicago Theaters,66.8,60.0
+rejected,Q42538322,Clybourn Theatre,ba15f53f-5800-4f07-95ed-20e2f980cd0e,Ox Bar & Hearth,91.0,48.3
+rejected,Q42538328,Criterion Theatre,5753efd9-2baa-4ffb-8587-c4a2d08f5e11,Seward Park,146.6,35.7
+rejected,Q42538336,Erie Theatre,66add7f1-a28d-407a-a1e9-74a698559086,Elate,119.7,47.1
+rejected,Q42538342,Esquire Theatre,150547ea-94cc-4d58-aa9f-4e451553b8ad,Starbucks Reserve,93.1,50.0
+rejected,Q49483370,Disney Park,2a36b0e7-9aeb-473b-8c82-edf13e2aa5ad,Elk Grove Park District,72.3,52.9
+rejected,Q49483563,Doerhoefer Park,4ee5e2bd-3545-43c8-b7f9-9c29ac28287d,Downers Grove Park District,100.8,52.4
+rejected,Q49519052,Longcommon Park,98aa5136-3c2f-4d37-9f44-f7dd20048957,Big Ball Park,44.0,50.0
+rejected,Q49519282,Lorenz Brentano Playground,c8d5cf5d-cd15-4d5a-814e-9f5ce5ec203e,Brentano Playground,5.9,84.4
+rejected,Q49519763,Lowe Park,329e8176-dad5-4477-b86a-de780a0d7c02,Lowe (Samuel) Park,16.1,72.0
+rejected,Q49520022,Loyola Park,22903577-0c31-4051-89d3-b92c88823061,Loyola Park Fieldhouse,121.3,66.7
+rejected,Q49520187,Lunt Park,c1934261-5694-4fbd-9f19-a5c81d30cf45,Lunt Playlot Park,18.3,69.2
+rejected,Q49520611,Madison Meadow Park,ccb6f2a7-b478-4fab-8631-39168b66d248,Madison Meadow,113.2,84.8
+rejected,Q49521695,Marimal Park,1172e941-443e-410f-a784-39fde446e819,Kelli Garvanian Park,38.5,62.5
+rejected,Q49522372,Mary Egan Park,0ac946fe-8dc9-41fa-a45c-3e6653541d2c,Tapatio Mexican Grill,37.8,48.3
+rejected,Q49568095,Supera Park,070412d5-87b4-4ee1-b515-f8598012ca6a,Supera Park Playground,30.6,66.7
+rejected,Q49568605,Sycamore Playlot,44d8424d-8a4c-4efb-8c78-2e2066f4b2da,Sycamore Park,19.8,75.9
+rejected,Q42538761,Tabor Theatre,e4cf5a54-32ba-4435-8275-8cea2f446de6,Fresh K Mart,95.6,32.0
+rejected,Q42538769,White Palace Theatre,ac4d1890-31fd-4d83-a6d4-3c488c164fdd,Whadda Jerk,62.6,32.3
+rejected,Q49563490,South Park,7a750663-07ae-4459-8db1-1e9cc49c930e,Arndt Park,101.8,40.0
+rejected,Q49563488,South Park,54e23ec3-9bd4-46f6-a2b7-196ee993dd8b,South Park Tennis Courts,91.5,58.8
+rejected,Q49497918,Hardin Square,ecadd852-83c9-4101-9d4c-26e2493300d6,Sun Yat-Sen Playground Park,136.7,40.0
+rejected,Q49497933,Harding Park,c7404f1b-80bc-498a-a4af-1d35384729c6,Harding (Frederick) Park,14.3,70.6
+rejected,Q49498239,Harrer Park,e9461ecc-819f-4c13-b721-05233c1bdf4d,Harrer Park 6200 W. Dempster,90.2,57.9
+rejected,Q49498970,Hawthorne Hill Park,04fe218c-f6a2-4d68-ad74-4287cd419be6,Woodridge Haunted Forest,126.0,32.6
+rejected,Q42538754,Springfield Theatre,b87831ed-1e95-413a-8e50-bc6ade3e00f1,Mama's Fried Chicken,26.4,41.0
+rejected,Q42538774,Lincoln Village 1-6,6c10331d-e098-407f-8a18-8b2b07ebd376,Simple Delights Filipino Bakery and Cafe,101.3,37.0
+rejected,Q42538779,Lincoln Village 7-9,f8fff811-c9c4-4651-a75f-e2a46806d81c,Park No. 526,108.2,33.3
+rejected,Q42538786,Vitagraph Theatre,041e1f2d-1fa9-4abe-b786-9d26ceb713fd,Agave Bar & Grill,61.8,38.5
+rejected,Q42538789,Ellis Theatre,ac44b5a8-b3d1-4f90-8880-9ce8a9ad0673,Haven Entertainment Center,14.8,35.9
+rejected,Q42538792,Lyceum Theatre,466b264e-68f9-469b-a492-4c5634ac5092,Mandrake Park Fieldhouse,78.9,31.6
+rejected,Q42538801,Oakland Theatre,c960d814-f344-4632-b440-b04023b46864,Mandrake Park,70.8,42.9
+rejected,Q42538805,Ontario Theatre,d7546d42-5907-4635-addf-ec3084155163,Penguin Lanes/Brandon Bowl,115.7,29.3
+rejected,Q42538814,Belpark Theatre,a60f8c00-6402-424c-9602-94b95c660b8f,New Delta Restaurant,76.7,41.7
+rejected,Q42538819,Grayland Theatre,9f76995e-fe9e-4d76-95c7-aa89bc30c4a4,Peru Criollo,43.9,35.7
+rejected,Q42538823,Jeff Theater,3cd9f510-1b13-461c-b7b9-01c65ae2503f,Windy City Music Theatre,54.3,38.9
+rejected,Q42538825,Jefferson Theatre,3cd9f510-1b13-461c-b7b9-01c65ae2503f,Windy City Music Theatre,12.5,43.9
+rejected,Q42538830,Montrose Theater,da4bb5cd-646e-4311-a7c1-481e1b7fbdc4,Nightshade Bar,97.9,46.2
+rejected,Q42538835,Pioneer Theater,6f4ff05f-a934-4419-ad85-6c551d751f9f,Tea Time,38.8,43.5
+rejected,Q42538840,Waverly Theatre,ba4cbf16-0eb7-4e87-902a-c2a21e797093,"Over Easy, Inc",146.8,42.9
+rejected,Q42538847,Adelphi Theatre,8536f4ca-bda5-47be-b699-e468fb244aaa,Taqueria Ciudad Hidalgo,48.3,42.1
+rejected,Q42538851,Casino Theater,8536f4ca-bda5-47be-b699-e468fb244aaa,Taqueria Ciudad Hidalgo,129.9,48.6
+rejected,Q42538854,Howard Theatre,5c079d13-4c15-45df-9089-2a57e76c4177,Howard Street Brewing Company,30.9,46.5
+rejected,Q42538475,Francis Theatre,64146090-1e95-49bc-a3c4-93b56fc6d566,Chicago Hope Cafe,75.1,37.0
+rejected,Q42538479,Haymarket Theatre,50f17ae2-4192-46fc-b279-454d4d7c28c2,Red Star Bar,86.4,48.0
+rejected,Q42538483,Imperial Theatre,8f28ff60-a106-470b-81b6-0e8ebe62cc0b,Imax Theatre,118.6,78.6
+rejected,Q42538494,Liberty Theatre,253998a5-fdd1-4b71-ab97-323ea4501323,Mariano's Bakery,58.1,45.2
+rejected,Q42538503,Madlin Theatre,e4630485-1311-4740-9e68-74d2cb76ddbf,Theater Box at United Center,107.2,47.6
+rejected,Q42538867,New Devon Theater,e0d078c9-a82b-4091-8a08-ef35798ffdb0,Taqueria El Chorrito,52.4,43.2
+rejected,Q49503012,Horace E. Bent Park,1a1c30da-b8a6-4ad0-ab7d-7c951e86a39a,Bent Park,17.9,66.7
+rejected,Q49503025,Horan Park,c37d99b0-e7bd-40ae-a89c-24d403cd6dc4,Albert Horan Park,80.9,74.1
+rejected,Q49503060,Horizon Park,f60457bc-41c2-4202-9a34-4944ded59a67,Horizon Park - Wheeling Park District,57.9,51.1
+rejected,Q49503672,Hubbard Park,384d5818-a781-458c-a482-69ea34d0c4b4,Hubbard (Gurdon) Park,54.4,77.4
+rejected,Q49503770,Hudson Playground,d73cdfce-d3ae-44fc-bca1-b1646fe6a382,Jibek Jolu Downtown,117.5,33.3
+rejected,Q34907303,Bromann Park,eecaee2d-98f6-4fe4-8ce5-e0329c63355f,Bromann (Charles) Park,20.6,75.0
+rejected,Q34908900,Buckeye Park,b49b8648-c93b-4a19-9566-9c0a6f2b4f7f,Kim's Home Cooking,100.8,33.3
+rejected,Q34909762,Bulger Park,077dd5b1-bee1-48ea-b82a-774076f40ceb,Bulger Park Veterans Park District,26.0,48.9
+rejected,Q34910104,Burnham Shores Park,38ce1ca3-a86a-4aeb-bb55-4cd67973e691,Elliott Park,70.8,32.3
+rejected,Q42538471,Empire Theatre,2f83c2d9-9ace-418e-958a-f7150f39e902,"Madison Street Bridge, Chicago",28.7,37.2
+rejected,Q42538508,Marshfield Theater,031d373f-80cd-4147-8051-4a3e6e4fffca,See Thru Chinese Kitchen,101.1,41.2
+rejected,Q42538514,Mid-City Theater,6c013b4a-faa3-4111-be24-259032fd5a42,Playbar At FFC,137.3,33.3
+rejected,Q42538520,Playhouse Theater,e4630485-1311-4740-9e68-74d2cb76ddbf,Theater Box at United Center,94.0,48.9
+rejected,Q42538529,Star and Garter Theatre,39e39e9e-5b4e-4f8b-ab66-fa54016d5d8c,Andrew Rafacz Gallery,135.0,50.0
+rejected,Q42538543,Virginia Theatre,253998a5-fdd1-4b71-ab97-323ea4501323,Mariano's Bakery,135.8,37.5
+rejected,Q42538552,Wonderland Theatre,6be68eb9-3300-4feb-95ce-c4610d9ca3b2,Rye Deli and Drink,132.8,33.3
+rejected,Q42538558,51st Street Theater,0da18f00-946d-4e55-8e77-5e1f97ed1d7c,"Lester J Herro,od,pc",60.7,30.8
+rejected,Q42538563,Alpha Theater,e351191f-01ea-43f7-8cd6-1fd94eac4f5b,White Castle,132.9,48.0
+rejected,Q42538567,Ashland Theatre,215f7a2f-6df1-4d5e-8729-23344efe2c4b,Genesis Bakery,21.0,27.6
+rejected,Q42538571,Boulevard Theatre,e351191f-01ea-43f7-8cd6-1fd94eac4f5b,White Castle,67.7,41.4
+rejected,Q42538577,Charm Theatre,3772d20d-894a-4b81-8a38-2c6f4d9f5c73,Quarantine Kitchen Canaryville,114.8,46.5
+rejected,Q42538583,Cornell Theater,e0793dfb-5371-4755-8b1c-58c35e252af7,El Salserin LLC,63.4,46.7
+rejected,Q42538588,Davis Square Theater,e7e1a432-a0e7-4407-b144-87071f1814cd,Free Street Storefront,64.2,38.1
+rejected,Q42538594,Gale Theater,215f7a2f-6df1-4d5e-8729-23344efe2c4b,Genesis Bakery,114.7,38.5
+rejected,Q42538600,Halfield Theatre,e9bbab68-c804-4c88-9be7-fa89ba973b99,Honey's Hoagies,62.5,45.2
+rejected,Q42538607,Mid-Town Theatre,550687e3-d584-4c24-a9b8-42c360de9956,Codys Belly Bites,45.7,30.3
+rejected,Q49523168,McAndrews Park,d5a9ca7e-137b-45d3-b03a-1c63c4f0917e,"James ""Pate"" Philip State Park",62.9,38.1
+rejected,Q49523651,McGuane Park,28327fb9-4dff-4b3c-8c36-043213dc3214,McGuane Park Pool,118.6,82.8
+ambiguous,Q49550312,Riley Park,b907735e-3beb-4a02-9a79-c594a301eb18,Riley Park,39.0,100.0
+ambiguous,Q49550312,Riley Park,ff0eff2c-4f69-4343-81d9-4a7a1d7ccc87,Riley Park,42.6,100.0
+rejected,Q49550757,River Park,a5661560-d7d5-48cb-ad57-c41d6262170a,River Park Dog Friendly Area,106.1,52.6
+rejected,Q49550936,Riverdale Park,1be4205a-5591-400c-b9d8-bd152f5a2181,Riverdale Park District,107.0,75.7
+rejected,Q49551718,Riverwalk Park,99db501a-ccb2-450e-a499-b607b017962c,Riverwalk Cafe,80.7,78.3
+rejected,Q49552223,Robin Hood Park,863444bc-2d2c-46c7-b488-af9b707c6561,Robinhood Park,27.0,69.0
+rejected,Q49552260,Robinson Park,b0d7a570-60ed-40c5-8d3b-7beb915362be,Harrington Park,51.3,50.0
+rejected,Q49552267,Robinson Park,f9c9fe38-3fa6-4270-80b6-45bea83fc3ed,Robinson Lake Park,49.2,83.9
+rejected,Q42536135,Studio Cinema,726a68f7-fb37-4001-9553-96cfea97b471,AMC Chicago Ridge 6,27.3,31.2
+rejected,Q42536142,Alba Theatre,4d46ff30-3c9c-4e62-9cf4-af77ea258220,Al Amira,21.0,50.0
+rejected,Q42536148,Albany Theatre,ae65aebb-f437-4205-abf8-bc18bcf7c7cb,Aztlan Mexican Grill,115.3,50.0
+rejected,Q42536156,Drake Theatre,70b03033-b665-4c8f-a32e-0f577652b3a7,Taqueria El Aguila Real 2,149.2,36.8
+rejected,Q49493356,George Arquilla Park,c93c1d7e-0527-4762-b97c-d91a566483a1,Arquilla Fieldhouse Rental Playground,106.3,56.1
+rejected,Q49493746,Gilbert Park,faa162ac-b013-4c52-9a23-49f7b5d3dc09,Gilbert Park Baseball Field,11.2,61.5
+rejected,Q49493744,Gilbert Park,41b99440-265f-4b67-b82e-ed0d1772f424,Smash & fry,124.3,28.6
+rejected,Q49494379,Goldberg Park,b52e5634-a3c0-482b-a476-5cfe7d2bd957,Goldberg (Louis) Park,19.0,81.2
+rejected,Q49494459,Goldenrod Park,b1c251df-9e93-48cc-927c-92a863f14de0,Dunkin',50.6,30.0
+rejected,Q49528629,Morton Park,27137cc9-3122-472b-9392-e7fca7f8b8ba,Burbank Park,25.9,60.9
+rejected,Q49529727,Munroe Park,c5742f90-6192-4b15-90d1-466017523117,Munroe (Roy) Park,113.3,84.6
+rejected,Q49529833,Murphy Park,e121b3d0-2a70-4c7a-b2aa-d7ba0d7d370a,Murphy Park Montrose Drive,70.5,59.5
+rejected,Q49529899,Murray Park,b15ce4d3-8559-41f7-836c-99f8b6fb5847,Murray (david) Park,90.2,78.6
+rejected,Q49530631,Navy Pier Park,1e2b8760-6c7a-4bb9-bcd7-9b16729567c7,Billy Goat Tavern Navy Pier,85.8,48.8
+rejected,Q49530765,Needles Park,b97638a1-6b2f-41a4-8054-17e73c5639c8,John W. Needles Park,37.4,77.4
+rejected,Q49570789,Tilton Park,7c7c2ece-8341-445b-8425-81143de41717,Tilton (George) Park,28.0,75.9
+rejected,Q49571106,Tom T Hamilton Park,a4ee8b8a-4d81-4de3-b9b5-8584f4f914e3,Gbur B,63.7,16.0
+rejected,Q49571354,Touhy Park,27b908c1-0cef-46b8-b278-0e42b8c8fe1c,Touhy Park Playground,122.8,64.5
+rejected,Q49571352,Touhy Park,3d1a3694-5d86-4c77-8fa2-29a3437de960,"Touhy-herbert Park (john, Victor)",8.3,50.0
+rejected,Q42536165,Metro Theatre,13820f50-de68-4413-b13a-63b4bda94ca3,Great Sea Restaurant,65.0,45.5
+rejected,Q42536175,Terminal Theatre,a1d9bafe-9ef4-4652-a386-541b1b405319,Bravo International Pizzaria,73.9,45.5
+rejected,Q42536193,Calo Theatre,11e051e7-878a-4a1b-99e9-7b06b4a368e3,Calo Ristorante,88.1,66.7
+rejected,Q42536202,Metropole Theatre,f2f31ebf-8e2e-4860-8f61-335391a51847,Franco's Ristorante,83.4,38.9
+rejected,Q42536213,Sun Sing Theatre,03fa2a89-b07c-4efa-98ea-ca74c991a786,Central East Asian Cuisine 印象新疆,119.2,42.6
+rejected,Q42536220,Auburn Theater,7246f44b-9d69-4e43-aacb-52f3f8dd6612,5 Stars Chicken and Fish,141.3,36.8
+rejected,Q42536230,Capitol Theatre,406f214f-a9aa-459a-87de-4e17437ebf2f,Ho Ho Chop Suey,115.3,40.0
+rejected,Q42536241,Cosmo Theatre,406f214f-a9aa-459a-87de-4e17437ebf2f,Ho Ho Chop Suey,69.3,42.9
+rejected,Q42536253,Emerald Theater,51c1333f-c2db-4750-8b35-3995185a6c16,Spot 77 Studio and Suites,87.2,30.0
+rejected,Q42536258,Highland Theater,fc67f32d-bddd-4cf6-86b0-b3f29a23f1c0,Good Bbq,59.4,16.7
+rejected,Q42536262,Pastime Theatre,98379309-707f-432c-8298-98317700c3ba,Glass House Lounge,61.6,38.5
+rejected,Q42536269,Austin Theater,4f070544-bbda-46dc-a7c4-ce5984a38397,Valerie Johnson,17.9,41.4
+rejected,Q49481430,J. Seymour Currey Park,8018e306-a024-4ca5-a6b8-5f380876309d,Currey Park,26.8,68.8
+rejected,Q49481981,Dauphin Playlot,42ecc846-8694-4641-899e-c03187e91dca,Lorraine Dixon Park,95.0,41.2
+rejected,Q49482226,De George Park,1306bed7-52bd-41aa-9822-c81362eb2238,Burger King,130.6,40.0
+rejected,Q49482339,Dean Playground,18922906-158e-4a1e-bf19-38e8371664d1,Dean Park,1.6,66.7
+rejected,Q49482366,Dearborn Park,68e1ce6d-d4b1-42c0-87d3-483a91ed3590,Dearborn (Henry) Park,13.3,81.2
+rejected,Q49482850,Depot Park,30cf2457-b5da-4d4c-8c88-a1fa77d7c658,1913 Restaurant and Bar,100.3,34.5
+rejected,Q49483295,Dimucci Park,b75a97ac-4828-45b5-a124-ed7eedb0c8ca,Dimucci-Lowenberg Park,45.1,70.6
+rejected,Q49569223,Tate Woods Park,a49b99b5-c62f-479a-aa04-4eabc02bb6ce,Saints' Underground,141.9,30.3
+rejected,Q49562215,Skokie Sports Park,ae6177ad-d87b-4192-9215-be83f17ddc46,The Bunker Indoor Golf Simulator,7.3,34.8
+rejected,Q49562213,Skokie River Nature Preserve,289f7c95-0e15-411c-aa00-f076cac7e102,Open Lands Park,118.2,32.6
+rejected,Q49562538,Smith Memorial Park,256b4324-49e3-4f8d-b45b-c0c428beefd3,Taqueria Hacienda Tapatia,133.5,31.8
+rejected,Q49562566,Smith Park,d03382da-7b89-4efd-ad22-2d4561844b92,Smith Park Pool,48.8,80.0
+rejected,Q42536277,Baird Theater,1c6c04f9-9f2f-4ea6-b10f-8815b5e26370,See Thru Chinese Kitchen,132.5,34.5
+rejected,Q42536285,Byrd Theatre,addd165b-75c7-4c3e-9d16-edb8ec118464,Gus Uncle Remus & Guilty Pleasurez Bakery,12.7,31.4
+rejected,Q49498984,Hawthorne Park,c0bd4095-0183-4f81-bac2-06a65f6ef542,Hawthorne Park District,81.5,75.7
+rejected,Q49500033,Henry Proesel Park,b81c6e9c-77d1-4aec-ad9b-80f9a7b843e2,Henry A. Proesel Park Pavilion,80.7,76.6
+rejected,Q49500114,Herald Square,c6fcbe81-3b6a-455f-8b7e-2c97389652bc,The Southern Mac & Cheese Store,143.7,42.1
+rejected,Q49500672,Hickory Glen Park,6e977aba-470f-4ca9-89b6-db7cf8aae417,Hickory Glen Park & Fieldhouse,61.2,75.6
+rejected,Q49500773,Hidden Lakes Park,7782e88d-10e2-4ad0-bfdb-87dee249f8a4,Cherbourg Park,55.5,45.2
+rejected,Q49501038,Highland Park,7ecac386-bb59-449e-9490-e5cc1468d3e7,"Flossmoor,IL Highland Park Playground",42.7,52.0
+rejected,Q49501196,Highland Point Park,f3030582-ea55-476c-878f-6e360daccb58,Fuji Thai,147.8,28.6
+rejected,Q49501501,Hill Street Park,a2c88b0f-9c62-427e-b09a-023a3f0ce52a,Hill Street Nature Center,40.3,68.3
+rejected,Q49502507,Holmes Park,8bcf9f12-334f-4b6f-a0ec-8aba9d58bae3,Los Amigos Mini Mart,141.2,38.7
+rejected,Q49502550,Holocaust Memorial and Veterans Memorial,a299a74e-468d-4c06-8531-82dd973ed462,Skokie Theatre - Performing Arts Center,122.8,41.6
+rejected,Q49502559,Holstein Park,4b840984-82e4-45b0-a4a2-011a9fe68beb,Holstein Park Playground,85.6,70.3
+rejected,Q49533455,Northwest Park,e25270bc-98df-4c3d-a6ca-232218ab1dd3,Duffy Park,28.2,41.7
+rejected,Q49533930,Oak Grove County Forest Preserve,b9dd6567-82e6-46eb-afee-f7be756006b1,Oak Grove,85.3,43.9
+ambiguous,Q49559205,Sears Park,64581334-21a1-460c-accd-bc6aa312c0be,Sears Park,99.9,100.0
+ambiguous,Q49559205,Sears Park,56e8dd1a-0278-4589-b505-6dad11a5e096,Sears Park,142.0,100.0
+rejected,Q49559629,Senka Park,b9250836-40f5-443c-b809-d4a175dd544c,Senka Park Gazebo,112.9,74.1
+rejected,Q49559870,Seven Gables Park,a163d6c9-5675-400c-b656-eb445fa2e972,Seven Gables East Shelter,82.8,57.1
+rejected,Q49488781,Fender County Forest Preserve,29990b80-9788-4733-98eb-bb2db386a3e2,Fischer Woods County Forest Preserve,6.3,80.0
+rejected,Q49489070,Finn Park,4cb86c67-0c56-403c-a99b-8478b9163cc5,Countryside Park,96.4,48.0
+rejected,Q49489176,Firemans Park,e91b2d07-b79e-4861-ae9a-55eae6ee1d52,Philbrick Park,125.0,37.0
+rejected,Q49491471,Franklin Park,eb4b991d-2f63-491d-bce1-58a560fe041a,Franklin (Benjamin) Park,15.2,74.3
+rejected,Q49492111,Friendship Park,aafb4a7a-7fe7-4f97-897b-0395dabb7dca,Friendship Park Conservatory,88.1,69.8
+rejected,Q49520844,Main Hamlin Tennis Complex,263e7241-cf5d-4ea3-a110-bfaeca626c0e,Main - Hamlin Tennis Center,7.1,82.4
+rejected,Q49520939,Maine Park,5097695f-7eeb-438b-93da-5d0a8e92a439,Wildwood Nature Center,83.8,31.2
+rejected,Q49520956,Majewski Metro Park,7e16becc-c08e-491c-983a-2232ed26c084,Auntie Anne's Pretzels,97.2,34.1
+rejected,Q49521501,Maplewood Park,4df05659-11db-40e6-b6a1-d120ce312371,Maplewood Park Little League Field,80.6,58.3
+rejected,Q49526730,Mills Park,dd10ce52-ed06-41fb-a65c-a091c6a73645,Elmwood Park,87.4,54.5
+rejected,Q49526901,Mini Park,4e64800a-37ad-4d8e-8437-3cdebff319c9,Cowboy Park,39.0,50.0
+rejected,Q49527251,Mitchell Lakes Park,2d1723d6-ebab-44a3-8984-b13ea4863e63,White Cottage Pizzeria,149.2,29.3
+rejected,Q49528243,Moran Park,ca65613a-03ff-43fa-b0a2-898bb53c8e56,Moran (Terrance) Park,58.0,69.0
+rejected,Q49528490,Morrell Park,5d7cb789-f1c9-4b1e-bf0a-e41b48773927,Little Caesars Pizza,71.0,37.5
+rejected,Q49532386,North End Park,716d1132-2d0b-40df-87a7-c928895c4039,Osborn Park,29.0,56.0
+rejected,Q49532384,North End Park,1ae62ec3-096d-44d4-910d-9423c29071f8,Candycane Park,38.8,57.1
+rejected,Q49532692,North Park,b3b82a87-73ad-4e36-be61-c68c15bda1e6,Inverness North Park Fieldhouse,71.6,48.8
+rejected,Q49532862,North Ridge Lake Park,e6e82dd3-11f4-4ecd-a7d8-8b8787547e2a,South Ridge Lake Park,124.6,71.4
+rejected,Q49532945,North Side Park,67b1eef8-5b90-43d7-9101-75feb6ff2195,Northside Park,49.1,69.0
+rejected,Q49533087,Northbrook Park,7deb2902-63af-4447-9579-b0e098847770,NBJH Park,82.1,58.3
+rejected,Q49533088,Northbrook Sports Complex,dcdcca91-d72c-411a-b8e3-67004cbe8441,West Park,22.2,35.3
+rejected,Q49533116,Northeast Park,4e5c064d-5914-4d90-9ee5-25074a294413,William G. Yena Park,37.2,30.3
+rejected,Q49533120,Northeast Park,6b1218be-140a-4d3c-b110-e20f74f1bc9c,Lawrence O Lawson Park,46.4,50.0
+rejected,Q49533165,Northerly Island Park,5bcba06e-7ba5-4127-8a0e-aa1d5ece6f86,Northerly Island Beach,133.7,74.4
+rejected,Q49556439,Salk Park,e9cec2bb-e0f6-46dd-b5c9-d4fbccef47cf,Rolling Meadows Park Dist,51.3,35.3
+rejected,Q49557114,San Souci Amusement Park,0c5f355d-0005-4ff4-99ff-52aa5c18bd76,ZENSHI Handcrafted Sushi,76.9,33.3
+rejected,Q49558318,Schaefer Park,d00443ca-1a32-46f2-80a6-0fb54cb8395c,Edward Schaefer Park,26.7,78.8
+rejected,Q49567600,Sunnyside Park,64cce796-0418-4586-8518-2ac9e4c6efe3,Sunnyside Park Hot House,25.7,73.7
+rejected,Q49567878,Sunset Park,6ca0fea6-0974-4505-b6c1-e0bb812ef91b,Glen Ellyn Manor Park,126.3,25.0
+rejected,Q49537213,Palmer Park,249ab946-1bef-45e3-9520-3b9fd5b874e4,Palmer Park Playground,69.3,66.7
+rejected,Q49537247,Palmer Square,737180cc-12a8-435b-bc56-7d6c35bddf87,Palmer Square Park,23.0,83.9
+rejected,Q49539246,Austin-Foster Park,822a2c61-a952-4a06-85bb-acbe3f2b7978,Austin Foster Park Playground,67.3,76.6
+rejected,Q49539250,Park 315,6b4f9b18-3984-4c64-8233-444358fec831,Falafel & Shawarma,149.5,25.0
+rejected,Q49539254,Park 399,14a53b27-bc2e-47ac-b686-d0a9d08b1816,Park No. 399,22.8,84.2
+rejected,Q49539256,Park 411,acdacb94-c37e-4d9d-bc40-2c47fbde3105,Mark R Sherman Inc,40.4,30.8
+rejected,Q49571688,Trail Tree Park,b0d9e7a4-d500-4a30-91c5-0dab0d0fa7a1,Trail Tree Park Playground,88.9,73.2
+rejected,Q49572249,Trumbull Park,82c63903-5a15-4334-a0a4-1258ebdb56a0,Trumbull Park Playground,76.6,70.3
+rejected,Q37760649,AMC Navy Pier IMAX,b21ed332-d1af-4414-8361-488e9f201125,Navy Pier Catering,36.9,66.7
+rejected,Q42533207,Michael Todd Theatre,c214767b-0a54-4f5a-b0f5-cbbfc178324c,Oriental Theatre Chicago,102.3,59.1
+rejected,Q42533219,Monroe Theatre,f2e1c030-e933-4bf7-a047-b5e15d4d41d9,CIBC Theatre,111.4,61.5
+rejected,Q49572740,Twin Groves Park,439816ae-e9f3-4398-8968-407bd4899df8,Ivy Park,58.1,50.0
+rejected,Q49505768,Ivanhoe Park,c460d06f-6ebd-41bc-aade-e75104279112,Riverdale Park District,57.0,34.3
+rejected,Q49506187,Jackson Park,e48455e7-c10f-4f40-b1bc-34ef37a784f6,Jackson Park Playground,90.3,68.6
+rejected,Q49506351,Jacob Park,352a744b-b3c7-4245-b690-d9dc9f2d370b,Jacob Playlot Park,26.0,71.4
+rejected,Q49506525,James C Mitchell Park,30bb25f5-61a5-4e31-8551-0e4bf09c2e4a,Deerfield Park District,113.7,45.5
+rejected,Q49506566,James E Larimer Park,7235033a-cb8c-442f-9406-765d62756d3c,Larimer Park,43.1,75.0
+rejected,Q49506916,Jaycee Park,3c864842-0090-42c1-98bb-29fedb58efc5,Jimmys Pizza,64.6,43.5
+rejected,Q49507258,Jefferson Playlot Park,c9e53361-4875-47b3-8d4d-637e6e0cb4c5,Jefferson Playlot Playground,7.2,84.0
+rejected,Q49507261,Jefferson Park,7845fdaf-5d77-4c33-991b-a964dbf94d29,Thomas Jefferson Memorial Park,67.8,63.6
+rejected,Q49507266,Jefferson Park,1bfacd25-b98c-43a5-b721-f27a842996b6,Borman Square Park,37.1,43.8
+rejected,Q49507455,Jennings Park,473de485-1378-476f-bfea-fb4e0687b32c,James Jennings Park,25.1,81.2
+rejected,Q34910244,Burnside Park,94a09187-2fe7-4b12-b48b-e3c865d27473,Burns Field Park,34.4,82.8
+rejected,Q34911866,California Park,c3140fe8-046d-4b76-8900-59397b104760,California Park (A.K.A. Mcfetridge Sports Center),93.7,49.2
+rejected,Q34912139,Cambridge Park,cd7ccf71-1a91-4d2d-9309-3260acb28bc3,Nino's Pizzeria & Catering,121.7,42.1
+rejected,Q34912346,Camera Park,45e7dbe8-9771-4d2b-a215-a64284e94da4,Glendale Heights Fest,84.4,18.8
+rejected,Q34920067,Cermak Park,b8e429cc-ffaa-4f5c-ba21-259c79cf1dbc,Starfish Cafe,85.3,21.1
+rejected,Q34920706,Chandler Park,be6f0575-dc1a-4869-af24-a8416c4be084,Leahy Park,85.6,60.9
+rejected,Q34921244,Charles L. O'Brien Park,853785e9-db91-4f82-b133-f964781ab9cb,Wholly Frijoles,123.3,37.8
+rejected,Q34921665,Chase Park,fc93c6d5-6964-42ce-94f7-7b00ba701d60,Chicago Park District,89.9,58.1
+rejected,Q34921841,Chathum Park,18d506b8-2dca-48f4-86aa-2312f507564c,"Good Times, Great Music",111.4,23.5
+rejected,Q34926192,Kamen West Park,cb6224ee-1172-4c8e-8c34-ee0b40b304ca,Leider Park,86.4,46.2
+rejected,Q34927612,Clark Park,c8593685-5721-4aee-8a9a-49d376392cb2,John Clark Park,45.3,80.0
+rejected,Q42533442,La Salle Theatre,18351672-906a-40d9-8958-86b8efaec0b9,Menta Academy Oak Park,128.4,36.8
+rejected,Q42534846,Skylark Drive-In,ac6202e9-60e1-428b-a0f0-b0c56bd067e2,Olive Garden,123.8,35.7
+rejected,Q42534902,Starlite Drive-In,4dc7c3fe-43c7-4de4-a746-4d6b42796b30,Raising Cane's,65.8,38.7
+rejected,Q42534907,Twin Open Air Drive-In,5e2fa6bf-3581-40fe-95fc-48579b68bc95,Garden Of Ol Inc,98.9,52.6
+rejected,Q42534910,Bel-Air Drive-In,9e377f3b-2310-4f38-b2cb-cfd963c54cfb,Mrs. Fields,35.9,38.5
+rejected,Q42534913,66 Drive-In,deedceae-ad16-463a-9ad6-a8b80392a8ab,Honey-Jam Cafe Countryside,148.7,32.4
+rejected,Q42535047,Morton Grove Drive-In,e3b61e25-c50c-417f-b937-ec38822e9a5e,Rosded Too Thai,28.8,44.4
+rejected,Q49524349,Meadows Park,37b4fabf-0dcf-4034-9ea6-e25afb907a70,Meadows Pool,106.9,75.0
+rejected,Q49524487,Medinah Park,2f8c80da-616c-4ffe-9b46-d4ab7287e1ab,Meacham Creek Park,120.4,60.0
+rejected,Q49524574,Mellin Park,ae165e2e-0da6-4d54-9732-5728d89d116e,"Mellin (Curtis, Sr.) Park",25.7,68.8
+rejected,Q49524794,Memorial Park,9bed884d-72bd-4328-a58b-9e929b7bc1c6,Memorial Park Pryor Field,57.6,68.4
+rejected,Q49524798,Memorial Park,59510dbe-0db5-4fc6-8948-529923f5cbcf,J J Fish & Chicken,146.2,20.7
+rejected,Q49524814,Memorial Park,7b4e75f2-3788-42b6-8fbc-1eef8bdab714,Memorial Park Volleyball,110.3,70.3
+rejected,Q34922822,Juneway Terrace Park,cee91cd4-4b5e-43fd-9d99-64da95c35059,Juneway Beach Park,12.5,63.2
+rejected,Q34923433,Chestnut Lake Park,53f0fa94-bdcc-438f-aa0b-a2647012c70c,Chestnut Basin,71.3,50.0
+rejected,Q34923868,Chicago Zoological Park,f71774dc-0664-4439-808c-80b9716678fe,Bison Prairie Grill,61.6,38.9
+rejected,Q34926053,Churchill Park,d000994a-a40c-4497-9cbd-770809a164d1,Churchill Park Dog Friendly Area,30.1,60.9
+rejected,Q42536296,Cinema Italia,b97a5da1-e886-459f-b661-ff68788981e0,Seafood Juction,67.4,35.7
+rejected,Q42536301,Ideal Theatre,98c5b812-f24b-46f0-be32-ffb6f139e11a,C & P Fried Rice,35.1,37.0
+rejected,Q42536306,Iris Theatre,1fed1cdd-9340-4c2c-8924-e2486c8a1541,Coleman's 2 Ribs and Tips,84.8,27.0
+rejected,Q42536314,Lyda Theater,c173ef42-fd89-4462-bc9e-5f662411166c,Dunkin' Donuts,86.8,16.0
+rejected,Q42536320,Manor Theatre,dec2521d-457a-4999-a95e-c55c8f1a7222,Riss Park,149.7,36.4
+rejected,Q42536331,Mayfield Theatre,64e98870-0a49-472e-962b-25f52740192b,The Roasted Leaf Cigar and Coffee Cafe,62.1,35.6
+rejected,Q42536339,Moreland Theatre,c173ef42-fd89-4462-bc9e-5f662411166c,Dunkin' Donuts,36.2,20.7
+rejected,Q42536346,Park Theatre,8d0403a3-1da7-4432-a782-fe5204d60cf3,Kinzie (John) Parkway  Park,113.7,38.9
+rejected,Q42536352,Plaisance Theater,ed420b36-5ed8-472e-8db6-a60f67fb1077,Harambee Community Garden,142.5,33.3
+rejected,Q42536361,Rockne Theatre,17b42779-f8e2-4021-aae7-0ec429d0c1eb,New China Chop Suey,104.5,36.4
+rejected,Q42536367,State Theatre,cbcb603e-418b-4145-bc3d-edb21079aca8,Ted's Place,28.3,41.7
+rejected,Q42536385,Vet Theatre,2d7f416f-a04c-4e77-8434-7b82479064c0,Nin Ice Cream Truck,93.4,33.3
+rejected,Q42536390,Weneeda Theater,e482dd43-0948-4f42-8e7f-6836bdb5837c,Schweet Cheesecake,55.4,48.5
+rejected,Q42536405,Windsor Theatre,8d0403a3-1da7-4432-a782-fe5204d60cf3,Kinzie (John) Parkway  Park,94.9,30.8
+rejected,Q42536410,Avondale Theater,7f1265b8-4c46-49fc-b8a6-0f575b624b76,Cameron And Kane Llc,63.1,44.4
+rejected,Q42536417,Diversey Theatre,6ef9f4c0-98c1-4c46-b24c-f9f1065db23b,The Bakery At Fat Rice,115.0,47.1
+rejected,Q42536422,Drake Theater,b5a151aa-f630-451d-a491-be42f9a477ee,Uprising Theater & Cafe,7.2,48.3
+rejected,Q42536429,Enterprise Theatre,ab49a0c0-e7bc-4415-b8db-99add59b6719,Hairpin Arts Center,41.4,48.6
+rejected,Q49564965,Spruce Park,65aa3313-9faa-432f-9f3e-727acb4ac06a,Spruce Park Playground,13.9,66.7
+rejected,Q42536432,Fox Theatre,d92d626e-fddb-4222-866b-45485872bc86,B'el Bar + Kitchen,58.6,42.1
+rejected,Q42536437,Linden Theatre,29f7767e-5b9f-4006-81b2-a4b44a0abdde,Auxiliary Art Center,15.4,41.2
+rejected,Q42536443,May Theatre,d92d626e-fddb-4222-866b-45485872bc86,B'el Bar + Kitchen,113.4,42.1
+rejected,Q42536447,Nita Theatre,cae8cd24-2171-4fec-ab7d-dc2e703521ca,Tacos Tequilas,32.5,46.2
+rejected,Q42536453,Round Up Theater,ab49a0c0-e7bc-4415-b8db-99add59b6719,Hairpin Arts Center,148.1,45.7
+rejected,Q42536463,Bricktown Square Cinema,8f594546-dede-444b-82ef-67033234118e,Las Islas Bar and Grill,121.2,35.0
+rejected,Q42536471,Luna Theatre,a688fe05-1f07-4079-973a-f746497a1494,Parsons (Lucy),128.9,41.7
+rejected,Q42536480,Main Theatre,5fad9353-517c-4107-974f-270ef1350f32,Happy Cracovia Lounge,141.8,38.5
+rejected,Q42536486,Will Rogers Theater,18123142-b1e2-4d41-ae31-cad8cfbb0993,Koala-Ty Games,95.9,36.4
+rejected,Q42536495,Hamlin Theatre,37429851-1aeb-4ac2-9e75-2eb614d660f7,Material,83.0,36.4
+rejected,Q42536503,Casino Theater,0f03ef8f-34df-4e15-b673-c9733c0281de,Ramova Theatre,29.4,64.3
+rejected,Q42536510,Eagle Theater,eeec0f7d-91f0-485f-aeea-6d9264377085,Bad Owl Coffee Roasters,97.3,38.9
+rejected,Q42536517,Holden Theatre,b3ea7e16-308c-400f-8da6-981b6c3ffca3,On Pointe Performing Arts Center,57.9,26.1
+rejected,Q42536524,Lithuania Theater,8eec9e70-1bec-4ede-9a43-de9c28391586,PrintWithMe,61.4,42.9
+rejected,Q42536533,Loomis Theatre,b3ea7e16-308c-400f-8da6-981b6c3ffca3,On Pointe Performing Arts Center,26.9,30.4
+rejected,Q42536539,Marion Theatre,0f03ef8f-34df-4e15-b673-c9733c0281de,Ramova Theatre,133.1,71.4
+rejected,Q42536544,Milda Theatre,3d460697-2011-4bc8-99e0-05c3235be762,Homestyle Taste,89.9,50.0
+rejected,Q42536552,Monogram Theater,0f03ef8f-34df-4e15-b673-c9733c0281de,Ramova Theatre,25.5,66.7
+rejected,Q42536559,Norwal Theater,efda1e8b-889c-4e0c-85b8-72ed96724749,Delivery Wow,89.1,23.1
+rejected,Q49511904,Kolmar Park,fbda05fe-40e4-4d7f-8813-45d7d14f6a0e,Kolmar (Gertrude) Park,45.1,71.0
+rejected,Q49512123,Kruger Park,fb73a3a3-6898-40da-8cc3-a0f23040de0b,Krueger Park Recreation Center,100.7,53.7
+rejected,Q49512794,LaFollette Park,421b8eac-c1b2-4f46-a439-542e30897ff7,La Follette (robert) Park,149.3,68.4
+rejected,Q49512837,Lagoon Park,b03b75d9-9378-4638-8176-b1a66403b5a0,Lombard Lagoon,64.4,72.0
+rejected,Q49513056,Lake Carleton Park,1eea91e6-cbce-44b4-b396-b85296676eb7,Lake Carleton,29.9,83.9
+rejected,Q49569919,The Grove Park,f90342bd-020b-4852-8306-4b41bfe78b64,Kennicott's Grove Nature Preserve,135.0,37.2
+rejected,Q49570187,Thomas Eddy Tallmadge Park,9e2ca3c3-40ea-4f6d-b954-2c354cbe77d0,Tallmadge Park,98.3,70.0
+rejected,Q49570415,Thorndale Park,e68c001a-6f03-415f-a1b0-42372fa81428,McDonald's,111.7,33.3
+rejected,Q49570412,Thorndale Avenue Park,62dc5f75-c597-412c-a15e-7e823ae2cd76,Dellamarie Parrilli,92.1,40.0
+rejected,Q49542535,Pietrowski Playground Park,11e68777-ff39-44f3-9fe1-72f7a6ff4eec,Pietrowski (Sylvester) Park,15.8,70.6
+rejected,Q49542832,Pine Lake Park,03efbe50-c7bf-45ba-9dd6-c7cca7caef05,Pine Lake,139.8,78.3
+rejected,Q49542851,Pine Park,a51664b0-90a4-4e91-abfb-4b9b1e5f8a99,Roselle Skate Park,97.2,44.4
+rejected,Q42535123,Bel-Air Drive-In,43401273-4536-4110-a661-014686fbbfd6,Larry's Bar & Grill,128.9,44.4
+rejected,Q49543037,Pinewood Park,e0a27067-3c79-48b0-b4be-60145f9fbff8,Pinewood Park Playground,52.1,70.3
+rejected,Q49546825,Pullman Park,78a65ab8-ad20-4dde-a2d0-dbd5dfdea721,The Pullman Cafe,71.8,73.7
+rejected,Q34917214,Centennial Park,88b70fd9-3af5-4c1e-8d45-adc394aba08b,Lemont Centennial Park,64.7,81.1
+rejected,Q34917289,Centennial Park,2899102b-0be8-489d-8a7e-cfd63cd28f5e,Wilmette Park Dist,101.1,36.4
+rejected,Q42535151,Sunset Drive-In,127cc033-80ea-4d39-bf0e-1b48a0a9b144,Pie Five Pizza,119.0,41.4
+rejected,Q42535156,Sauk Trail Drive-In,c1d6263b-67a1-4e32-a958-43bcdb721536,"Bap's Tap Sports Bar & Grill, Inc.",76.0,40.8
+rejected,Q42535244,Addison Cinema 1 & 2,0b2d8aab-c9af-44d4-a619-6335207432df,Little Caesars Pizza,121.2,31.6
+rejected,Q42535413,Argo Theatre,bfa05781-1d99-4785-bbae-a27d31f4f92c,Talerico Martin Retail Bakery,47.0,39.0
+rejected,Q42535419,Paragon Arlington Heights,9153b447-f4ee-40ae-ac78-9275653ee3b4,CMX Cinemas Arlington Heights,42.6,63.0
+rejected,Q42535416,Arlington Theater,5e87e44d-5c81-4fe2-b1dd-d007dcf7845f,Bistro Chen,77.4,42.9
+rejected,Q42535423,Ridge Plaza Cinemas,233db46e-1d98-483c-a77e-406ba287e74b,"Le Titi De Paris Ii, Inc.",87.8,38.1
+rejected,Q42535428,Town & Country Theatres,4de22ece-e255-44c6-95d3-0618cc5f8fb5,Old Country Buffet,135.9,46.2
+rejected,Q42535610,Bensenville Theatre,976c1b7b-a95e-43a3-97bb-9fe8142d7492,Taqueria Mexico 2000 Number 2,70.0,29.2
+rejected,Q42535629,Berwyn Theatre,373dd30b-1aa5-4658-af25-93f06a8ee8b3,Berwyn Park,54.6,72.0
+rejected,Q42535632,Oakwyn Theater,c48b662c-ce25-440a-a80b-c5d724ba5067,Autre Monde Cafe and Spirits,140.4,38.1
+rejected,Q42535638,Roxy Theatre,88a8e9a4-949d-46be-9bc6-ea7f6c6f745e,Dragonfly Terrace,57.0,55.2
+rejected,Q42535637,Ritz Theatre,80377c31-a031-4cd9-a6f3-973d5922e281,Pete's Red Hots,56.8,44.4
+rejected,Q42535645,Picture Show at Bloomingdale Court,83801dfa-3672-44a9-805c-5cc9e74033d2,The Original Rainbow Cone,16.5,40.0
+rejected,Q42535687,Grand Opera House,d2d58cf1-7633-459b-b033-6238c3db9b6d,San Marcos Mexican Restaurant,34.6,34.3
+rejected,Q49531617,Nickol Knoll Park,2b921b05-18d9-4d24-9515-6b3048e26306,Payton's Hill,123.5,33.3
+rejected,Q49532085,Norridge Park,32a25e3d-d532-41e6-80da-687b15368245,Norridge Park District,112.6,74.3
+rejected,Q49535181,Old Pond Park,e8c165db-2e14-4d39-82a4-25627b21e229,Oakwood Park,80.8,56.0
+rejected,Q49535497,Olive Park,357f5558-13dc-44c9-b45d-a12741ff22ee,Medal of Honor Park,86.2,48.3
+rejected,Q49536157,Orr Park,1301f09e-647a-4128-b046-8cb84a855eab,Orr (Rezin) Park,59.1,72.7
+rejected,Q49540419,Paurlberg Park,f2205393-ca30-4f92-89b7-57f20a527065,Paarlberg Park,108.0,64.3
+rejected,Q49541270,Lucy Flower Park,9e50244f-3486-4423-9f94-85bc61f1b0f4,Flower Park,1.3,81.5
+rejected,Q49541514,Perry Park,95b8c8e1-c352-4427-90c3-b5fa0627240c,Adam Perry Park,16.2,80.0
+rejected,Q49541680,Peter G Redar Park,8e1c7938-323b-4427-98d1-3bc479c43777,Peter G Redar Memorial Park Playground,130.2,64.3
+rejected,Q49549538,Revere Park,d5d19ad0-db92-4a89-a99d-243617284b69,Revere (paul) Park,96.4,81.5
+rejected,Q49549795,Richard D Irwin Park,e0ad773d-0760-490f-86e7-63d886b842e9,H-F Park District - Life Begins at 55,71.7,36.4
+rejected,Q49550096,Ridge Park,a174aa0b-4ac8-4596-957c-beaf05fa94ae,Olympic Park,105.8,36.4
+rejected,Q49550141,Ridgeland Park,b0ba954b-b303-4257-bbd8-a9e96aa617fa,Ridgeland Common Park,85.9,80.0
+rejected,Q49550183,Ridgeville Park,749ada57-4464-4734-a37d-bbd09bfff471,Ridgeville Ramps,52.6,77.4
+rejected,Q49513531,Lake Park,864d79a8-a116-4c90-ab00-17f5fabc3d3e,Lake Opeka,127.9,73.7
+rejected,Q49513533,Lake Park,2052ac78-dbe6-411b-802e-a840b887ea58,Lake Park Estates,41.1,69.2
+rejected,Q49513676,Lake Shore Playground,25cc8177-9c56-405c-b022-0d2bd9d9ef0b,Lake Shore Park,58.5,77.8
+rejected,Q49513701,Lake Street Reserve County Forest Preserve,03324a86-6813-45da-b7ce-78dcc5174f28,Spring Creek Reservoir Forest Preserve,57.7,67.5
+rejected,Q49514268,Lamb Park,99a7cb2a-d692-44c2-b664-fe4c3d12b0cc,Lamb (Harold) Park,87.7,72.0
+rejected,Q49514422,Lane Park,470a7606-a679-4251-bd54-6c9d53549313,Lane Beach Park,14.0,75.0
+rejected,Q49514459,Langdon Park,716e4b9a-5564-4168-ae04-39dcf06d2f6b,Langdon Playlot Park,15.9,75.0
+rejected,Q49563497,South Park,3a38bdcd-d46d-482e-bdb8-087d9b4f5131,South Park Playground,92.8,64.5
+rejected,Q49563704,South Shore Park,c030531a-7e3c-4d97-b819-20ac73ef3c9e,Rosenblum Park,77.8,53.3
+rejected,Q49563736,South Side Park,1b6f8508-cbeb-40f3-bd41-52ad15822eb0,Newton Park,26.4,30.8
+rejected,Q49563884,Southeast Park,636e92e5-a5cf-4e08-ba96-d0c4cd012337,Candy Cane Park,115.0,27.6
+rejected,Q49564531,Sportsmans Park,e5cacc76-6762-42f3-8cb5-da40db81571d,Naperville Sportsman's Park,134.4,66.7
+rejected,Q49564805,Spring Valley Nature Sanctuary,5ba4f723-fd44-453e-97cf-7333156bd5d4,Merkle Log Cabin,93.3,34.8
+rejected,Q49539268,Wieboldt Park,0414b0fd-045c-49f8-bb8f-538bad80ed5f,Wieboldt (William) Park,11.1,76.5
+rejected,Q49539269,Park 456,38b84f4d-94f2-41a2-9d3f-7a696e8779e3,Ameer Kabob,100.8,31.6
+rejected,Q49539272,Park 479,69908b2c-9272-45a9-b234-2749d450ea1e,Mary Richardson Jones Park,91.6,29.4
+rejected,Q49539273,Park 484,7945779a-4749-4e7d-b7fc-18f12b235296,Michael J. Madigan Sr. Park,107.8,30.3
+rejected,Q49539276,Broncho Billy Park,46494ee2-5360-480e-977f-297c79af88a9,Broncho Billy Playlot Park,42.9,81.8
+rejected,Q49539318,Park Hill Park,43c309ea-3f99-49c8-88f3-abcd0f65835b,Scotch Tim's,126.8,15.4
+rejected,Q49539351,Park Number 3,1e5a8a68-59c4-4b90-9b3e-e6146502ad99,Bartrum Park,9.8,56.0
+rejected,Q49539349,Park Number 289,7941923a-b122-4ada-974f-342ad854949d,Reggio's Pizza,109.4,20.7
+rejected,Q49539354,Park Number 439,14884967-112e-4619-b29e-9ab50a9d1f95,Kroc White Sox Ace Field,120.9,20.5
+rejected,Q49539357,Park Number 528,0d662d79-c0af-4b30-970c-f11f0a7331f4,Park No. 528,29.6,76.9
+rejected,Q49539514,Parkholme,2943548b-03c3-4ec1-b360-97ba04e6220b,Parkholme Park,55.9,78.3
+rejected,Q49540035,Paschen Park,d2333bac-3077-42db-bcfe-908e68d98a70,Paschen (christian) Park,7.9,70.6
+rejected,Q49540156,Pathways Pond Park,282368ca-581a-49a7-ad4d-446ae772dc01,Papa's Pizza Place,126.8,38.9
+rejected,Q49504209,Hurley Park,3073acdf-106d-4b68-b516-34dd24eb40fd,Timothy Hurley Park,42.5,73.3
+rejected,Q49504694,Independence Square Fountain,363b719f-7d68-401d-93e4-424909e3e1ad,Independence Square,15.0,80.9
+rejected,Q49504730,Indian Boundary North Park,56b249bf-03ec-47d7-b9de-7a3ebe71dd8c,Island Prairie Park,30.0,40.0
+rejected,Q49504926,Indian Ridge Park,37ad6e6e-e2c7-432d-a496-b2bfb508fafb,Indian Ridge Park Tennis Court,70.1,72.3
+rejected,Q49504942,Indian Road Park,91591e91-468b-4ba3-8fd3-5bbdc1eac494,Indian Road Fieldhouse,82.8,57.9
+rejected,Q49505038,Indiana Harbor Catholic Elementary School,9988f393-17ab-46f6-9fdd-e034fdf86b13,HIDDEN GEM HOOKAH BAR,92.0,37.9
+rejected,Q42538871,Park Theater,a86c33e9-6bb5-4f44-ade1-f1ce7af50397,Taqueria El Dorado,112.4,40.0
+rejected,Q42538875,Ridge Theatre,79ca89b0-b42d-4dd3-a374-a623d9c5d7c2,Everyday Thai,140.7,46.2
+rejected,Q42538880,Parkway Theatre,cb75379f-c806-4eed-a766-a7a94f2a79bc,New Taste Of Chicago,113.4,40.0
+rejected,Q49579462,Westridge Park,b8f21fe2-e7a4-436b-ae81-488fd8ffff1c,West Ridge Park,15.1,69.0
+rejected,Q49579827,Whispering Lake Park,320ed5ea-2c8a-4a6e-b34c-b7210076a79e,Jake's Pizza,79.9,50.0
+rejected,Q49579878,White City Amusement Park,d1699422-d7a4-4079-a7fa-0584148f7683,Black Robin,67.8,27.8
+rejected,Q49579978,White Park,c8e49e54-7bc9-402f-a598-6df05d2e70de,White (edward H.) Park,116.9,69.0
+rejected,Q49580198,Whiting Park,4408269b-5a90-4c0a-b431-8cbf557b6430,Whiting Lakefront Park,29.1,70.6
+rejected,Q49580380,Wicker Park,6f2b91a0-77e3-414f-adb0-ce2d3eb56e60,Wicker Memorial Park,62.5,71.0
+rejected,Q49580428,Wierzba Park,6b5dd3c5-affb-4f86-94ff-2eef76e50c19,Wierzba Memorial Park,17.1,72.7
+rejected,Q49581198,Williams Love Park,ecfa4279-500f-4481-97dd-59353cc17492,Williams Cove Park and Playground,46.7,66.7
+rejected,Q49581476,Willow Park,e2983783-0e81-4562-88a6-ddb702900a50,The Hill At Florence Park,144.9,37.5
+rejected,Q49581482,Willow Park,c8792ac6-b2d4-4e38-8da1-cd2f63b82215,Bo's Run Dog Park,87.0,35.7
+rejected,Q49581532,Willow Park South,b5e9eb2c-da0c-4052-b67c-a7e57e3fe4b5,Clarkson Park,70.7,40.0
+rejected,Q42538870,North Shore Theater,ba25e5cf-c2fc-4107-8218-a199f8951723,The New 400 Theater,145.5,58.8
+rejected,Q42538884,Roseland Theatre,e679cc49-2026-4c2c-8417-d0dca66fe221,BioHarmonic Galleries,60.2,37.8
+rejected,Q42538890,Bowen Theater,8cacead4-7bf5-40e1-8549-538979d60f9a,Bridgeview Brew in South Chicago,49.5,31.1
+rejected,Q49510958,Kings Park,d34a11fe-709f-40fe-bb11-99ed63eacdef,East Greens Park,72.8,53.8
+rejected,Q49511719,Knoch Knolls Commons Park,5d6577ed-3147-4a44-a4a3-5445dd0467d6,Knoch Knolls Park,145.0,81.0
+rejected,Q49511724,Knoch Park,ef452da4-0ccd-4e2b-8314-e6b828522954,Broeker Parkway,105.3,48.0
+rejected,Q42538894,Chelten Theatre,2b96a893-fca4-4ebc-9fad-32cd21829aac,Little Caesars Pizza,140.9,40.0
+rejected,Q42538897,Commercial Theatre,ad3c355b-cb0a-4bf4-aa77-2c726c3caca5,Crab Island Seafood Market,91.5,36.4
+rejected,Q42538903,Gayety Theatre,8cacead4-7bf5-40e1-8549-538979d60f9a,Bridgeview Brew in South Chicago,64.2,26.1
+rejected,Q42538910,Joy Theatre,d40a0165-5f35-4daf-8e8c-1921039e3d50,Roma's Village Bar & Grill,69.7,27.6
+rejected,Q42538919,Krakow Theatre,bb00387c-7b60-413a-a20e-569127003901,South side. nutrition,80.8,29.4
+rejected,Q42538943,Apollo's 2000,f24e1351-5872-4199-9b78-928e07e51132,Los Corrales,31.8,40.0
+rejected,Q42538950,Atlantic Theatre,edd10f14-a1f1-4a6d-8f1d-fd1602b7a995,Taquerias Atotonilco,91.7,50.0
+rejected,Q42538954,Avers Theater,b04566f1-42ae-4252-b92c-4d94b2864041,Las Tres Campanitas,61.7,37.5
+rejected,Q42538963,"Crown Theatre, 4049 26th Street",f84439c7-cfe4-4a7a-9b3a-abdfbbdb7e25,Tacos y Tamales El Pollo,106.4,33.3
+rejected,Q42538960,California Theatre,346e3abf-e837-4ac9-be6c-a69f62194bfc,Sora Temakeria,120.1,50.0
+rejected,Q42538966,Douglas Theater,e4e8b834-15e7-4287-aafb-3347f7e0286d,Paleteria Juarez,135.3,45.2
+rejected,Q42538971,Homan Theater,6f4b30b1-b791-4839-82a4-36c7e6ede3d0,Taqueria Coral,130.8,51.9
+rejected,Q42538976,Home Theater,18c71d2a-1963-4ff3-af76-bc43ebe70017,Panadería Coral,75.8,37.0
+rejected,Q42538982,Paris Theater,edd10f14-a1f1-4a6d-8f1d-fd1602b7a995,Taquerias Atotonilco,45.6,42.4
+rejected,Q42538988,Pilsen Theater,62f26175-27c9-4a06-941a-fb9128ac49d8,Mi Tierra,88.5,43.5
+rejected,Q49525384,Merchants Park,58d7b7b8-7730-438c-b506-25a76bbd73dd,Lassen's Tap,146.7,38.5
+rejected,Q49525473,Merrick Park,033797f1-880c-4d31-a864-1dfc2422fc07,Merrick Rose Garden,9.6,58.1
+rejected,Q49525772,Meyering Park,e38bb5b4-185d-4cab-861f-67a1962219a7,Meyering Park Water Playground,68.3,60.5
+rejected,Q49525809,Micek Park,ad6102b8-e912-4175-95db-22811c4bfe0a,Micek (Frank) Park,62.2,76.9
+rejected,Q49526133,Midway Park,497d186b-b4da-4606-8f71-d7db3593e614,Appleseed Park,29.8,48.0
+rejected,Q49566107,Stehman School Playground,f9ad6dc3-1d4a-4a6a-a615-c13f0c99c5b4,Yusho,131.7,33.3
+rejected,Q49566329,Stevenson Playground,d88952f7-0bd2-41b0-95d5-1c686513d71e,Stevenson Park,45.7,76.5
+rejected,Q49566624,Stonegate Park,fc938c65-587e-41f4-9041-ec5e8fed8059,Stonegate Park Gazebo,53.3,80.0
+rejected,Q49567313,Summit Park,c6da233e-a336-43bc-aae6-c05b95e31912,Summit Park District,62.6,71.0
+rejected,Q49576549,Walsh Park,aeed5dec-2dd5-4d78-88c0-58442ffe46d1,John Walsh Park,26.7,80.0
+rejected,Q49576595,Walter S. Lovelace Park,e55e034f-a8a6-466a-9b29-44d447b9ccc1,Lovelace Park,82.1,74.3
+rejected,Q49576845,Warren Park,3db15e4f-ad4b-4a5c-850f-971a2062da9b,Warren Park Building,44.5,71.0
+rejected,Q49577093,Washington Park,08220676-acc2-4f83-a4b0-075eeda516be,Gilson Park Tot-Lot,69.5,41.2
+rejected,Q49509953,Kemmering Park,26385739-7f39-4024-96ef-2e1da8a9005f,Kemmerling Park and Pool,56.7,73.7
+ambiguous,Q49509994,Ken-Well Park,6cffcfe4-417d-4ccb-94e8-3c22ad4b6f06,Ken-Well Park,38.7,100.0
+ambiguous,Q49509994,Ken-Well Park,0a043bd6-1073-4eb4-aad6-2cc003738452,Ken-Well Park,109.3,100.0
+rejected,Q49510091,Kennedy Park,e3e55f36-834e-4430-89d8-49a4c88e9ab8,Kennedy (dennis) Park,110.2,77.4
+rejected,Q49510096,Kennedy Park,ec85793e-85d6-4aff-bdf5-3da682237a0b,Lake Park East,138.8,53.8
+rejected,Q49510100,Kennedy Park,b1786559-31ef-4556-88e2-67aa24662d87,Carlson Oxbow Park,82.5,40.0
+rejected,Q42535709,Regal Bolingbrook Stadium 12,1078b1ad-8f15-4553-8d66-b1be6af22975,Regal Bolingbrook,70.7,75.6
+rejected,Q42535743,Strand Theatre,85a2fe98-e91d-4102-9904-94d5ca46fb44,Grand Tavern,17.3,61.5
+rejected,Q42535741,Harlem Corners Theaters,f39e06af-1ae9-4259-9592-3b92f888e91d,Holy Buckets Halal Chicken & Pizza,52.5,36.4
+rejected,Q42535800,River Oaks 6,1ce8fee8-2467-4a3b-8c5e-16a2083d0fb2,Whisper's Coffee & Tea,69.8,37.5
+rejected,Q49510272,Kenwood Park,ddb6e926-4b0e-42ad-8bfa-3ad23cbf814a,Kenwood Park Fieldhouse,87.0,68.6
+rejected,Q49510815,Kimpton Park,3b334774-1623-4727-8d6d-133be4d7b92b,Ackerman Park,39.5,64.0
+rejected,Q49544354,Plum Park,417400b8-34c6-4d59-a4a0-cedc94d9d32c,Goudy Public School Playground,127.2,30.8
+rejected,Q49544591,Commissioners Point Park,04158cee-49ea-4e88-a520-4631a98370e3,Point Park,8.7,58.8
+rejected,Q49545313,Post Office Park,95c4b2ed-f466-4c5d-ac89-e853a20d0bd6,Park District Roselle,91.9,54.1
+rejected,Q49545759,Prairie Garden,f3351ce6-add4-48ac-8627-e3bb45afd035,"Fr Michael E Komechak, OSB, Art Gallery at Benedictine University",142.5,26.0
+rejected,Q49545780,Prairie Lakes Park,07af0b62-6f04-455b-b0af-b9e2cbb0d5e2,Des Plaines Park District Athletics,97.7,49.1
+rejected,Q49545805,Prairie Park,4f429eb9-365c-40d3-93d5-f044684b5199,Perminas Park,61.9,64.0
+rejected,Q49581723,Wilson Park,0a73f759-7590-47e2-9836-43c01d1f01ac,Wilson Park Fieldhouse,79.5,66.7
+rejected,Q49581809,Wilson Playground,c5851c0c-2af4-4683-afea-b4c380a35e91,Wilson Park,26.7,71.4
+rejected,Q49582136,Winnetka Park,7a129fb7-b979-472d-ab94-808a012caf3d,Indian Hill Park,64.5,34.5
+rejected,Q42535806,River Oaks 7-8,1ce8fee8-2467-4a3b-8c5e-16a2083d0fb2,Whisper's Coffee & Tea,54.9,41.2
+rejected,Q42535815,River Oaks Theaters 2 & 3,24f73651-8f7e-4774-bab9-a32be61e6a9a,Taqueria Dona Flor,125.2,43.9
+rejected,Q42535824,River Oaks Theatre,24f73651-8f7e-4774-bab9-a32be61e6a9a,Taqueria Dona Flor,125.2,44.4
+rejected,Q42535829,River Oaks Theatres 11 & 12,579f5b7a-99f0-4b2d-91b5-cd096ca76f20,Ruby's Soul Food River Oaks,41.8,53.8
+rejected,Q42536075,Fashion Theatre,311007ab-4dea-42a2-b1d2-163d219a364b,Harold's Chicken Shack,51.6,37.8
+rejected,Q42536082,Liberty Theatre,65c249f1-df09-47e3-8bd3-fa3d3c4514e0,Liza's Food for the Soul Catering,119.4,25.0
+rejected,Q42536091,Lincoln Theater,12705991-de1e-47d6-95f3-fe9a601ddea8,La Michoacana,128.7,42.9
+rejected,Q42536129,Commons Cinemas,0e0e851f-cf19-406b-bda8-cf4338635ecf,Qamaria Yemeni Coffee,111.8,38.9
+rejected,Q42536575,Wallace Theater,f632f501-b7bb-4282-b8e2-4061320ed959,Fabulous Freddies Italian Eatery,120.9,42.6
+rejected,Q42536583,Brighton Theatre,04235902-2442-4084-9cf5-bd0b585b1bf0,Brighton Park,23.9,75.9
+rejected,Q42536593,Crane Theatre,a3330080-65c2-4f5c-a49e-723621f4d5b7,Monterrey Bakery,127.9,48.3
+rejected,Q42536600,Gaelic Theater,83922ffc-8d9e-447e-91cb-2beb7fb458c0,Paleteria Ayutla,127.5,46.7
+rejected,Q42536607,Burton Theater,6bf78b1c-8bee-4edb-a11e-920c4aa7a292,South Side Community Art Center,64.1,31.1
+rejected,Q49516127,Levin Park,c3ca784b-9b78-4cd5-9a48-cab534e1fc84,Levin Park Playground,84.3,64.5
+rejected,Q49516166,Lewandowski Park,1840b14f-2ad7-4cce-8eed-750d0977b34a,Sharks Of Oak Lawn Inc,133.9,47.4
+rejected,Q49516877,Lincoln Meadows Park,15e9f904-d993-45d5-955d-2a37b9494f37,Aurelio's Pizza Frankfort,100.6,40.0
+rejected,Q49516946,Lincoln Park,d9a0d45f-8d20-4413-9deb-c93dfeca422c,Lincoln Greenway,108.3,50.0
+rejected,Q49517248,Lindberg Park,11c0fec4-6168-4e23-a667-4aa81c6cee1c,Steak 'n Shake,145.5,38.5
+rejected,Q49517277,Lindblom Park,7e5ff36e-7a2e-4c8c-b62f-19ef01fc9476,Lindblom (Robert) Park,34.2,78.8
+rejected,Q49534094,Oak Park,51a16619-37b6-41b7-b2a0-90c6f9114deb,Oak Grove Park,93.2,72.7
+rejected,Q49534366,Oakland Park,99b1d6c5-8cfb-4772-bc51-49c8b5a70d1c,Oakland Playlot Park,109.0,75.0
+rejected,Q49534410,Oakley Park,3c01fd08-4e36-46de-9c5c-4a5f84515a71,Dunkin',123.2,11.8
+rejected,Q49534447,Oakton Park,6d8d0454-17ea-4969-aaa1-d104a74c02ca,Paws Park,121.9,50.0
+rejected,Q49534493,Oakwood Park,009b19df-5007-4685-9b66-fb7d4da8cbff,Hartmann Park,35.5,48.0
+rejected,Q49574409,Vernon Park,9f5ffbba-95e9-434d-80d0-96fd72ca6693,Columbus On the Park,121.4,38.7
+ambiguous,Q49574557,Veterans Memorial Park,06376edc-8f50-46e2-86c3-4312b22125e8,Veterans Memorial Park,92.8,100.0
+ambiguous,Q49574557,Veterans Memorial Park,f5df8b7d-3288-4187-9a38-d69c885b98a4,Veterans Memorial Park,73.1,100.0
+rejected,Q49574764,Veterans Park,7d67c346-c782-4174-af5a-b29a97920887,Veterans Park Picnic Shelter,111.9,63.4
+rejected,Q49577374,Washtenaw Park,0402438c-e1c5-4da2-9265-0e085e8d7935,Algonquin Park,25.7,28.6
+rejected,Q49577759,Watts Park,d66a7de1-fad8-4c28-b14e-a793483c4673,Watts Park Disc Golf Course,60.4,54.1
+rejected,Q49577824,Waverly Park,b1963672-edf4-4b59-b7d2-a41c965e92f2,Waverly Park Playground,122.6,68.6
+rejected,Q49577885,Wayne Park,50d690a8-ed58-4702-9885-eb4cd30c2cad,Schreiber Park,105.4,50.0
+rejected,Q49577998,Weber Park,b953cef6-fa12-432c-980f-c3365cbef623,Emma's Bagel Cafe,130.7,27.3
+rejected,Q49578212,Well Park,a2a44cce-3e27-47f2-a028-d1bce06cd7c6,Homewood Estates Park,73.0,26.7
+rejected,Q49578218,Weller Creek Park,d7ea9114-694c-4ec9-81b9-54dbfa576be7,Weller Park,67.5,78.6
+rejected,Q49578342,Wendt Park,c206f0c0-f65a-43a1-bc62-76245637fdc2,Wendt (Kenneth) Park,12.5,71.4
+rejected,Q49578386,Wentworth Park,e26bddd7-a3cf-48cf-87f4-83c2c3c7b17c,Wentworth Park - Chicago Park District,118.8,56.0
+rejected,Q49578493,West Beach Recreation Area,2e713fc9-042b-477b-b94e-dff53f447ebd,Indiana Dunes National Lakeshore West Beach,88.2,55.1
+rejected,Q49578866,West Park,cb398e92-595e-464a-8545-ef83150b0463,Centennial Park,149.7,33.3
+rejected,Q49578868,West Park,6616f84e-30a9-4479-be30-78387a083143,Des Plaines Park District,119.3,41.2
+rejected,Q49578990,West River Park,bb2aada6-5286-470e-8d84-fb3b16769dd4,River Park West Playground,52.5,73.2
+rejected,Q49579203,Westbury Lake Park,72a25637-98ed-4667-ab01-a75e1c520a56,Westbury Park,67.2,83.9
+rejected,Q49579329,Westgate Park,ab5e986f-5c5e-4e86-aab2-dbed0285b4bd,My Time To Shine Musical Theater,127.8,31.1
+rejected,Q49507517,Jeorse Park,98e3c0a3-9052-4081-ab75-28ca83daefe7,Amerisports,16.8,45.5
+rejected,Q49507629,Jessie 'Ma' Houston Playlot Park,cb878a37-10c1-4408-8ddb-51ccc9ac99e8,Jessie Ma Park,78.3,63.6
+rejected,Q49507701,Jewett Park,931c316f-6d4a-4bb5-837d-44de6b43752f,Deerfield Park District,127.3,52.9
+rejected,Q49517682,Lions Park,0a11fdd6-b406-4f6a-94a1-c12360a1eada,Lions Den Park,42.6,83.3
+rejected,Q49518433,Lloyd Park,b56aefec-1e77-41c9-9fe3-699520aa1ee2,Lake Michigan Beach,120.9,20.7
+rejected,Q49547349,Quinn Park,983e9295-3353-4f84-a411-76bbeea9a712,Quinn (Mary Berkemeier) Park,25.9,55.6
+rejected,Q49547687,Rainbow Park,fa4cb631-816b-4112-bd0c-d00e4b43c210,Rainbow Beach Park,68.8,80.0
+rejected,Q49548278,Rauhoff Park,f4e217a8-d08c-483a-baca-c4b3cb79a84c,Jean Rauhoff Park,22.1,82.8
+rejected,Q49548308,Ravenswood Park,3bed3a57-ca7d-45a7-b74b-07e50e3b3515,Ravenswood Manor Park,36.1,83.3
+rejected,Q49548618,Niles Park District Recreation Center,5885e9fa-54ec-4507-b6f6-7f2abdde8ae4,Niles Park District Oasis Waterpark,148.5,63.9
+rejected,Q49549222,Rehm Park,646778d5-d360-4bc0-acbd-ae9e412a879f,Rehm Pool,37.1,66.7
+rejected,Q49514886,Last Four Acres Park,e7cbba74-1f7c-43a6-b0b2-a42095a7b517,Pleasant Run Park,42.3,48.6
+rejected,Q49515030,Laurel Park,cbc996a3-cd23-4498-bf31-03aceee041bf,Laurel Park Rose Garden,73.8,64.7
+rejected,Q49515100,Walter J. Lauth Park,c30c048b-33cb-4ded-a0fb-8cc58f905ee8,Sarah's Brick Oven,100.2,27.0
+rejected,Q49515146,Lawler Park,c67ed5b1-53c2-42ef-94e6-e3c69844fcac,Reid Park,11.5,40.0
+rejected,Q49515144,Lawler Park,95735452-e535-47e3-aaa4-81b8075f160b,Lawler Park Playground,83.0,66.7
+rejected,Q49515160,Lawndale Park,96c29650-2757-40df-b908-06eaaf913c28,Piotrowski Park,58.3,35.7
+rejected,Q49515398,Leavitt Avenue Park,a0a0186d-c250-493f-b33f-0e1549951e91,Leavitt Avenue Park Gazebo,92.1,84.4
+rejected,Q49515603,Legge Memorial Park,bdf6f536-a3c0-4939-8b79-5a1071ea6f09,R. Harold Zook Home And Studio,63.3,33.3
+rejected,Q49515654,Legion Park,dd3c8a91-1f13-4cf7-b832-3fecc1bd2cdd,Runyon Preserve,51.2,23.1
+rejected,Q49515997,Leone Park,e14ff697-2323-4f4e-974c-6851f5ea89d3,Leone Beach Park,42.0,76.9
+rejected,Q49574770,Veterans Park,a7192106-74e5-44fb-af6c-766535d12561,Vets Park,80.5,81.8
+rejected,Q49574780,Veterans Park,be773bd6-4f0f-4e7f-9515-4ef5ec95f97c,Mr Burritos,148.3,25.0
+rejected,Q49575120,Vietnam Veteran's Memorial,a80a6a6b-6c1e-49bc-b60b-8cc950ba6d97,Exploritorium,65.2,41.0
+rejected,Q49575395,Village Green,6aabf3ea-3339-46a4-a324-f75e654a0483,Village Green Park,63.2,83.9
+rejected,Q49575419,Village Green Park,3f37c59e-902a-49b7-89e2-7a17a6222c58,Winnetka Village Green,71.7,65.0
+rejected,Q49575820,Vogle Park,c5a842b4-f369-4313-8985-1f0e24551945,Vogle Playlot Park,15.7,71.4
+rejected,Q49582751,Woodland Park,9aa295a2-0189-448c-ab02-b9987947af1e,Woodland Park Condominiums,114.6,66.7
+ambiguous,Q49583277,Wrightwood Park,973e60fb-46c3-4a24-95b5-b2e3420dbe0d,Wrightwood Park,18.7,100.0
+ambiguous,Q49583277,Wrightwood Park,2a263f56-731b-482e-9ac8-fb3ef1311377,Wrightwood Park Pool,59.4,85.7
+rejected,Q49583686,York-High Ridge County Forest Preserve,8d9ee1c4-8ec7-4b9b-8523-e26e322d0639,York and High Ridge,59.9,59.6
+rejected,Q55612819,Goosefoot,fc9b997c-7441-4770-8cab-5f165d617c94,Theodore Gross Park,65.4,42.9
+rejected,Q62088390,Park Ridge Youth Campus,87bae26e-ef4f-4d06-8729-d22b82a70ef1,Park Ridge Historical Society,128.1,61.5
+rejected,Q62608627,AMC Showplace Niles 12,e54291a5-317e-46b9-9889-b9cc89f22f8c,AMC Niles 12,7.2,70.6
+rejected,Q65073473,Wholesale Florists Exchange,8abd425b-8002-4184-b95d-ea3056d1416d,Forest N Oak Holdings Llc,105.1,42.3
+rejected,Q75135268,Ismaili Community Center And Jamatkhana,a22443ae-69b4-4be1-8f7b-d23fa7bbaed0,Aunty Joy's Jamaican Kitchen,114.0,40.7
+rejected,Q85754114,Cornell Square,e4b6f27d-ee75-4367-9fa9-92dd4733488a,Cornell (Paul) Square Park,16.9,73.7
+rejected,Q85755906,Davis Square,d828f4e3-c9d9-4149-ad1c-859e532fb8f2,Davis Square Park Pool,19.2,70.6
+rejected,Q85797680,Roger Brown Study Collection,c57b116a-8dbc-46bf-9cfd-e9fb6dcca49f,Floating World Gallery,48.4,40.0
+rejected,Q85807210,The Forum,a8ada5d0-1685-4e1f-b708-4f231e8ea8f4,Le Fleur de Lis,82.2,20.0
+rejected,Q87240066,The Forge: Lemont Quarries Adventure Park,84815d75-09d0-4399-b9ae-b4e927864b63,Lemont Heritage Quarries Recreation Area,121.6,60.5
+rejected,Q88101305,Gorton Community Center,ea7ee403-e897-4e94-88be-07391d08c6c4,Gorton Center,12.6,72.2
+rejected,Q88106325,Block Cinema,b009b14c-c8b3-46a6-96b0-60e5a0650aa3,The Kiln,130.3,37.5
+rejected,Q95302388,Cairo Supper Club Building,ae78c672-b758-4d54-a41a-d7bd22b57e33,Thumbprint Studios,53.3,40.9
+rejected,Q106379466,Segal Visitors Center,8d8bb067-e4c5-4740-9e74-5d47a0588be9,Northwestern University Arts Circle,99.9,42.9
+rejected,Q106415239,Phyllis Wheatley Home,e0806124-31f4-4434-a966-ed9dda16d3cc,Little Wok Chinese Restaurant,93.4,41.0
+rejected,Q107259781,Admiral Theatre,17f34048-d868-4b92-8e30-315041a767e4,Panaderia Taximaroa,59.6,47.1
+rejected,Q107390501,Eighth Street Theater,de4e7456-d78c-4397-b3d0-43f94b82869a,Grant Park Bistro,104.3,42.1
+rejected,Q107899862,The Palm,147fcb2a-2e45-4a00-bff0-d9d67502f896,Jacks 47 Llc,84.8,25.0
+rejected,Q49508205,John Humphrey House,c487689a-bc4e-4a3e-b072-999d86f76f4b,Orland Historical Society,20.7,27.3
+rejected,Q49509471,Kathy - Western Park,9f3cd3d4-2833-44da-b021-89072ab146e0,Kathy,102.7,43.5
+rejected,Q49509653,Kedvale Park,8cd472ee-2d88-4a05-a993-a64ef5f6372b,Kedvale,37.4,73.7
+ambiguous,Q49509748,Keller Park,6b312063-8da1-4dd7-ad47-b7a3d6ce0ae6,Keller Park,71.5,100.0
+ambiguous,Q49509748,Keller Park,c72d0738-a3ac-4ed3-bec5-2655ba6fb429,Keller Park,149.8,100.0
+rejected,Q49509896,Kelly Park,56b4c343-a5da-4fce-9d87-c5837c703bdb,Baker Park,83.9,70.0
+rejected,Q49517502,Lion Park,c39eba60-702c-460f-925e-655aaa4f9fda,Roselle Lla Inc,96.8,41.7
+rejected,Q49517587,Lions Field,57791cb6-b94e-4fe0-a806-3e1203de5c1f,Paw Paws Pet Bakery,52.9,20.0
+ambiguous,Q49517643,Lions Park,60a0a53e-f30b-4c20-a607-8bfe7f480ee7,Lions Park,55.7,100.0
+ambiguous,Q49517643,Lions Park,e301bb9d-1bc1-446d-bdb8-47f960f74c10,Lions Park,65.3,100.0
+rejected,Q49517648,Lions Park,c88e0e3c-b631-4af5-b197-f1741cd00359,Lions Recreation Center,82.6,42.4
+rejected,Q97693339,Chicago Women's Club Building,fc69ccc0-a648-43aa-92ac-d94bcaa67686,Eleven City Diner,116.4,34.8
+rejected,Q96384385,Jeffery Theater,ca7b99b8-42b6-4228-9c4a-cdaec9dd09f7,Jeffery Pub,65.7,61.5
+rejected,Q97574202,Mahoney Park,96802225-4f99-4a01-80f9-2143b4aa0845,Maloney Farm Preserve,23.6,54.5
+rejected,Q110236166,Manny’s Deli,9708790c-b67e-4dfd-a1bf-4b348186376c,Atino's Pizza,43.9,40.0
+rejected,Q111710714,University of Chicago Settlement,e7e1a432-a0e7-4407-b144-87071f1814cd,Free Street Storefront,102.1,37.0
+rejected,Q111846095,Bally's Chicago,e7141d3a-ca3c-468d-a9ba-3148c82e55d8,Chicago Tribune Freedom Center,63.9,40.0
+rejected,Q112081342,WNDR Museum,001b27f5-2728-44f2-bd60-40b7896bc45c,Warm Belly Bakery,52.6,28.6
+rejected,Q116055774,Kaufman's Deli,75961313-977f-4473-8959-20b46928fba7,Kaufman's Bagel and Delicatessen,8.0,60.9
+rejected,Q117354677,UIC Dorin Forum,f3f6a095-e414-4bbd-a6b8-a9f4006349a2,Ghareeb Nawaz UIC,123.0,37.5
+rejected,Q117443329,Mr. Beef,eb0c896d-36cd-48e9-a7b6-ff4b0bff73ae,Breather,145.9,53.3
+rejected,Q120434696,Grand Opera House,c800884f-6c12-4678-9e8f-abaa7e7bf5a8,Silk Road Theatre,138.1,47.1
+rejected,Q121291456,Kasama,71ecf971-fbae-4f3e-93f4-1e1d36315559,Thai Basil,134.4,37.5
+rejected,Q135898409,Artis Restaurant and Lounge,25fc5aa3-e583-4aff-bcfa-f67c2b9cfa0c,Gibsons Restaurant Group,104.8,63.6
+rejected,Q136799021,Palmisano Park,6a3d76cd-f1dd-48b3-a93d-41bc223315f1,Palmisano Park Fitness Course,136.5,65.1
+rejected,Q137705867,Q137705867,896fd825-8bca-4b87-bd84-d5d2c9b7656a,3 Little Pigs Chi,26.8,7.4
+rejected,Q138024566,Happy Medium Theatre,8a53269c-c459-4700-9dff-75ee70d7a03a,Little Market Brasserie,92.7,41.9
+rejected,Q121797556,Jane Byrne Park,3e97c2e6-f433-40d9-aeb4-2ba3f9fd9718,Jane M. Byrne Plaza Park,13.3,78.9
+rejected,Q121907192,Bennett Park,fa5748a1-a80d-46cb-8e12-56fe4ee94179,Market Bistro,91.4,48.0
+rejected,Q122281826,Forest Park Amusement Park,3f35b5b9-d961-4843-bbc6-e6085590a7a8,Forest Park Blue Line,102.0,63.8
+rejected,Q124619406,Naval Air Station Glenview Museum,b6267743-8516-49f6-bb2f-fb9d23d3ab63,Glenview Hangar One Foundation,58.5,54.0
+rejected,Q124989967,Techny Towers Conference & Retreat Center,a03e9ea8-886e-452d-b908-3ee8f9d128a3,Almighty Spirits Distiller,71.1,24.6
+rejected,Q127502398,Middle Brow,e29567e8-489e-46c3-b783-7be26fcedf53,Bungalow by Middle Brow,11.0,64.7
+rejected,Q130348684,Prairie,64ca37d3-f7f5-4165-8a2c-6d53899929d6,Ghin Khao Eat Rice,134.2,40.0
+rejected,Q131605865,Cariño,2935fac9-7733-465f-a0bb-fb93c02c5aa2,Agami,70.4,36.4
+rejected,Q132573454,Japonais Chicago,96bf9e7b-372c-4068-b49f-4d2dd26e3204,Japonais by Morimoto,32.5,50.0
+rejected,Q134299493,Rizal Center,fb0df294-ece5-4d13-a12a-0e4c924c6028,Graceland Cemetery,139.0,60.0
+rejected,Q134429196,Park No. 474,c72e97e8-dec6-4770-8464-44d4b69ea43d,Zaika - al murooj rotana,147.8,30.3
+rejected,Q4072258,Q4072258,f7dbaf35-8202-48a5-a1e7-069b107afd74,Atrium Theater,25.4,0.0
+rejected,Q6800590,McCormick Tribune Freedom Museum,bf3dcb30-c59e-4077-8668-21d090213417,Museum of Ice Cream,60.2,54.9
+rejected,Q18706206,Constellation Jazz Club,20d928fa-967b-43ef-a9f7-90018e9a7323,Constellation,1.2,72.2
+rejected,Q133579229,Cort Theatre,c800884f-6c12-4678-9e8f-abaa7e7bf5a8,Silk Road Theatre,82.0,62.1
+rejected,Q140129460,Q140129460,3fada643-fb0b-41ff-be06-985340edafa8,House Of Vans - Chicago,94.1,0.0
+rejected,Q121335371,Claudia,6a9510ed-a991-4e55-a9ac-e10004c203fb,Color Wheel Studio,142.8,40.0
+rejected,Q121365314,Avenues,7ac7c559-d186-4784-b0a7-b9cec423eff5,M Avenue Restaurant & Lounge,137.9,53.8
+rejected,Q121365343,Kikko,b1b6fd69-4abc-4742-a488-4e1fc3dec6f4,Kumiko,20.8,72.7
+rejected,Q121365376,Porto,3aa6dc53-ff3f-44b4-9280-a62fd4ee986a,Mr Taco's,114.2,42.9
+rejected,Q121408921,Roister,30d6aad8-90cf-4154-9187-76df24e1cb22,The Office,17.6,46.2
+rejected,Q121433494,Dusek's Board & Beer,42e2a929-ced0-4aff-9fd2-d10858920f64,Spoke & Bird Bakehouse,85.7,52.6
+rejected,Q49518717,Logan Square,bb9849f8-521d-467b-a2b9-17cf7e3cc482,Logan Square Park,34.9,82.8
+rejected,Q121590639,Temporis,9c2ef874-557d-4d30-8c4f-4f7b57868e8f,Atsumeru,8.6,37.5
+rejected,Q121598809,Starbucks Reserve Roastery,784493db-39f6-4d4c-a77b-b469d7ab4b64,Starbucks,3.1,51.4
+rejected,Q141106507,Logan Square Auditorium,bb9849f8-521d-467b-a2b9-17cf7e3cc482,Logan Square Park,74.8,60.0

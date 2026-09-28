@@ -24,7 +24,7 @@ async def reverse_geocode(
     lat: float = Query(..., ge=-90, le=90),
     lng: float = Query(..., ge=-180, le=180),
 ):
-    result = await GeocodingService.reverse_geocode(lat, lng)
+    result = await GeocodingService.reverse_geocode_with_context(lat, lng)
     if not result:
         return {}
 
@@ -32,7 +32,16 @@ async def reverse_geocode(
     city = addr.get("city") or addr.get("town") or addr.get("village") or addr.get("hamlet") or addr.get("suburb")
     state = addr.get("state")
     country = addr.get("country")
-    name = result.get("name") or addr.get("road") or result.get("display_name", "").split(",")[0] or "Address"
+    street_line = " ".join(
+        part for part in (addr.get("house_number"), addr.get("road")) if part
+    ).strip()
+    name = (
+        result.get("name")
+        or street_line
+        or addr.get("road")
+        or result.get("display_name", "").split(",")[0]
+        or "Address"
+    )
 
     # Construct stable placeKey
     from app.services.place_key_service import build_place_key
@@ -56,8 +65,11 @@ async def reverse_geocode(
         "state": state,
         "country": country,
         "placeKey": place_key,
-        "source": "nominatim",
-        # Legacy compatibility for test assertions
+        "source": result.get("source") or "nominatim",
+        "osm_type": result.get("osm_type"),
+        "osm_id": result.get("osm_id"),
+        "type": result.get("type"),
+        "class": result.get("class"),
         "extratags": result.get("extratags", {}),
     }
 

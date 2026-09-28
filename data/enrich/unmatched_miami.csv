@@ -1,0 +1,440 @@
+reason,wikidata_qid,wikidata_name,overture_gers_id,overture_name,distance_m,score
+rejected,Q42422168,Skylake Twin,77940286-b8f9-4f79-ad24-841198d65551,Skylake Garden North Miami Beach,122.8,31.8
+rejected,Q42422178,Cineluxe Theater,2adb4794-89c5-4ff1-b69c-98dbdcd7d53a,Dunkin',142.8,18.2
+rejected,Q42422177,Biscayne Twin,c6c0abed-f91a-4390-b7c9-781066db7b1c,Tiny Thai House,95.9,42.9
+rejected,Q42422180,North Miami Theatre,e66b70b8-e9d2-4a42-a139-07e3e5432020,Domino's,114.9,37.0
+rejected,Q42422207,Miami Gardens 183rd Cinema,113af1f9-a189-4cc7-991a-ebca965ec88e,One mission wellness center,122.3,34.0
+rejected,Q15961437,Girls' Club Foundation,45caea3d-b5ef-44f7-afe0-9f970f0e780e,Girls' Club,50.3,64.5
+rejected,Q16900210,Simpson Park Hammock,29882434-9782-4664-8a5f-f5b8b7d81008,Simpson Rockland Hammock Preserve Park,137.7,69.0
+rejected,Q17018639,Locust Projects,1a3ce957-3d51-4e19-9dbf-f3337e7d8f5c,"Pc 136, Llc",51.2,40.0
+rejected,Q17033924,Shuckum's Oyster Bar,ace53fa8-bc9b-4e72-9821-39ccc23e8c28,Sushi Sake Hollywood,143.5,44.4
+rejected,Q17078322,Mai-Kai Restaurant,c2c59b11-c4b0-4ecf-af50-425b63aad14d,Maison Du Crab,144.0,47.6
+rejected,Q17512585,Buehler Planetarium and Observatory,cabec49d-5bba-453b-be48-1095f405d314,Buehler Planetarium,83.6,70.4
+rejected,Q18325982,MDC Museum of Art + Design,0e0c55d6-feab-459d-9583-db5b2e258523,Museum of Art and Design (MOAD) at MDC,10.9,80.0
+rejected,Q19868187,Boulevard Theater,aef2b9af-de5f-45e6-a661-2b7dbfd54a29,Olde River Pizzeria & Tavern,83.6,46.5
+rejected,Q34905713,Briar Bay Urban Park,f31dbd47-ac93-41d0-a8eb-25640a92a8d7,Briar Bay Park,20.5,82.4
+rejected,Q34905955,Brickell Park,09119f80-2777-4e4b-a893-b7cafd3a2ae6,Pokekai Brickell,23.4,75.9
+rejected,Q34905968,Brickell Plaza Mini Park,249eb70b-8db9-4f8b-948c-c0991daa0fa3,Allen Morris Brickell Park,33.8,64.0
+rejected,Q34908092,Broward Circle Park,09d53844-1322-4575-b105-a276842b7b02,University of Miami Linda Ray Intervention Center,113.2,23.5
+rejected,Q34909394,Buena Vista Park,d94f2fd9-4de6-4da1-afaf-537012b46c02,Irie Village,90.7,35.7
+rejected,Q42419491,Dania Drive-In,5986f8ea-7fd5-4450-8956-15c55b5e924d,Dania Poker Room,99.1,53.3
+rejected,Q42419529,Brown's Drive-In,5a9375ef-9f0a-44b4-83ff-b6efaae30913,"Washington Park, Broward County, Florida",94.7,40.7
+rejected,Q42419535,Lauderdale Drive-In,28966258-b72a-4a0f-a248-9f6372646683,Golden Krust Caribbean Restaurant,133.9,43.9
+rejected,Q42419538,North Andrews Drive-In,7625cd5b-a4da-463d-8d9f-2efe82d6d262,Pinho's Bakery & Deli,110.0,43.9
+rejected,Q21020956,Roxy Theater,15bbb7ab-4e08-4d6d-a05d-f45ef03a4194,Rosticceria,99.1,43.5
+rejected,Q28404241,De la Cruz Collection,d15cb976-730b-4c95-9263-5eb8833875b4,Oxfer Collection Corporation,93.4,61.2
+rejected,Q42421943,Arcade Theater,7c4744e5-6f5b-4490-9fb7-39e727dc0c3d,Huellas del Arte,123.6,53.3
+rejected,Q42421941,Airdome,1dc4c639-c479-494f-8296-4abd6643f0c1,Pawnbroker,115.4,47.1
+rejected,Q42421947,Capitol Theatre,e922cb5f-7e5d-4e4f-8402-ea870cd5b057,The Constitution Cafe and Court Yard,99.8,38.3
+rejected,Q42421948,Embassy Theatre,17da858e-3950-4e9d-8c18-d70e6c8fa827,Heal Day Cafe,109.6,52.2
+rejected,Q42421967,Fairfax Theatre,71918c90-5857-4273-a768-bd277e07e8a8,The Artisan Creperie,106.8,45.2
+rejected,Q42421973,Paramount Theatre,b9bb1b35-a2e5-4f63-996e-7f14b5b3d754,Cabrontaqueriabar,77.8,47.1
+rejected,Q42421983,Roxy Theater,4a2d7442-d541-40e6-b836-ff8aea7cc9b5,Tropics thai,85.2,41.7
+rejected,Q42421980,Rio Theatre,b9bb1b35-a2e5-4f63-996e-7f14b5b3d754,Cabrontaqueriabar,114.9,42.9
+rejected,Q42421963,Movies by the Bay,59fff898-bb46-4ed4-a3a2-b3013d06430e,New Year's Eve At Bayfront Park,133.3,41.7
+rejected,Q42421960,Mayfair Theatre,b33ef394-813e-4013-8648-c401f99e9bcc,Fish Market,103.4,46.2
+rejected,Q42421966,Omni 10,8509ead5-9ae0-4710-850d-1ea1528179b6,1601 Lobby Lounge,21.5,47.1
+rejected,Q42421956,Fotosho Theatre,4ea85468-e5a4-4be7-be37-4581e67656a7,7 Seas Foods Int,45.0,51.6
+rejected,Q42421962,Miami Theatre,905e61d2-5206-4884-8fcf-968a66435408,Mama Tried,123.0,60.9
+rejected,Q42421949,Flagler Theater,88136871-f69e-470b-9a4c-4db97dffda23,Flagler Arts Space,52.9,60.6
+rejected,Q42421951,Florida Theatre,a46a72c9-ac2e-42c8-8811-8755f71d3631,Jar + Fork,139.6,52.2
+rejected,Q42421833,Regent Theatre,b9be3c4a-47a3-437b-b27a-7eab889fdc05,Tipicocentro Americano Cafe,80.3,38.9
+rejected,Q42421838,Strand Theatre,7e35533e-3495-4632-abaf-a41edca7a768,Panther Coffee Roasters,98.4,43.2
+rejected,Q42421844,Ambassador Theatre,ca964d60-d43b-40f0-a7ff-30f84378203f,El Centro Americano,39.1,48.6
+rejected,Q42421860,Astor Theatre,6ec758f6-6895-4767-a653-f3c0ee204cf2,Sabores Argentinos,87.0,45.2
+rejected,Q42421901,CMX Brickell City Centre,74db6dcb-80af-475c-bff2-933f1fc183fc,Casa Tua Cucina Brickell,114.4,58.3
+rejected,Q42421909,Cinema 10 at the Miracle Center,b68db4c0-bcb7-43f3-8a5d-fdc949262c65,Imperial Tea,37.6,37.2
+rejected,Q42421914,Gables Triple,9dafd6f5-a47c-421d-bd96-8a23c72e2fe8,Gilbert's Bakery,33.4,41.4
+rejected,Q42421920,Parkway Theatre,9ae9f7f9-1f43-4bc1-a9fe-b4f3cec1cee3,Presidio Politico Historico,42.5,23.8
+rejected,Q42421935,Air Dome,c5a89659-6764-4975-b0de-44d80d30fd9c,Bistro Coffee,81.6,47.6
+rejected,Q42421895,CinéBistro Dolphin Mall,7a68ab52-d919-4952-a0e9-c78e38cbccb4,CMX Dolphin 19 & IMAX,137.8,57.1
+rejected,Q42421988,Royal Theatre,b2417ff4-a181-4961-bb35-6cba75d9057e,Opera Tower,106.9,50.0
+rejected,Q42421992,State Theatre,7c4744e5-6f5b-4490-9fb7-39e727dc0c3d,Huellas del Arte,68.5,48.3
+rejected,Q42421997,Temple Theater,98b6ca81-5ccf-42c9-a431-97ef1fdf6130,Casablanca on the river,145.1,32.4
+rejected,Q42422000,Town Theatre,144245af-57d6-4418-ad28-c9f8a8539587,Achar Street Kitchen,83.4,50.0
+rejected,Q42422005,Wigwam Theatre,0a963bb3-3044-4eb9-b51b-1e6f53d6287c,Club Heat Miami,66.2,55.2
+rejected,Q42422012,Trianon Twin,b2fe310a-53a3-4b61-b21b-2a97ce0f0f65,Crandon Park Gardens,63.7,43.8
+rejected,Q42422016,Galaxy 7,f8a6803c-caa1-4ce4-a7ca-e859e525c850,Rancho Mateo,137.0,20.0
+rejected,Q42422017,AMC Kendall Town and Country,b7c5aab1-079b-4fe4-8cd3-bed576750dae,Bricked Burgers,14.2,27.9
+rejected,Q42420616,Dania Theatre,e84e167a-e849-4e44-95e5-47b77a9f010e,Dania Post Office,145.8,53.3
+rejected,Q42422015,Gala Cinemas,0aa87a1d-230a-4373-adc2-013deae1b04f,Pamela's Restaurante Chileno,143.1,40.0
+rejected,Q42420628,Paragon Ridge 8,a0b89664-ac33-4c61-8ba2-fa021181dd91,Ridge Cinema 8,16.5,62.1
+rejected,Q42422652,Broward Mall 4,36360d85-a25b-4f98-9a9e-8554c74e709d,Gloria Jean's Coffee Bean,145.1,25.6
+rejected,Q42422657,Fountains Cinema 8,c1a3d63f-19bf-4d5f-8a32-51c5fe3464e9,Plantation C C Llc,71.2,44.4
+rejected,Q42422666,Plantation Cross Roads,a45e947d-4c01-4805-aea7-eaccb81200ef,Primanti Bros.,140.7,51.4
+rejected,Q42422456,Pembroke Pines Cinema,eaba980a-a8f6-4cad-bc61-262120a243ff,JERSEYS Wings Sports Bar & Grill Pembroke Pines,133.5,51.5
+rejected,Q42422460,Regal Westfork Stadium 13,314f39c5-24f9-46a2-8010-188d05f58338,Regal Westfork,20.1,71.8
+rejected,Q42422688,UA Movies at Plantation,471380fc-09b2-4b4d-a50a-7e9de3bc3b37,Einstein Bros. Bagels,130.8,41.9
+rejected,Q42422926,AMC Bakery Centre 7 Theatres,fb0a4c64-0b4f-460e-b4a3-8763615e8768,IMAX Theatre At Sunset Place,121.7,57.1
+rejected,Q42422933,AMC Sunset Place 24,a597fac3-e40a-4c89-9f70-e098a8e3fb1d,Sunset Plaza-Miami,97.5,70.3
+rejected,Q42422944,Riviera Theatre,96629c99-7c43-461f-882d-eb07c89dd6d2,Rice Mediterranean Kitchen,91.3,48.5
+rejected,Q42422674,Plantation Theatre,ab706dca-e8b6-4ba8-97b8-38fb5ad5164b,Nothing But Wings,88.1,28.6
+rejected,Q42422682,Regal Broward Stadium 12,53dd668c-3a84-406e-bced-dba0a9b963ea,Regal Broward,0.0,70.3
+rejected,Q42420799,AMC Dine-In Coral Ridge 10 Theatre,fdeb1c2d-786b-4b7a-b343-6125fd0e271a,Theater 4,66.2,32.6
+rejected,Q42420802,Coral Ridge Theatre,902ed520-fb5e-4ced-b912-c5a89c2e4a0e,Carrot Express,44.6,42.4
+rejected,Q42420807,Galleria Cinemas,4a352500-84bc-4e6b-9ca7-10ab5cfbf69c,Starbucks Coffee Company,139.6,35.0
+rejected,Q42420808,Colony Theatre,85381af3-549e-4a13-8fe6-09281113e7f4,Jackson's Steakhouse,71.7,47.1
+rejected,Q42420814,Las Olas Cinemas,0e7834d0-18cc-4e19-a1ef-e0d338d09a7c,Vicky Bakery Las Olas,142.9,54.1
+rejected,Q42420812,Florida Theatre,0a1fe8cb-9abb-4368-83d2-06ce53f367ac,The Piefather,97.4,50.0
+rejected,Q42420735,Cinébistro At CityPlace Doral,ed578d7b-75ce-4397-a286-3bafc42b4655,Cabo Flats- Doral,4.7,40.0
+rejected,Q42420791,Centennial Male Theatre,55f36e0c-382f-4853-abe7-145edd4ff257,AOH Theme Park,91.7,43.2
+rejected,Q42420795,Ocean Theatre,f92b0edb-4878-44e1-b01e-b05dbae72cec,Gelato Dream,58.2,48.0
+rejected,Q42420818,Savor Cinema,0773d91e-4504-4941-ac22-22cb4ae21e46,Savor Cinema Fort Lauderdale,5.9,60.0
+rejected,Q42420821,Warnor Theatre,806078cd-8166-4c1a-9ca0-f1e98b6cc484,Huizenga Park,84.1,44.4
+rejected,Q42420825,Southport Cinema & Drafthouse,aaa2105c-9644-418a-9308-297df7016e6f,Tokyo Sushi Omakase Restaurant,143.6,43.5
+rejected,Q42420831,Lauderhill Theatre,4911c640-fc62-4906-84c3-19cf6fbbca4f,Crafty Crab - Lauderhill Mall,137.2,53.3
+rejected,Q42420836,Movie City,752baa9b-5a47-4256-88a3-534df049e3f0,G Exhaust - Oakland Park,125.5,18.8
+rejected,Q42420843,Village Triple,a18c9a95-78d3-462e-a53e-96fcaa6b9da7,The Burger Den,78.3,33.3
+rejected,Q34860622,Brownsville Park,f2cc3aac-5514-41a2-a0f7-52f3512e8919,Jefferson Reaves Sr. Park,49.3,40.0
+rejected,Q34865486,Burk Recreation Center,590eb444-6788-4cfb-885d-8bfd6559b7e1,Biscayne Park Village,30.7,32.6
+rejected,Q34871746,Cartagena Plaza,646a8ff5-9f38-40fa-97fb-0d6a184a39b0,Cartagena Park-Cocoplum Circle,75.7,57.8
+rejected,Q34805019,64th Street Park,dbb9ccdf-3148-4c77-81c6-17781fffc84b,63rd Street Beach,62.0,60.6
+rejected,Q34809343,Alfred S Besade Park,eb4668d6-7b77-45b2-85eb-0686b0cff34e,"Oaklawn Park, Miami, Florida",115.1,43.5
+rejected,Q34809593,Allapattah Mini Park,f5ce608e-2ed7-4007-8595-84f6dd3dadbb,Highland Circle Mini Park,104.7,57.8
+rejected,Q34809603,Allapattah-Comstock Park,49038b99-5831-4d50-b5cb-b9f8e39bc3de,Juan Pablo Duarte Park,108.6,43.5
+rejected,Q34815943,Arch Creek Memorial Park,f4ebfcfb-2258-4c37-bfa2-d3b21ffecaff,Arch Creek Park,118.9,76.9
+rejected,Q34816209,Arcola Lakes Community Park,d3d6c794-3212-4942-a044-2a75764bd6d3,Little River Park,131.8,45.5
+rejected,Q34839873,Bel Aire Park,e262c9b5-ec14-4d43-bc2c-eec130f63698,Rico´s Steak & Grill,138.8,40.0
+rejected,Q34892716,Babcock Park,239a24f0-eb53-40cc-850a-913ea1f6d383,Acuario Marble & Granite,100.0,35.3
+rejected,Q34905334,Breezeswept Park,898efd38-2be1-4ba3-925e-c85019312ce6,Breezeswept Tot Lot,22.6,68.6
+rejected,Q42420845,Northridge Cinema,673c8149-b7d3-400e-ba2c-bd1c9ab7092d,Northridge Raw Bar & Restaurant,31.1,64.5
+rejected,Q42420848,Sunset Theatre,24e7921f-f416-4254-aaeb-176d3b78af0f,TIMBR Restaurant & Lounge,80.5,46.7
+rejected,Q42419755,Tropicaire Drive-In,e95aa3bb-8c46-4381-b5ea-dcdbf7e5f3f9,Pizza Hut Express,72.0,38.9
+rejected,Q42419833,Blue Starlite Mini Urban Drive-In - Miami,6c11660d-3dff-41cb-83d6-aa5f3d0bc19c,Starbucks Coffee Company,128.4,38.1
+rejected,Q42420257,Bay Harbor 4 Theatres,1b224f91-741d-43ae-94fa-09f86be62601,Waterstone Capital Airport Llc,115.5,39.2
+rejected,Q42420497,Absinthe House Cinematheque,f03b4e1c-df3e-4ccd-8d90-7be9dd7f5717,POC American Fusion Buffet & Sushi,100.9,37.3
+rejected,Q42420513,Coral Theatre,3cce6553-9633-4d3d-8d07-78279be7beba,Small Tea Co.,73.3,64.0
+rejected,Q42420516,Dream Theater,fe72c4e8-cbac-4212-a864-429788861ee5,Terre Del Sapore,100.5,48.3
+rejected,Q42420520,Gables Theatre,9da02fa8-d0fc-473b-be73-aa756adbce1e,Blendthy,47.4,45.5
+rejected,Q42420530,New Theatre,16e50fe7-1e62-4e7d-a963-cd638bb51acf,Ernie's Acai,32.0,34.8
+rejected,Q42420501,Miracle Theater,2839830d-a9b5-4f18-afaf-70450e6b97dd,Thien-nguyen Inc,73.2,45.2
+rejected,Q42420506,Bill Cosford Cinema,cdae0476-08bd-4d4a-9942-192a1abeb6f3,UM Cuban Heritage Collection,135.6,34.0
+rejected,Q42420541,Trail Theatre,ddd6bb88-d148-417b-941a-328d92c0d80b,Teatro Trail / Trail Theater,4.5,61.5
+rejected,Q42420594,AMC South Dade 8,d1e0c961-15bd-413d-b69b-9c044f469dc9,Junie's Bar and Restaurant,113.2,38.7
+rejected,Q49503936,Humble Mini Park,f561346b-40e8-4675-aaf7-6229e94664af,Unseen Creatures Brewing & Blending,132.2,36.7
+rejected,Q49505682,Island View Park,f7d0d482-9083-431f-8430-9667d7742f2f,MAK Miami Art Kitchen,96.7,41.4
+rejected,Q49505782,Ives Estate Park,71ebeb6b-8861-43cb-89f0-98f331929af3,Ives Estates Tennis Center,123.6,57.1
+rejected,Q49508039,John D Easterlin Park,acdb4ed4-b57f-4796-aa5a-0f42f7e62c10,Easterlin Park,20.7,80.0
+rejected,Q49508818,Jose Marti Riverfront Park,5a43f116-facf-4d50-858f-0c4c9814df15,Jose Marti Park,36.6,73.2
+rejected,Q49510014,Kendall Wayside Park,e33406d4-9847-42d2-84b4-14ab85f5a593,Veterans Wayside Park,55.2,58.5
+rejected,Q3026688,Zoo Miami,d6d86116-4f27-41bb-b867-83af521f5440,Asian Elephant,147.2,26.1
+rejected,Q3026874,Pérez Art Museum Miami,d7e6649c-9bb5-42b4-9d07-254580744087,Miami Shoe Museum,42.9,71.8
+rejected,Q3089259,Frost Art Museum,810c1603-3fed-4ece-9989-6ca5f7b6132c,Patricia and Phillip Frost Art Museum,17.7,60.4
+rejected,Q42419621,Breezeway Drive-In,94559ec1-4ba9-435e-82ff-ccf02dd17e97,Son Of A Pizza,102.9,31.2
+rejected,Q42419594,Hallandale Drive-In,ba211fa0-ff46-4b0a-a47f-4d3baf97a6ec,Zaika Express Indian Restauran,126.7,36.7
+rejected,Q42419597,Gulfstream Drive-In,66e11412-521f-4c3f-931b-f0fc37e1ff69,IL Mercato Cafe and Wine Bar,138.2,41.9
+rejected,Q42419611,441 Family Drive-In,9e368eea-e366-4912-b17d-e41829748bcf,"Quickie's Burgers, Wings & Seafood",106.9,32.0
+rejected,Q42419543,Davie Boulevard Drive-In,af3959c4-87c9-4b82-879a-058a9a55326f,Dunkin',97.7,20.0
+rejected,Q3113018,Miami Seaquarium,871e87eb-44cb-401a-8e08-e63ecaf12386,Aquário de Miami,18.5,37.5
+rejected,Q3307880,Q3307880,c10eb3ec-0ae8-4549-aa37-f143dc866674,Frost Art Museum,46.2,0.0
+rejected,Q3330548,North Miami Museum of Contemporary Art,b2513d66-4164-45ef-8960-43e3829d97eb,The Contemporary Art Modern Project,54.2,63.8
+rejected,Q3485583,Six Flags Atlantis,08e4aba5-411a-4c80-b2cd-06ae591b5729,Dania Beach-stirling Rd,55.0,39.0
+rejected,Q42419715,Lakeshore Drive-In,80654b5b-629d-4711-abc5-fcfac6bf35a3,South Beach Miami Fl,133.2,31.6
+rejected,Q42419731,Coral Way Drive-In,32bf8daa-b8e6-4fa4-a109-b26084be54cf,Los Vitrales Cuban Food Inc,45.2,40.0
+rejected,Q42419733,Dixie Drive-In,2c5f8c3c-e7ed-411b-8415-c411aab8eae4,Peruvian Ceviches + Bar,146.6,45.2
+rejected,Q49510090,Kennedy Park,ad46b5fc-c145-4beb-9a1a-4699818d78ce,David T. Kennedy Park,72.3,75.0
+rejected,Q49510535,Keystone Point Park,81ecc94b-9fed-4cbf-8324-ecf176ee0ef7,Piccadilly Cafeteria,139.2,35.9
+rejected,Q49510537,Keystone Tot Lot,c6c0abed-f91a-4390-b7c9-781066db7b1c,Tiny Thai House,133.2,38.7
+rejected,Q49515789,Leisure Lake Park,f18b7ab3-bfb0-4825-8144-461869d00110,Leisure City Duck Park,30.8,71.8
+rejected,Q49516815,Lincoln City Park Number 2,a336d915-d14f-4ea0-8254-d36d0c10cde3,Lincoln City Park,10.1,79.1
+rejected,Q49516836,Lincoln Field,a65c051e-1d51-472a-9825-581051454700,Lincoln Park,11.7,56.0
+rejected,Q49516846,Lincoln Gardens Park,6e3c5ca7-c0bc-462d-87a7-97b36fad770e,Marva Y. Bannerman Park,41.1,42.9
+rejected,Q42422023,Kendall 9,33f08957-3e08-4177-a1a0-e59f3c082bd7,Banda Burrito,59.5,27.3
+rejected,Q42422021,Kendale Lakes Triple,aac739e9-2fec-42f7-903d-f8a99ea6d95f,International Food Chains Llc,120.9,28.6
+rejected,Q42422032,Movies of Kendall,ebbb6f61-396b-4d06-aeb8-3d13b427673b,Left Field Holdings Ii Llc,144.4,37.2
+rejected,Q42422038,79th Street Twin II Cinema,67647c6b-0f6b-4f41-930a-ef07a457ac65,Atlas Meat-Free Deli,130.1,43.5
+rejected,Q42422036,Regal Kendall Village Stadium 16 IMAX & RPX,6be4038a-98a8-42f1-b0d9-5bd8f9248ef6,Regal Kendall Village,89.3,67.7
+rejected,Q42422041,Biltmore Theater,9330d800-6d5a-418d-9519-4921ebea1ce6,Nite Owl Theater,98.5,68.8
+rejected,Q42422047,Rex Art Theatre,e69b629c-3d7a-4a1d-9cc4-b2b189f09d6d,Rojas + Rubensteen Projects,148.7,40.0
+rejected,Q42422044,Edison Theatre,ec71c7f5-ce22-49f7-bee8-f9cbe7c5b1e5,Wiener Dog Brewery,144.1,37.5
+rejected,Q42422048,Soyka Cinema,34d271a7-7e20-436e-ae61-3a3af42b91ef,Soyka,27.9,58.8
+rejected,Q42422027,Kendall Mall Twin,2857cd5e-577d-4bed-90c5-fad814c98dcc,Power Pizza Kendall,71.4,61.1
+rejected,Q42419752,North Dade Drive-In,6a8eb1fb-4732-49ee-92fb-918073eac80d,Gwen Cherry Pool,133.2,34.3
+rejected,Q42419753,Palm Drive-In,1ddc6d4f-d47d-438a-bf39-e04db683c9d5,Totoseven Soul Food,113.5,25.0
+rejected,Q49518195,Little River Community Park,367ea936-a07d-4cf3-8d49-275326bcd99d,Cheeseburger Baby,134.6,27.3
+rejected,Q42422055,Tivoli Theatre,14b8247d-98d3-4ae2-a7d9-05da0d1b7298,Los Catrachos Restaurant,50.6,37.0
+rejected,Q42422052,Teatro Marti,929f6cff-7d43-4e9e-b431-1422b6b2aadd,Lolita Restaurant,100.8,33.3
+rejected,Q49525960,Mickel Field,6a0cf6cc-9e18-4245-889a-89fca2a911d4,Mickel Park,77.1,52.2
+rejected,Q49526217,Milander Park,a0e7f709-1cd6-4011-a797-cf9248b39e55,Fish and Aquarium,62.6,40.0
+rejected,Q49526553,Miller Drive Park,817b0945-8ace-426c-b1ad-7da887355dca,New York Slice Pizza,90.0,43.2
+rejected,Q49526900,Mini Park,04ba5122-c9a1-46d7-8cd9-8f281b2d8016,Ernestine Jackson Seymore Park,17.9,35.9
+rejected,Q49527224,Mistretta Park,f11fb68d-e481-415e-b48d-fe9c7554a248,Angelo Mistretta Park,38.0,80.0
+rejected,Q49527380,Modello Wayside Park,4364512c-7539-497b-ad04-93a6c17096ae,Elote Lovers,84.6,37.5
+rejected,Q49527637,Monroe Park,fd6c66f6-90c9-4531-9ea1-ba46a92eafeb,Oak Avenue Park,123.2,53.8
+rejected,Q49529683,Municipal Park,c6d95bf7-e6a0-40c5-a131-75586c078ef0,J.D. Redd Park,57.1,37.0
+rejected,Q49529897,Murray Park,33c086c1-ba37-4265-bb54-30298f737cec,Murray Park Aquatic Center,127.5,59.5
+rejected,Q49530007,Musselwhite Park,89042e91-27e7-450e-8857-a71a70151f95,La Piedra Bar And Lounge,60.0,24.2
+rejected,Q49530076,Myres Bayside Park,61b32bab-40d3-4785-8160-2ac78b6b2088,Kenneth M Myers Bayside Park,34.6,73.9
+rejected,Q49530666,Neal Park,a4fdc8c9-33a3-4558-9691-fbbf5cac69df,Washington Park Allen Park,148.2,40.0
+rejected,Q49532187,North Bayshore Park,aef01307-f04a-4df0-a115-769349e310b9,Miami Shores Village Bayfront Park,70.9,41.5
+rejected,Q49532184,North Bay Vista Park,341a454e-5afb-4de1-992d-349baa479cba,The Margulies Collection at the Warehouse,108.1,38.6
+rejected,Q49532335,North Dade Optimists Club Park,70e1e51f-35d5-462a-9e76-7d1c7edc5194,Optimist Park,16.7,60.5
+rejected,Q49494808,Goulds Park,d8ab40b5-974d-4b75-891c-2e6f812ca1b6,Jl (joe) And Enid W. Demps Park,44.2,35.9
+rejected,Q49494928,Graceland Heights Park,59a3460d-11b0-4faf-a7aa-d7fd4ab328a3,Grapeland Water Park,82.1,61.9
+rejected,Q49494971,Graham Park,68d44914-5311-4766-af6c-b2596e322771,Ernest R Graham Park,49.9,71.0
+rejected,Q49495399,Grapeland Heights Park,2b779402-2b29-4981-9190-722830e5cf9a,Grapeland Park Baseball Field,101.3,54.9
+rejected,Q49495396,Grapeland Heights Park,d9dfa50b-6d62-4618-940f-821faf677f9c,Farinelli 1937,42.4,22.2
+rejected,Q49496390,Griffin Park,e824e330-3f08-4d46-9f79-52333efa0a43,Patrick J. Meli Park,77.3,38.7
+rejected,Q42422061,Miller Road Theatre,e690efa0-bc7f-4def-add4-06663e1cdeee,Janette & Co.,113.3,34.5
+rejected,Q42422066,Festival at Grove Harbour,9d37e881-192c-4bd0-b99d-44b057ba413e,Konos Gelato - Coconut Grove,90.1,47.1
+rejected,Q42422065,Cinépolis Coconut Grove,0dd7a831-9f54-4100-8540-60cfc0ef81e2,Bellini | Coconut Grove,102.0,77.3
+rejected,Q42422062,Miller Square Theatre,2adc3303-9289-467f-a91b-a212c90c37ef,Smoothie King,100.6,35.3
+rejected,Q42422063,Carver Theatre,63128676-b0fa-4a8b-8f5a-cb3239537aad,Sandrell Rivers Theater,31.3,59.5
+rejected,Q49496881,Gwen Cherry Park,543690d1-9c2e-40bb-99c6-2bab6b0d2a3e,Dade County Nfl Yet Center,139.8,38.1
+rejected,Q49497255,Hallandale City Park,1041fff8-5efe-4d68-a978-76cb69d0cd07,Peter Bluesten Park,124.8,35.9
+rejected,Q49497928,Harding Park,2a1a1778-3d20-428c-8cab-bfc17f386eba,7340 Harding Ave Miami Beach,146.0,45.0
+rejected,Q49498320,Harris Field,ddfddd59-2495-429d-bdfd-0eaa3b496789,Harris Field Park,143.4,82.8
+rejected,Q49501030,Highland Park,d28f504d-cd0f-44a1-8a6b-6d7dae6ccfe4,Tuyo Restaurant,105.1,0.0
+rejected,Q42422954,Sunset Theatre,8ab25ee1-f3e9-4658-ae7b-0227e6164d61,The Halal Guys,24.4,41.7
+rejected,Q42423233,170th Street Cinema,61db36b2-3296-4e5c-a461-c69017bab699,Christine Lee's,105.5,41.2
+rejected,Q42423238,183rd Street Theatre,72170a24-e939-474e-8c34-9935460c15d7,La Terraza Restarant & Bar,21.4,45.0
+rejected,Q42421687,Cinema Theatre,a1c127eb-2e0d-4152-a13d-1d7a94a202d6,O Cinema South Beach,104.0,52.9
+rejected,Q42421702,Community Theatre,9d207818-f83b-4858-b951-22856029579b,Colony Theatre,89.8,77.4
+rejected,Q42421708,Flamingo Theatre,42efbede-915e-45a6-9b9e-f430186052c1,Paradiso Theater,50.6,62.5
+rejected,Q42421712,Loew's Konover Theatre,35cc04b4-e384-4e10-a5b6-8e3953abece0,The Rat Pack Theater,20.5,47.4
+rejected,Q42421718,Miami Beach Cinematheque,5c23931a-6af5-40c9-8fa6-c72f80933a98,La Locanda Miami Beach,81.9,65.2
+rejected,Q42421725,Mini Art Cinema,c8ad3eb7-3dbc-4c06-a7dd-ac2de3085220,Sushi Miami Beach,120.7,43.8
+rejected,Q42421731,Normandy Theatre,c3fd5606-42e9-43bb-83be-1a9a7221dd81,Ocean Terrace Restaurant,139.5,55.2
+rejected,Q42421739,O Cinema Miami Beach,959c3b2f-7edd-497f-98a8-b888aa06afb0,Ezio's Miami Beach,90.1,73.7
+rejected,Q42421747,Paris Theatre,6d327fcf-207b-4791-b84b-80fdabd4836f,Aroma Espresso Bar,144.5,44.4
+rejected,Q42421757,Plaza Art Theatre,d70f0bcb-40bc-4e08-9914-51e4fc50d6a5,Osteria Del Teatro,119.2,45.7
+rejected,Q42421762,Regal Cinemas South Beach 18,ff05f837-00b6-4ed9-9334-37f5bb3ddb9a,Rooftop Cinema Club South Beach,106.9,67.8
+rejected,Q42421785,Sheridan Theatre,6516d26f-3451-4a55-987e-4ad126b80546,Mario the Baker,148.8,45.2
+rejected,Q42421792,Surf Theatre,49075ca0-6991-4d7a-887c-95e40920e80d,Curry's Steak House,59.6,45.2
+rejected,Q42421796,Cobb Hialeah Grand 18,e64cffbf-356d-4999-af23-77e00b7add68,Cobb Grand Theatre 18,13.0,81.0
+rejected,Q42423250,AMC Weston 8,d36c6d58-6cf2-4f09-9e6e-ab7a827b5c7f,Wings In Weston,103.0,51.9
+rejected,Q42423255,Regal Sawgrass 23,0ea87c24-996c-4642-8452-c93fa68e5c3b,In the Game Sawgrass Mills,146.5,55.8
+rejected,Q42423612,Manor Art Cinema,d15603a5-361c-4243-8d1a-e1a40c170e8d,Negril Art Gallery,57.0,47.1
+rejected,Q49478787,Coconut Grove Bay Front Park,0772bed4-31b0-4b86-8347-b072d41548fd,Bay Front Park,28.8,66.7
+rejected,Q49479196,Colohatchee Park,c829748f-2a53-4b58-b97f-dafaf9a53243,M.E. DePalma Park,128.5,50.0
+ambiguous,Q49479672,Concord Park,d42c8bf4-95f1-41f3-b777-fcb698877e0f,Concord Park,126.1,100.0
+ambiguous,Q49479672,Concord Park,1b1aa81f-cb18-4142-8953-e7fee537efdf,Concord Park,29.4,100.0
+rejected,Q49479915,Continental Park,c508fb06-4ce6-4afa-b923-8838a52a8b9b,Anthony's Coal Fired Pizza,95.6,38.1
+rejected,Q42421815,Circle Theater,7b6fba5f-e610-4001-b60f-d11dea9c00ee,Circle Park,127.1,72.0
+rejected,Q42421821,Dade Theatre,b9be3c4a-47a3-437b-b27a-7eab889fdc05,Tipicocentro Americano Cafe,32.9,41.2
+rejected,Q42421002,Hollywood Cinema,f5d48ec4-5786-41e9-959a-c145803bb6c6,Hollywood Art and Culture Center,84.2,54.2
+rejected,Q42421006,Ocean Walk 10,d3857ac3-1178-4238-ac58-d1ba46fd15d3,Sardelli Italian Steakhouse,104.6,30.0
+rejected,Q42421012,Regal Cinemas Oakwood 18,23d8a66a-aab2-4317-8ce4-100c22077257,Regal Cinemas,127.4,70.3
+rejected,Q42421017,Ritz Theatre,6448f10f-ded6-44c8-803d-9e44f4d747bf,Peruvian Test Kitchen Inc,133.9,43.2
+rejected,Q42421022,Sheridan Plaza 12,d4ed96dd-c4b9-4486-aca0-ecd50aa27030,Sheridan Plaza - GameStop,120.1,75.0
+rejected,Q42421036,Homestead Flagship Cinema,5a9e0158-66da-49b1-ab72-a8e871434bfa,Sake Thai & Sushi Bar,132.7,40.0
+rejected,Q42421041,Homestead Theatre,49db70d8-83e1-4dce-9fec-b0a1525e4e01,Amistad Grill Events,61.2,48.6
+rejected,Q42421031,Fun Center Cinema,f9285a99-00be-4a8f-aed1-dacafce314d6,Homestead Bowling Center,0.3,43.9
+rejected,Q42421046,Seminole Cultural Arts Theatre,5de5c512-446e-4e2f-be7e-ddf9efb98d71,Seminole Theatre,41.7,69.6
+rejected,Q42421049,Seminole Theater,87aebce7-491c-4ae6-b907-f58f7e98a84e,El Toro Taco Mexican Restaurant,130.3,50.0
+rejected,Q42421434,AMC Lakes Mall Six Theatres,80654b5b-629d-4711-abc5-fcfac6bf35a3,South Beach Miami Fl,138.0,46.8
+rejected,Q42421461,Inverrary Five Theater,e3882bd4-a059-46fb-ad5c-29cdd550e8a5,Jamaican Manchester,127.5,39.0
+rejected,Q42421469,Movies at Lauderhill,ec1dcb36-89bb-4604-ac1e-5ec93722d0af,"Hua Jin, Inc",56.5,32.3
+rejected,Q42421650,21st Street Twin,30d8d0b5-8dce-46ac-b1f6-e1bbd8fcc1c2,Jaya at The Setai,70.0,42.4
+rejected,Q49480144,Coral Way Park,9019476a-5a7f-41d3-9e79-87a86f6c8f45,Brothers to the Rescue Memorial Park,6.6,40.0
+rejected,Q49480281,Corver Ranches Recreation Center,b916ecba-28b5-4b96-8e0a-8a25e48bc135,Carver Ranches Park,81.0,51.0
+rejected,Q42421443,Screen Play Cinema 'n' Drafthouse,64b07a5b-ad0f-4813-89f6-f4f9026f569c,Val's Kitchen & Catering,146.4,37.7
+rejected,Q49520440,Maceo Park,b3320c3e-9797-47d0-8cae-988bb93d1fda,Antonio Maceo Park,31.1,71.4
+rejected,Q49523488,McDonald Park,4a6c6ea3-7ae4-471c-b726-29a7e19e0799,McDonald Water Park,51.0,81.2
+rejected,Q49524078,McTyre Park,9cc33959-b8cb-4c77-88fe-eaf2e77452cf,City Of West Park,37.1,57.1
+rejected,Q49525470,Merrick Park,534d4c78-339e-4e64-878e-a92edbbd5d95,Almeria Park Condo Association,91.7,47.6
+rejected,Q49525797,Miami Police Benevolent Association Park,d49f42f7-5f81-49fc-b60a-5964e34ee2a1,"Kossuth Park, Miami, Florida",98.4,51.5
+rejected,Q49525803,Miami Springs Recreation Center,53b49bde-190a-485c-a472-1debf4ffb2e5,Rebeca Sosa Theater,65.0,36.0
+rejected,Q49482043,David Park,984ac6c7-69bf-4133-a3e1-e981ea231e79,David Park Tennis Center,63.7,58.8
+rejected,Q49482512,Deerwood Park,1dbce222-f9c5-472a-b77f-ee3e45578c36,Deerwood Bonita Lakes Park,28.4,66.7
+rejected,Q49483035,Devon Aire Park,37a5acc3-50ba-4566-8ef5-181731b4a434,Bone Fish Grille,133.5,25.8
+rejected,Q49483432,Dixie Park,e92898ae-af7d-4137-ad2a-eae2398813be,Johnson Park,17.2,45.5
+rejected,Q49483652,Q49483652,377573b2-fbf4-4006-9fee-a72f4cf67ed4,El Taquito,145.7,10.5
+rejected,Q49483972,Douglas Mini Park,ecfb517a-836c-4f04-a1b8-53f2174cdea4,Marjory Stoneman Douglas Mini Park,4.5,66.7
+rejected,Q49485061,East Bay Vista Park,f338aaaf-167c-425e-b02a-b9d1a8e287d3,Miller J. Dawkins Mini Park,41.5,35.6
+rejected,Q49485092,East Drive Park,95dccae9-1aed-4e20-99d7-3b8a67de368e,Stafford Park,121.7,42.9
+rejected,Q49485157,East Greynolds Park,2061b6f7-5b04-4038-b6bf-d4287d1b8f4a,Bark Park,146.4,50.0
+rejected,Q49493063,Gateway Park,725f7fb5-c0e1-442f-b644-7f46955c08a9,"Goya Industrial Park, Miami, Florida",51.8,39.1
+rejected,Q49493937,Glades Road Park,cb5e7fcf-c4ef-4bd6-89e0-389b20484a3e,Ruben Dario Park,77.7,50.0
+rejected,Q49494410,Golden Isles Park,5d55ba28-924e-400d-9775-48fe5203a31d,City of Hallandale Parks & Recreation Department,92.4,34.9
+rejected,Q49494493,Gomez Park,c9581ef5-dd40-48ae-b7db-532dd8fdd4ee,Parque Domino,43.9,52.2
+rejected,Q49487067,Enchanted Forest Park,45acaa40-2f3b-4bf2-9761-0712b6f8460c,Enchanted Forest Elaine Gordon Park,40.7,75.0
+rejected,Q49487165,English Park,890a1f9b-690e-4a6a-94ff-b4809bd0eab2,Myapapaya,132.9,19.0
+rejected,Q42420851,Regal Cypress Creek Station 16,9f947d88-5513-4fcb-a587-e8cb0c7073de,Green Streak Cypress Creek Llc,77.0,70.0
+rejected,Q42420853,Southland Twin,f49efbe2-ab20-41bd-847d-f497ed46bb56,Mama's Latin Cafe,60.4,38.5
+rejected,Q42420860,Gateway Theatre,aad36c5a-f348-405d-b1a9-d8ebef7477df,The Classic Gateway Theatre,9.0,78.9
+rejected,Q42420960,Mall Theatres 1 & 2,5dfba1f2-0843-47b2-a383-0c205b722655,Cilantro Asian Bistro,147.0,31.6
+rejected,Q42420969,Apollo North,9a240743-20ad-4b09-8828-8557e711088c,La Mia Pizza & Wings,103.1,26.7
+rejected,Q42420974,Atlas Twin,f6b90f31-0425-4fb7-82d7-ade1d77e677a,Restaurante Delicias La Cabana,123.6,35.0
+rejected,Q42420966,AMC Hialeah 12,8dfa40a4-35cd-4b67-adb4-a4840301def5,Miami Lakes Cobb Theater,128.7,36.8
+rejected,Q42420970,Apollo South,92fabd90-d91b-43fb-abe0-916c916136ad,Marioby's Restaurant Cafe,131.4,37.5
+rejected,Q42420976,Colonial Twin,b1b7cd87-2abb-4399-9ce6-f3981189d997,Don Pan International Bakery,120.6,34.1
+rejected,Q42420982,Hialeah Theatre,5222a2b9-e100-4334-8130-33425d387619,Vensa Loads Inc,49.8,40.0
+rejected,Q42420980,Favorite Cinemas,ce30db37-aaef-4df0-9fc5-7fcc9c6612a7,Las Casitas Grill,37.3,44.4
+rejected,Q7088984,Olympia Theater,351cf132-137d-419f-afae-2efb8591e911,Ecco PizzaTeca & Lounge,109.1,48.3
+rejected,Q9082153,Lyric Theater,0dcabf1c-4faa-4b4f-8b5e-9216819cf214,Art Africa Miami Arts Fair,135.6,41.0
+rejected,Q9275937,History Miami,dabd8c08-1b2a-4dde-8115-5ca8f2ded768,Miami City Park,104.4,64.3
+rejected,Q11692364,Miami Women's Club,cee9fb2d-3f8f-4f8c-9333-fbf0af158012,"Sports Cafe Miami, Llc",114.8,56.4
+rejected,Q11703451,S & S Sandwich Shop,219cd708-5783-408a-a64c-3c114ef3796e,Spectrum Art Fair,97.9,35.3
+rejected,Q11884284,New World Center,ea951ff9-a051-402f-b436-723242b95586,Cooper Avenue,123.6,41.4
+rejected,Q1435790,Fontainebleau Miami Beach,9d03d7be-fe6d-49e8-bead-24d20d5e860f,Foutainbleau Beach Club Miami Beach,126.4,76.7
+rejected,Q1923740,Fairchild Tropical Botanic Garden,48c03d1e-7542-4a5b-8a49-e9d84eb18654,Matheson Hammock Park & Marina Charquito,66.2,39.4
+rejected,Q2178180,Wolfsonian-FIU,01b838bb-9fc7-4a32-bd3e-a44f4f1593a4,Antico Pizza Napoletana,139.1,37.8
+rejected,Q7083846,Old Dillard High School,7dea50ee-be72-4bf0-b290-826724bbc3a9,Old Dillard Museum,102.8,58.5
+rejected,Q42420994,Florida Twin,984ac6c7-69bf-4133-a3e1-e981ea231e79,David Park Tennis Center,92.5,38.9
+rejected,Q42420993,Florida Theatre,913d0999-4794-4db4-b4f8-c008395df5af,O'Malley's Margate Florida,124.3,58.5
+rejected,Q42420998,Gamecock Theatre,3e8a8418-9d60-4d0c-acc4-decd7b695ac2,Carvel Ice Cream,12.0,37.5
+rejected,Q42420984,Palm Springs Twin One & Two,8739c2a6-4f20-4c0e-958e-ffe225345c72,Long John Silver's,37.7,41.9
+rejected,Q42420990,Flipper's Hollywood Cinema 10,37838882-310c-45c2-8a4a-8f6b043f2e64,Flippers,6.1,43.2
+rejected,Q42420988,Cine 1 & 2,6cbdad16-5d20-450c-80f4-33b449e7d8be,Candinas Wine and Beer Lounge,134.7,40.0
+rejected,Q14685904,Hollywood Garden Club,b9c72d1a-c685-4fed-94a7-3975cfb25241,South Miami Beach,100.7,26.3
+rejected,Q5617636,Gulfstream Park,2696da75-0de3-4d09-87e2-5b319a10619c,The Casino at Gulf Stream,147.6,55.6
+rejected,Q6224422,John C. Gifford Arboretum,3882193e-6f75-439a-89ef-412273176310,Gifford Arboretum,6.4,82.9
+rejected,Q6422233,Knight International Center,de84e240-508a-4f32-a518-cfc0cb3a380d,James L. Knight Center,45.0,62.5
+rejected,Q6462022,La Covacha,4fde78a7-ab5b-4c1b-a504-3185a430a63f,Las Chimis,111.1,50.0
+ambiguous,Q6551047,Lincoln Theatre,c8b92a3f-0eb7-4e18-8717-f81ea5c1743c,SRA Lincoln Theatre,9.9,88.2
+ambiguous,Q6551047,Lincoln Theatre,8d18b86b-e3bb-44ab-8b87-fa8d70ece1c0,Lincoln Theatre,20.9,100.0
+rejected,Q6827236,Miami-Dade County Fair & Exposition,69656d23-34b7-4e42-b113-ea7c9f36da11,Miami-Dade County Youth Fairgrounds,84.5,64.7
+rejected,Q6827269,Miami Beach Convention Center,befd7ca6-8cfd-4f3c-88b2-d36e0ca47a64,New World Center,115.7,44.4
+rejected,Q42422087,Roxy Performing Arts Center,656b14bf-aa2c-458c-afe5-b3f8fc5049dd,Raf & Rod Investment,131.8,44.4
+rejected,Q42422094,Star Twin,c35a376c-edeb-46c5-b66c-7270a385569d,Agua Marina,50.4,40.0
+rejected,Q42422069,Grove Movie,abe95845-84dc-42ab-a6ba-e8d284f5b222,The Grove Spot,84.8,66.7
+rejected,Q42422075,Modern Theatre,f780e752-4dfa-4b60-a166-5dac8125675a,Overtown Performing Arts Center,78.3,31.1
+rejected,Q42422072,North Side Twin,792c6970-7aae-45f0-87f5-ef4b278eec34,Picasso Queens,123.4,27.6
+rejected,Q42422073,Capitol Theater,d5c935a7-eaf6-4080-abdf-d9cc65f61d76,Overtown Gibson Park,138.7,34.3
+rejected,Q42422099,UA Movies at the Falls 12,6aef70d9-ca34-4955-9c91-0a2104745b31,Churromania The Falls Mall,143.9,51.0
+rejected,Q42422096,Super Saver 8,822eaae8-d03a-4bba-98c2-649acc415e71,Sports Grill,149.9,31.6
+rejected,Q42422103,Valentino Cinema,22396120-2b7b-4de4-b885-992db6dc4ffb,Giovanni's Restaurant,148.6,38.5
+rejected,Q42422083,Regency Theatre,f22f05d0-8880-4b18-bd2a-00db2abbf5a5,Grazianos Market,121.8,38.7
+rejected,Q42422080,Ritz Theatre,c893aad5-b7ab-4fbb-b6d1-a01bee0ba46f,Red Rooster Overtown,26.9,37.5
+rejected,Q2825308,Adrienne Arsht Center for the Performing Arts,0221f263-ea73-4209-beb3-23565f9df76a,Ticketmaster Tollfreelsc,32.1,37.7
+rejected,Q42422070,Mayfair 10,ca9b1c78-7d8a-4932-a8c9-afd31f755ee2,Mayfair Shops In the Grove,126.1,44.4
+rejected,Q42422104,O Cinema,4234f87a-b77f-45a2-a1b1-ca0f9c897496,O Cinema Wynwood,141.9,66.7
+rejected,Q42422154,Value Cinemas 6,ed3c5cf9-7206-4cfd-a308-4312bceebd98,Maj Bakery & Take Out,118.9,35.3
+rejected,Q42422157,163rd Street & Patio Theatre,ba525a6d-2e81-4ec2-85cf-0b8e880b649c,Y And C Restaurant Inc,44.6,37.5
+rejected,Q5073278,Chapman Field Park,eeff76a5-25b7-4f29-96f1-b09fc54c6558,Chapman Field Park Flag Football,107.9,72.0
+rejected,Q5073277,Chapman Field,fa0e033f-ea66-4f9b-bc25-5de46480d544,Chapman Field (Miami),0.0,81.2
+rejected,Q5076811,Charles Deering Estate,39ec8ec4-1a1a-407d-8b39-9416d601c461,Stone House,53.6,42.4
+rejected,Q7138360,Parker Playhouse,a345ec8b-7303-4fcd-a3b6-e434ed09fbab,Florida USA,7.3,29.6
+rejected,Q42422162,AMC Fashion Island 16,8cd22375-d43b-4dbf-bfcd-43c4f255f789,"T 7 Management, Llc",21.4,35.9
+rejected,Q42422160,167th Street Twins,8eddafbb-89af-4beb-ab89-7638d177e062,Shing Wang Bubble Tea Cafe,105.6,35.9
+rejected,Q4785297,Arch Creek,f4ebfcfb-2258-4c37-bfa2-d3b21ffecaff,Arch Creek Park,137.6,80.0
+rejected,Q4867942,The Bass Museum of Art,2959001a-72ef-46fe-a84c-bfb93938bd58,Las' Lap Miami,122.6,45.2
+rejected,Q4874221,Bay of Pigs Museum,c169a339-f270-445e-a12b-073092a9b70a,Bay of Pigs Museum and Library,12.1,75.0
+rejected,Q4903566,Maurice A. Ferré Park,793e5f28-7f2a-4cb9-9745-5fed7c83ad7a,Bicentennial Park,59.3,43.2
+rejected,Q7201618,Plantation Towne Mall,44e165a6-0149-4806-af98-b7308aa7c475,Plantation Diner,134.3,59.5
+rejected,Q7382489,Rustic Inn,4fa7ae73-c262-487f-b952-f65bac9ff949,Rustic Inn Crabhouse,4.3,66.7
+rejected,Q7449511,Seminole Hard Rock Hotel and Casino Hollywood,f063af6e-a6fd-461c-9050-d06109918f2c,Oculus Bar (in Seminole Hard Rock Hollywood),100.0,75.9
+rejected,Q7568258,South Pointe Park,657834df-6075-4058-bd14-8e1df57157f3,South Pointe Cafe,65.4,82.8
+rejected,Q7721082,Cameo Theatre,f5176c05-22cc-4262-a24b-1d5ca9ae867c,Cafe Charlotte,66.9,59.3
+rejected,Q7829737,Tower Theater,19840257-d050-470c-9f81-8300c11bbed4,Union Beer,99.6,43.5
+rejected,Q7922622,Versailles restaurant,4b0bea14-1a00-4abe-a9a1-3745da78e3a5,Versailles Bakery,21.4,74.1
+rejected,Q7968023,Wannado City,eed30ac7-999d-43a9-a22b-e70881d64e87,Asian Chao,48.7,45.5
+rejected,Q7970924,Warsaw ballroom,a98ace63-ec4a-4273-b0dd-58b54f7c3177,Carlton Room Cafe,38.1,44.4
+rejected,Q8030163,Wolfie Cohen's Rascal House,f6b37d22-667d-4b92-971f-087f7ddbebaa,Rascall House Restaurant,53.1,65.0
+rejected,Q8030630,Woman's Club of Coconut Grove,df4afa33-b0a5-4e08-9432-5b788f814b18,La Cabrera Coconut Grove,126.0,67.9
+rejected,Q8058535,Young at Art Museum,d65adcae-c6e5-4cc9-99a7-89a315b5e686,Super Duper Grub Cafe,38.8,28.6
+rejected,Q42421657,Alliance Cinema,1b980855-8e2b-4c0e-be44-cb8d9ab1148c,Romina's Ristorante Italiano,104.7,51.2
+rejected,Q42421662,Beach Theatre,1d582ffd-2f4b-4441-93c7-929774f55046,Chalan on the Beach,123.8,62.5
+rejected,Q42421668,Biscayne Plaza Theatre,02de6cf3-f2bf-4a64-ae12-0fb8e0738c36,Southpointe Park Water Plaza,137.6,56.0
+rejected,Q42421681,Carib Theatre,42efbede-915e-45a6-9b9e-f430186052c1,Paradiso Theater,74.9,69.0
+rejected,Q49532917,North Shore Open Space Park,6780d218-ef6d-4fb5-8534-5c86afb32684,North Shore Doggie Park,134.0,64.0
+rejected,Q49532925,North Shore Park,c9e7f618-e973-49f2-a7f9-2d281a5edb55,North Shore Park and Youth Center,150.0,65.3
+rejected,Q49536861,Pace Park,f7fc9ad8-7e72-4011-9906-2fec909bbd8c,Margaret Pace Park,94.4,66.7
+rejected,Q49537124,Pallot Park,b5a0207c-93a5-4a1c-bed9-2f3cc2c210ae,Albert Pallot Park,41.4,75.9
+rejected,Q49537173,Palm Springs North Park,e2936593-3271-435d-bfd8-a7e1859f5ec2,PSN Park,45.3,45.2
+rejected,Q49541473,Perrine Wayside Park,894fae10-de2d-4ac2-8caf-f5be3d5be103,Perrine Wayside water Dog Park,80.0,80.0
+rejected,Q49543316,Pioneer Park,da48bcb9-85e5-4940-a707-f3b6f52be459,Peach Tree,93.3,45.5
+rejected,Q49548132,Range Park,2ec4a84c-7f7d-43dc-9240-ffbe5a6fd0a7,Athalie Range Park,81.8,71.4
+rejected,Q49549145,Reeves Park,ad7c59d3-996a-4497-b687-eece9eefd430,"King Of Flavors, Llc",140.4,26.7
+rejected,Q49551946,José de Diego Park,2bc05b60-f4cc-4a77-bac4-4c1716b9295b,Mi Buñuelo Miami,108.4,29.4
+rejected,Q49552137,Roberts Park,076a8811-5fe0-4952-b9cf-629b2c4ce5b5,Loren Roberts Park,66.2,80.0
+rejected,Q49553854,Rosenthal Playground,49ac1be5-9d63-435d-8b4d-c570bc85d3a3,A1A,141.8,17.4
+rejected,Q49555218,S P Snyder Park,75c80f2c-2024-46a5-8a28-dfb173a7c040,Snyder Park,86.9,84.6
+ambiguous,Q49555234,Sabal Chase Park,3e8ac3eb-7613-4485-996b-d97d7f3699aa,Sabal Chase Park,114.6,100.0
+ambiguous,Q49555234,Sabal Chase Park,a045aca6-5fb7-4905-856c-55ae927eac5c,Sabal Chase Park,56.7,100.0
+rejected,Q49556608,Salvadore Park,9b750571-fac1-4946-81ab-24c49ae6a7f4,Salvadore Park Tennis Center,35.5,66.7
+rejected,Q49559175,Seamans Park,6b5fc704-ce8a-4c33-8c9d-df9afa696f03,Seafarers Park,94.9,76.9
+rejected,Q49559366,Secret Woods Park,a6aee1b1-4e90-47d0-8a25-6989bdda04ef,Secret Woods Nature Center,115.8,69.8
+rejected,Q49560015,E. G. Sewell Park,933f2d44-e334-4c70-8e63-ef16bb193b1e,Sewell Park,14.2,84.6
+rejected,Q49561875,Simpson Park,9bb3ad16-3375-4ac2-af5e-f479e74c46d2,Simpson Park Garden Center,116.4,63.2
+rejected,Q49563701,South Shore Park,35802b8e-f150-4bd6-924a-2ead286cf25b,Fogo de Chão Brazilian Steakhouse,145.7,36.7
+rejected,Q49564088,Southwest Broward Junior Athletic Association,24f5b060-95eb-4cbd-9384-2868e16e3ded,Miramar Athletic Park,59.3,42.4
+rejected,Q49567506,Sunland Park,319ddee2-4e68-4140-8331-a860fc69f142,Joseph Carter Park,59.3,33.3
+rejected,Q49567532,Sunny Isles Beach Park,ed3df4a2-6be6-4899-aa87-8584d89fa0d2,Playa Naturista,60.0,37.8
+rejected,Q49567714,Sunrise Park,da732a8d-07fe-4641-b116-d09124ae2126,Sunrise Harbor Park,17.8,77.4
+rejected,Q49568765,Tacolcy Park,61d07ec4-5aff-4c81-a370-da2b266b0f1f,Barstool Bites,128.7,38.5
+rejected,Q49569065,Tamiami Trail Park,139c4fa1-78d2-47df-96dd-efc84a85d210,Mirage Operations Llc Dba,118.1,41.9
+rejected,Q49570738,Tigertail Lake Park,bf293710-e9a4-4b5b-81f7-3cb1eb267dd9,Dog Lake,148.3,29.6
+ambiguous,Q49572134,Tropical Estates Park,b63e0dbf-ec7c-4ddc-b56a-09c6f31d5980,Tropical Estates Pool,32.5,85.7
+ambiguous,Q49572134,Tropical Estates Park,25c5d0ad-b3f0-47b7-8579-5e99dd65bc81,Tropical Estates Park,34.2,100.0
+rejected,Q49575463,Village Park,3b40b27e-7715-4e48-ac1c-475a89031773,Country Village Park,26.5,75.0
+rejected,Q49575699,Virrick Park,78c56c25-39b4-4def-9788-37292e511e58,Elizabeth Virrick Park,32.7,70.6
+rejected,Q49575757,Vista Verde,9144148c-83a1-49e6-8184-c0c163e1e100,Vista Verde Park,80.0,81.5
+rejected,Q49575782,Vizcaya,01dd1eaf-8544-4428-8719-121556634684,Palace Vizcaya,32.8,66.7
+rejected,Q49575784,Vizcaya Gardens,6cfcd24a-c485-4f9e-a83d-0a62fd0e9095,Vizcaya Museum and Gardens,84.2,73.2
+rejected,Q49576360,Walker Park,5ac897ed-c71c-4562-afa1-5bd3b682cfe4,Le Chat Noir,63.1,43.5
+rejected,Q49577074,Washington Park,5ab354ad-baf7-4011-9d2b-6d20d1a3b871,Washington Park Community Center,113.3,63.8
+rejected,Q49577078,Washington Park,a8aa185b-c77b-4ddd-bc4b-a3befdf47ece,Washington Dog Park & Annex,33.5,75.0
+rejected,Q49577080,Washington Park,a4fdc8c9-33a3-4558-9691-fbbf5cac69df,Washington Park Allen Park,92.7,73.2
+rejected,Q49577414,Water Plant Park,0b887666-d659-46ce-b608-50981d147226,Grand Avenue Park,75.5,42.4
+rejected,Q49577699,Watson Island Park,0bd9df75-1ce4-4d80-a212-99de0ea526ad,Miami Friends of the Japanese Garden,140.8,37.0
+rejected,Q49577709,Watson Park,62a1b3bd-34dc-4e77-bc19-53521a5d1b57,The Deck at Island Gardens,72.0,36.4
+rejected,Q49578273,Wellman Field,eb5b7077-d22b-4c27-a54e-8dd64bb00bd9,Perry Park-Wellman Field,18.6,70.3
+rejected,Q49578536,West Buena Vista Park,8f284c37-1976-4d34-91c5-c7097a20b021,Tropical Conch,126.3,28.6
+rejected,Q49578600,Manolo Reyes Park,80a2105c-5c35-424a-bc8a-14b28d20f1ce,West End Park,11.2,60.0
+rejected,Q49578940,West Perrine Park,12ceba9f-9c37-4578-b103-bafd64629973,Miami Dade County Parks and Recreation Department Areas & Programs,107.5,27.2
+rejected,Q49579466,Westside Community Center,afa0e4db-2c27-41b4-b6ae-fe73b744ba67,Sunkist Grove Community Center,101.3,72.7
+rejected,Q49579830,Whispering Pines Hammock Park,9b70a6d4-e8fe-4eb5-8a3a-85b7d7ba280c,whispering lakes park,25.6,72.0
+rejected,Q49579831,Whispering Pines Park,b77ee5b2-1260-4911-9908-435098b5dfce,Whispering Pines Hammock Preserve,120.0,70.4
+rejected,Q49580561,Wilde Park,613017bc-f160-4eb3-b11c-fb95e8110423,City of Hialeah Wilde Park,74.9,55.6
+rejected,Q132573451,China Grill Miami Beach,b09acab4-641f-4639-9594-b9e1c04485e2,Fratelli La Bufala - Miami Beach,74.8,64.2
+rejected,Q133865134,Estiatorio Milos Miami Beach,606a1bd0-5864-45c1-94e9-c02726fba9e2,Estiatorio Milos,37.5,72.7
+rejected,Q133876701,Scottish Rite Masonic Temple,98b6ca81-5ccf-42c9-a431-97ef1fdf6130,Casablanca on the river,140.8,47.1
+rejected,Q135448843,KFC-Taco Bell combination restaurant,93e63bd9-828f-44f7-a4e3-f6598cc86efe,Barrios Altos Tradición Criolla,103.4,42.9
+rejected,Q136039559,Carl Fisher Clubhouse,3e546c37-8199-4a8c-8850-85bd4368ee4b,Rum Room Restaurant & Venu,20.5,31.1
+rejected,Q137480454,Art Deco Museum,57641863-f0bb-410f-a84a-281adc63a7c1,Rosetta Bakery,139.0,41.4
+rejected,Q137784041,Campo (Casa Faena),bb3cb311-79bd-4e12-a1c7-a463cfe94bae,Museum of Ice Cream,74.9,45.7
+rejected,Q138135851,Ogawa,d8c26833-1959-41bc-94dd-d3e008b8f04f,Ogawa Miami,72.9,62.5
+rejected,Q138680010,Manuel Artime Theater,9d2c07f2-5032-4477-ac81-78800ae92598,Amore Mio Trattoria e Pizzería,146.5,43.1
+rejected,Q138893551,Miami Freedom Park,d2166fea-9de7-4284-bd4f-c8360b12c7bd,Gandara Marine,123.2,31.2
+rejected,Q140157755,Itamae Ao,59b4c54b-e9f0-4d16-b7f1-891a5862ec24,Art Miami,145.6,55.6
+rejected,Q140183383,Grails Miami,8e131767-bcfc-43b5-9715-769783e4876a,ZURI MIAMI,133.0,45.5
+rejected,Q140408412,Mutra,45d0ffbb-7f39-46c2-bc4c-62085960f502,Thai Treat,64.7,40.0
+rejected,Q49581721,Wilson Park,30440201-7788-489d-8037-946b8e251509,Tobie Wilson Park,82.2,78.6
+rejected,Q49582079,Wingate Park,d4f990bc-0c5e-4803-86fd-2051aff6caa9,West Ken Lark Park,70.2,46.7
+rejected,Q49583731,Young Park,1a87d61b-e7c0-4a71-bac9-eac6475ce4c8,Fewell Park,135.8,38.1
+rejected,Q58856270,Davie Woman's Club,26712a00-4910-4f29-a536-9ff6ce3eefaf,Orange Blossom MHP,120.4,33.3
+rejected,Q64438171,Dave & Mary Alper Jewish Community Center,5999ce58-0d5f-4481-aa8e-305fc83d18f1,Miami Childrens Theater,99.8,38.7
+rejected,Q68571885,Wild Thyme Oceanside Eatery,22f0d372-a236-4fd2-9fb0-77ee6da88e8b,At The Market,134.0,45.0
+rejected,Q68601954,El Taquito,89b6ae2f-2c08-46d8-bf7e-a4a1bd3dd85f,Sunrise Beach Outlet,110.4,33.3
+rejected,Q68602451,Yo Mama's Ice Cream,3ac0cf59-7bc6-4b99-904a-505792f79b5d,Mexican Cantina,103.8,35.3
+rejected,Q69130848,Steelpan,3ac0cf59-7bc6-4b99-904a-505792f79b5d,Mexican Cantina,78.7,34.8
+rejected,Q69831599,Casa Sensei,eae83f13-31db-4463-b983-d8e2aac6839f,Vinos On Las Olas,20.7,42.9
+rejected,Q69832274,Empanada Top,638e1bb3-6f10-4078-a787-47a4111d8f7a,Preston's Wine and Martini Lounge,129.2,36.8
+rejected,Q78221892,Silverspot Miami,aefb2b36-19db-43df-8048-87eb64ed592c,Zest Miami,104.5,69.2
+rejected,Q86757788,Rubell Museum,16ad260a-1488-4dce-9076-72e0d4825c90,Jon & Vinny’s - Residency at the Rubell Museum,56.1,47.3
+rejected,Q88207135,Goodlet Park Community Center,f04f7c66-e107-4ad7-a6a6-68c7b5c6576d,Goodlet Park,99.4,58.5
+rejected,Q101226419,Ward Rooming House,dccd1aba-34d2-4953-878e-89800bc9f0ae,Historic Ward Rooming House,6.0,80.0
+rejected,Q105822407,Municipal Auditorium,328f5300-b0cb-418c-be69-3b6db917c5aa,Il Gabbiano,73.5,38.7
+rejected,Q107377017,outdoorgym Smoker Family Park,ffcf208a-8004-4064-a0d3-aec432587f61,Smoker Family Park,85.9,76.6
+rejected,Q111393089,"Beach House Fort Lauderdale, A Hilton Resort",8e02c5e8-6857-4591-88aa-58e28b19b471,Fort Lauderdale Beach Resort,61.1,78.9
+rejected,Q111393202,"The Betsy Hotel, South Beach",5629bf2a-2a3a-49f6-ab08-fd7d9d6d1a11,South Beach l Miami Beach,109.1,66.7
+rejected,Q113987734,Cauley Square,311ddc46-2f2c-4373-9c81-d7ce16f37364,Tea Room Miami at Cauley Square,23.1,59.1
+rejected,Q115224066,Cheers,f199c3dd-2adf-4dcd-8b56-37c6d0fb5705,Homa Persian Cuisine,0.7,38.5
+rejected,Q119400333,Hoffman's Cafeteria,cffd8870-9a9b-43ef-bc5d-220827cad92b,Hosteria Romana,148.1,58.8
+rejected,Q121113886,Stubborn Seed,adc5d380-092d-43c5-8e61-5b5538ac509c,Stubborn Seed - Miami Beach,5.7,68.4
+rejected,Q123138647,Wynwood Walls,b916adb8-7924-46ce-8b43-fad661ee8e92,Mamas Wynwood,61.7,76.9
+rejected,Q123419124,Liv Miami,d46db7aa-5d53-4f17-bc79-841bb7ce525f,"Miami Beach, Miami",139.5,53.8
+rejected,Q124459095,"Pride Park, Miami Beach FL",715eff68-593d-43bd-8ea3-9ed913e01cdf,Lincoln Road - Miami Beach,147.3,65.3
+rejected,Q124519632,Carter's Million Dollar Pier,d977cddc-c7a9-4755-9466-44d03103df22,The Beach- South Beach,51.6,26.7
+rejected,Q124672202,Hardie's Casino,da754ce0-df21-4856-b4d8-00c125884a74,Prime Italian,116.9,50.0
+rejected,Q124672307,Smith's Casino,ad0e4000-a852-4778-8ba2-b7f176ecfdbb,Catch,113.5,42.1
+rejected,Q124881356,Jumbo's,25832e5e-4665-4a36-9617-5c54950038ed,Soul Town BBQ,9.0,30.0
+rejected,Q125293719,Fort Lauderdale Woman's Club,1df11e05-5325-40e2-8a58-21bdf02162fa,Café Roma italy,148.5,41.9
+rejected,Q126919382,Miami Beach Aquarium,e6eaa4a2-f3d5-49d7-b5cc-d847cc9214ca,Bar One Miami Beach,80.0,71.8
+rejected,Q131293095,Máximo Gómez Park,c9581ef5-dd40-48ae-b7db-532dd8fdd4ee,Parque Domino,13.3,46.7
+rejected,Q131735921,Caracas Bakery,0da4e5fc-27c3-45d4-ac75-f32ed8943660,Caracas Bakery Biscayne,17.1,75.7
+rejected,Q131735966,Entrenos,8f4afe1f-f925-4a84-845c-dcd6f5fc5d69,EntreNos Miami,18.6,72.7
+rejected,Q49489766,Flamingo Park,d8f1e13e-1b7a-481c-bc5b-6c345a1cee14,Parc Vendome,98.3,24.0
+rejected,Q49490892,Foster Park,9ea49d31-2cba-488a-b6b3-cbf8775a008e,"Dr. Martin Luther King, Jr Park & Dream Center",33.7,30.2
+rejected,Q49490984,Fountainebleau Park,f6f7e7d6-dca7-4b1c-bfa1-577476c9d92f,"Pieology Pizzeria, Miami, FL",144.9,35.6
+rejected,Q49562807,Snyder Tennis Complex,87fa0876-e734-4d8d-9f51-def7e6ff11d8,"Greynolds Park Gardens, North Miami Beach, Florida",37.8,26.1
+rejected,Q49562819,Soar Memorial Park,c291c951-39b2-40e0-b591-961467e3b17c,Soar Park Playground,12.7,52.6
+rejected,Q49563174,South Beach Park,59eba941-7a1f-426c-a851-33c481988e15,South Beach Ft. Lauderdale,78.2,68.3
+rejected,Q49563178,South Beach Park,0b52d10c-2e9f-4689-87d0-00d20a6a603c,Prime 112 South Beach,137.7,75.7
+rejected,Q7449501,Seminole Cafe and Hotel,84cc71e9-6a64-4ecc-8913-abd17cb30f93,Fat Monkey Karaoke Bar,123.2,43.9
+rejected,Q7777706,Thee Image Club,41d749dd-9591-421a-b175-aabe10561953,The Strand at Carillon Miami,60.7,35.9
+rejected,Q49505142,Ingraham Terrace,8eddaa53-e324-4439-bfcf-1ef7a1d09f55,Ingraham Park,133.8,69.0
+rejected,Q106787455,Parque de la Memoria Cubana,e79e06f8-2f1f-4333-9314-e230a5603e55,Cuban Memorial Park,88.9,73.9
+rejected,Q116621836,Q116621836,b33a9a14-8287-4162-bde9-e16c0c07e547,Quinto,38.6,12.5

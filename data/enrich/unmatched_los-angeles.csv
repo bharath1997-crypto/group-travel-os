@@ -1,0 +1,1351 @@
+reason,wikidata_qid,wikidata_name,overture_gers_id,overture_name,distance_m,score
+rejected,Q162154,Broad Contemporary Art Museum,b4cf965e-70f7-4fea-b82b-242676096bc1,Steve Turner Contemporary,117.1,59.3
+rejected,Q186080,Crypto.com Arena,a47bc408-af5f-4b11-9534-f3dc593071c7,Art Of The Game,92.1,45.2
+rejected,Q254118,Holocaust Museum LA,3acfcdca-ab4d-4d55-adc5-5651644e037c,Cafe Ruisseau,126.4,43.8
+rejected,Q7135374,Paramount Theatre,08e9fc54-26c2-4b94-9133-94f89c2c095a,Cameo Theatre,141.7,73.3
+rejected,Q7141551,Pasadena Museum of California Art,6dce27b1-2c0b-4c8f-a173-8878ab685881,Southern California Children's Museum,115.1,62.9
+rejected,Q7141555,Pasadena Playhouse,d32e62db-0322-4e21-89b1-7c2820bc75de,Playhouse 7,133.4,69.0
+rejected,Q7161584,Pellissier Building and Wiltern Theatre,cb6d8357-87a6-4b8b-8d22-ec9f17d7442c,Wiltern Theatre,117.6,55.6
+rejected,Q7072566,OHWOW,bd2231ca-fd2c-4199-9d5f-59a7c61672ea,Domino's,110.0,30.8
+rejected,Q7077370,Odd Fellows Temple,a1cf166d-720f-4a8b-8d17-f37d71bd7dec,Playhouse Village Park,75.9,30.0
+rejected,Q7085574,Oldest McDonald's restaurant,d88d033d-5acb-44a3-85d9-109aa3182cab,Mimi's Donuts,82.7,40.0
+rejected,Q7102584,Original Spanish Kitchen,fcdd976a-0648-4ef7-a80a-03336cf762db,Michael's Pizza,143.1,45.2
+rejected,Q564589,Los Angeles Convention Center,e64ecdcf-7b80-472c-a4b8-2d5d40a25d97,AVANT South Park,144.9,31.1
+rejected,Q595439,Santa Monica Pier,852df9e4-efad-43b7-9112-c79ae442b89c,Santa Monica,145.0,82.8
+rejected,Q731126,J. Paul Getty Museum,090e0c58-658e-4287-9e0d-bdc1dabddbe0,Restaurant at the Getty Center,54.9,36.7
+rejected,Q44857382,El Rey Theatre,139cba70-985c-4120-93c1-48e8e295c2bb,Tea Barrel,87.8,50.0
+rejected,Q44857399,Garfield Theater,65580f83-6150-4053-b0ef-1c729e4fc25d,Ding Tea Alhambra,17.0,42.4
+rejected,Q44857419,Superba Theatre,a8380b23-318e-4161-927e-e13cbd8d1a85,The Habit Burger Grill,90.0,51.9
+rejected,Q44857299,Alhambra Place,84961371-1071-471a-86e3-44664117d012,Black Angus Steakhouse,49.8,33.3
+rejected,Q44857313,Alhambra Twin Cinemas,7d197689-d71a-451e-8dbc-30e37d9c51bb,Xiang La Hui,97.5,36.4
+rejected,Q44857330,Capri Theatre,a794e509-325a-451f-8671-cdeec973082e,Charlie's Trio Cafe,82.8,51.9
+rejected,Q44839354,Roadium Drive-In,9e05c706-9f4b-4960-b394-667a861f8b33,Rico Brothers Inc,100.1,48.5
+rejected,Q44857891,AMC Santa Anita 16,2c6a3dde-5d7c-4f40-b36a-e787628a99f5,California Pizza Kitchen,139.1,41.2
+rejected,Q44857909,Arcadia Theatre,e7745f0e-ca83-4be1-8e5d-ca8f2a556ac1,White Springs Cafe,64.9,42.9
+rejected,Q44857925,Cinemaland,24163cc3-5574-4b29-9202-10839eff9cc7,Mélange,147.3,47.1
+rejected,Q44857365,Edwards Atlantic Palace 10,dab042f3-eae2-4b75-ade5-44ba340d3509,Meow Rice Noodle,134.3,28.6
+rejected,Q44857944,GCC Santa Anita 4,bb400d6d-57f2-487c-a1f7-36329eb20d29,Ramen Nagi,95.3,44.4
+rejected,Q44858661,Towne Theater,68871af8-4406-4ba7-a1e1-a79663e39f21,Cold Stone Creamery,100.5,56.2
+rejected,Q44858676,Alpha Theatre,0212211b-bc9b-46ac-b4f3-7e334707f139,La Perla Tapatia,65.4,48.3
+rejected,Q44858694,Bell Theatre,e08a06d0-28d6-4373-91c4-756ca23f989a,Los Reyes Bakery,132.5,42.9
+rejected,Q44858712,Liberty 3 Cinemas,88620a53-a61f-4607-b131-6b62aebb957c,Olympic Donuts,98.3,32.3
+rejected,Q44858753,Holiday Theatre,a5193d3d-7403-4a4a-b95c-b12d43e416dc,The Lakewood Hop,57.5,37.0
+rejected,Q44859296,Ahrya Fine Arts Cinema,1c5335eb-9e65-4cdd-a768-5c40aa76aecf,Fine Arts Theatre,7.8,51.3
+rejected,Q44859312,Beverly Theater,176fcd43-416d-4535-9508-12afe092275f,North Beverly Park,129.5,72.7
+rejected,Q44859328,Music Hall Theatre,45983730-f65f-4f58-a988-f9feed9af0ca,Lumiere Music Hall,18.3,55.6
+rejected,Q44859361,Solari Theatre,e408dd35-708f-4698-bb43-82c9858b22ae,Portia Park - Realtor,34.2,48.5
+rejected,Q750733,Grauman's Egyptian Theatre,244c7792-ad45-4c85-9acd-0683806343ef,Grauman's Egyptian,27.8,81.8
+rejected,Q44858739,Circle Theatre,57005566-bd41-419c-b21f-e929fb784eb7,French Quarter Creole Bar & Grill,145.6,46.2
+rejected,Q1134646,"Museum of Contemporary Art, Los Angeles",77c945d0-c01c-4008-b7bc-f6aa657848be,Museo De arte Contemporaneo El broad Los Angeles,140.9,74.4
+rejected,Q981112,Los Angeles Music Center,6a6aacbc-78cd-4d4d-adf3-4ed241b535d6,Center Theatre Group,42.4,40.9
+rejected,Q1010349,Gibson Amphitheatre,bf9f462e-a082-4eeb-8bd9-84a30fda7730,Magic Neep,31.3,34.5
+rejected,Q7395868,Saban Theatre,c6786804-01dd-4252-bd90-d414e515294b,AC Talent Agency,81.2,48.3
+rejected,Q7403734,Salazar Park,0349ae1e-9274-407a-82a9-38f1d488b613,Ruben Salazar Park,55.2,80.0
+rejected,Q7419800,"Institute of Contemporary Art, Los Angeles",45e36acf-8588-4d7e-af4b-092553a58999,Mano Po At Smorgasburg [los Angeles],119.4,50.7
+rejected,Q7419811,Santa Monica State Beach,7a388c31-4d53-4e0d-9177-74c4a2f4eaf6,More Santa Monica Beach Stairs,111.1,81.5
+rejected,Q7437952,Scottish Rite Cathedral,38fcf3be-7221-4f40-aad2-51a443ad0c19,Jing Ru Zhou,86.1,22.9
+rejected,Q7438884,Scream,f4842649-5867-4dca-8e7e-43af11490f63,Sincerely Yours,142.7,38.1
+rejected,Q7276303,REDCAT,2b77bd7b-807b-497e-a681-c7d0f949a5e9,The Broad,78.7,36.4
+rejected,Q7276845,RIVERA & RIVERA,551a02e4-62dd-4c1b-b27b-41c5ea64593c,The King Cigar Lounge,44.4,34.8
+rejected,Q7284581,Rainbow Bar and Grill,eef9c4c8-e619-4dbe-a697-9fd559df66e4,Rainbow Bar & Grill,6.8,84.6
+rejected,Q7286133,Raji's,29f40f5a-a10e-4d77-963f-623c0964d90a,Frolic Room,130.7,35.3
+rejected,Q7291096,Rancho Los Feliz,f574241c-a6be-4146-a653-7e835822b70f,Long Beach,76.7,38.5
+rejected,Q7369028,Roslin Art Gallery,232c32aa-259d-463d-81d1-4d336f704d31,Porto's Bakery and Cafe,47.2,55.6
+rejected,Q5142607,Cole's Pacific Electric Buffet,0d37e3e8-6025-4cfc-8ba4-edca150cacca,Machine Inspired Art Gallery,104.0,37.9
+rejected,Q5152421,Commerce Casino,5c7d4530-a7da-4e4b-8bb1-d96e3bf97fea,Commerce Casino River Bar,24.2,83.3
+rejected,Q7628208,Studio One,d44acd31-3f21-408e-bbc0-695eafc37fd2,Magnum Thursdays,14.3,38.5
+rejected,Q5046923,Carson Community Center,628a0d66-e282-4bb3-8a2c-f471d942b23d,Carson Event Center,23.2,76.2
+rejected,Q5087240,Chasen's,0c1440f6-6dd3-4534-8a97-cf2e4c12900e,Art Angels,52.5,33.3
+rejected,Q5088503,Chavez Ravine Arboretum,c0903df8-4deb-4594-94bf-4ec28ab5ca41,"Elysian Park, Los Angeles, California",30.8,31.0
+rejected,Q5098173,Children's Museum of Los Angeles,22349e46-8d9e-468a-b2ec-def91e81b8df,The Garden Of Eden Los Angeles,81.3,65.5
+rejected,Q5263937,Desert Garden Conservatory,9cd1e306-125e-4ca3-bbb3-970b9a788172,Conservatorio del Jardín del Desierto,0.0,73.0
+rejected,Q7537148,SkyBar,55b5778e-ce5e-4c22-9e41-83b709b40f12,Backbeat,67.1,42.9
+rejected,Q7550931,Social and Public Art Resource Center,62e94900-1969-4dbd-8f35-15e2d654be9b,Great Wall of Los Angeles,36.2,41.9
+rejected,Q7572696,Spaceland,a235a760-9ebb-4534-941d-1cc70db127fc,The Satellite,3.7,44.4
+rejected,Q1147168,La Brea Tar Pits,950ee952-c3cc-44fc-a7d7-30f599e0185c,La Brea Tar Pits And Museum,122.0,74.4
+rejected,Q1250287,Dorothy Chandler Pavilion,d217c18d-378d-42f5-978c-8152fa289aa4,Pavilion Caterers,32.9,66.7
+rejected,Q1303805,Venice Beach,ad5938e8-a45c-4a88-906d-4fb5aac64f11,Venice Skatepark,72.0,64.3
+rejected,Q1337576,Universal Studios Hollywood,97248c53-04ca-480f-b432-5d49ff70a772,Universal Studio City Imax Theater,146.1,59.0
+rejected,Q1340614,Griffith Park,24130805-e396-4cb4-995c-fa05227abed3,Mt. Taco,60.0,30.0
+rejected,Q1370924,Los Angeles Zoo,9e504fa9-47f8-4f95-bafd-c42f2e091dff,LA Zoo Lights,43.5,57.1
+rejected,Q1515071,Gersten Pavilion,116ada3a-1b6d-4b32-afb6-43d419607adc,Sullivan Field,106.5,33.3
+rejected,Q5759005,Highland Park Masonic Temple,b24d8a86-13a1-43ed-947d-3b20f48384b9,ETA Highland Park,140.6,57.8
+ambiguous,Q5883025,Hollywood Wax Museum,05394c96-99e8-4db0-b57f-fb512bf8e61a,Hollywood Wax Museum,38.3,100.0
+ambiguous,Q5883025,Hollywood Wax Museum,db0650ff-d573-4412-8e61-8f2b839ce6b6,The Hollywood Museum,110.0,88.9
+rejected,Q5911311,Hotel Café,c15215ef-9646-472c-ae17-912fad930e57,Bliss Art House Cafe,119.5,40.0
+rejected,Q5996519,Il Corral,b2b53864-50f2-4eb2-abcc-f648b73e6321,Pizza Pauls,14.1,40.0
+ambiguous,Q6052568,International Printing Museum,9fd0537d-287c-48e8-89b5-3094d209499e,International Printing Museum,69.5,100.0
+ambiguous,Q6052568,International Printing Museum,ee55a00a-1e14-4cdd-8c2a-9472d0eee7f7,International Printing Museum,8.2,100.0
+rejected,Q6092614,Italian American Museum of Los Angeles,671ef07a-d22a-43d6-baca-4d39a5343dce,Chinese American Museum,130.5,62.3
+rejected,Q6099945,Ivy Substation,b441f408-ac85-4ffa-9f6b-cd84f4c6924b,Brothers Sushi,117.6,35.7
+rejected,Q6311640,Junc Gallery,bbc22f14-1244-46d4-aad8-08a9b21ddba0,CALIFORNIA SUN,116.9,46.2
+rejected,Q7720613,The Bunny Museum,a66df708-e39c-4465-b2eb-8ff8fa1d7f60,Pasadena Museum Of Art,92.8,41.2
+rejected,Q7730804,Downtown Independent,fa520104-617d-4566-bad3-e90bc2200c97,BADMAASH Downtown LA,144.9,45.0
+rejected,Q7766498,Steve Allen Theater,a5a53368-5477-4bfc-badb-a3406866b375,SEA SALT Seafood Fish & Chips,121.7,34.8
+rejected,Q7766549,The Stinking Rose,3b5ecea7-306c-41d7-8bb0-d4625b8ba1fb,The Stinking Rose - Beverly Hills,54.8,65.0
+rejected,Q7835942,Travel Town Museum,411046b3-6c85-46c5-970f-8585f21ec801,Travel Town Railroad,4.0,63.2
+rejected,Q7864026,Q7864026,a73d8077-4356-495e-a137-2703fdfa61e9,Wilson Plaza,132.1,0.0
+rejected,Q7737452,Grammy Museum,c1d0d42e-c26b-460f-b65f-b684fd6fc5e5,GRAMMY Museum L.A. Live,71.0,74.3
+rejected,Q7751095,The Merry Karnowsky Gallery,e166a300-e603-4180-be11-3b7196e3255e,Jan Baum Gallery,16.2,51.3
+rejected,Q17515016,Catalina Bar & Grill,e062f543-8156-457e-a403-03d7836f4b1e,Catalina Jazz Club,32.9,53.3
+rejected,Q18148881,Huysman Gallery,c936c3c6-fe32-4577-8008-81efd65384de,Mash Gallery,112.0,74.1
+rejected,Q18152065,Human Resources Los Angeles,7259968a-d33e-4ac8-9dec-3300425a2704,Bamboo Plaza Los Angeles,134.9,54.9
+rejected,Q18397884,George C. Page Museum,950ee952-c3cc-44fc-a7d7-30f599e0185c,La Brea Tar Pits And Museum,132.6,55.3
+rejected,Q18636210,The Cat & Fiddle,cd3dc348-4599-489c-aa2c-45ca6f680855,The Cat & Fiddle Pub,42.2,83.3
+rejected,Q18706021,Café Montmartre,554f6bdf-7439-4b75-a6ed-519d37f7a184,El Capitan Theatre,105.2,48.5
+rejected,Q18755117,Majestic Theatre,713d0c91-bbf4-4374-9f3f-531428bf74c1,The Orpheum Theatre,59.3,58.1
+rejected,Q19867465,The Park's Finest,3a6c5333-7a34-44bf-976e-01b7e2505e6a,Dinner House M,27.0,44.4
+rejected,Q20639518,Bumiller Building,abb116b2-5a59-4448-a9c2-e433fe88d401,FOLD Gallery,104.7,48.3
+rejected,Q16828750,California Institute of Abnormalarts,3e39ff25-5e45-41d6-994b-8b2ba9b295e3,Varsity Tutors - Los Angeles,107.0,38.7
+rejected,Q16890674,Corky's,087a76ca-d50c-4f76-b842-3fdf8d84882a,Children's Burn Foundation,81.3,24.2
+rejected,Q16892740,The Ivy (Los Angeles),eda66fb4-74e7-48be-a8e4-41a932b2b29c,The Ivy,8.5,33.3
+rejected,Q16899439,Roxbury Memorial Park,d13dac26-df01-4aab-a968-59284d254187,Roxbury Park,140.3,72.7
+ambiguous,Q16901864,Tongva Park,f6170559-4123-41d5-9a76-eafcab269e68,Tongva Park,23.3,100.0
+ambiguous,Q16901864,Tongva Park,4b61c561-41be-465f-8215-7bad1b04c3c5,Tongva Park,15.5,100.0
+rejected,Q16928091,Fox Theatre,22c9e941-7c0e-449d-a22e-2865e370e806,Fox Inglewood Theater,48.8,62.5
+rejected,Q16960028,Velveteria,8d02a685-c459-4185-b2b1-9717601f658e,The Evangeline Swamp Room,77.5,38.7
+rejected,Q16998971,"Lafayette Park, Los Angeles",1710ee51-1913-4cdb-a6f3-a4ffdeacc57e,Lafayette Park,40.7,70.0
+rejected,Q17060022,The Barrelhouse,15087038-5e76-4fe0-a561-3039f3a8f11c,Tamales Naborina,134.0,29.6
+rejected,Q17065460,Papa Cristo's,7d9a54f9-1b49-41bc-be58-19842f869c21,Papa Cristo's Greek Grill And Market,4.0,53.1
+rejected,Q7170179,Pershing Square,886a4fe7-6855-4bff-8b3b-2c4ca9472ff4,Sai Sai,129.0,45.5
+ambiguous,Q7205443,Plummer Park,e45c47be-8275-49c2-b6ac-9d39e4381a0c,Plamer Park,65.7,87.0
+ambiguous,Q7205443,Plummer Park,ace1479d-8aa0-40f0-94ec-b54b55db2d7e,Plummer Park,64.1,100.0
+rejected,Q7244048,Prince Hall Masonic Temple,2fc7a844-15a2-4993-83fc-bbb4fe7eb7c7,"Prince Hall Masonic Temple (Los Angeles, California)",9.7,69.3
+rejected,Q5304318,Dr. Paul Carlson Park,af60fa30-049b-4194-8d32-ee1b30f852b5,Carlson Park,10.7,75.0
+rejected,Q5306327,Dream Center,db3956d7-2f72-4404-87bb-10ffd386eb05,Cafe Gratitude,140.9,38.5
+rejected,Q5332831,Echoplex,22e19b17-a0d7-4a6b-a2f5-a4eadfce879c,The Echo,26.0,66.7
+rejected,Q1400558,"The Huntington Library, Art Museum, and Botanical Gardens",09a06bed-ac7d-4d3d-aa47-09e2befe5c33,Jardín Botánico de Huntington,114.8,57.5
+rejected,Q21016156,San Gabriel Mission Playhouse,68e3f09f-a76c-4da6-ae31-7d1f751f9b0f,Jasmine Creamery - San Gabriel,89.3,56.1
+rejected,Q22025731,Trinity Auditorium,b12dd01f-ed0e-4031-b618-bdec18e88830,J Trani's Ristorante,98.4,47.4
+rejected,Q22078149,Warner Bros. Museum,e3b4bd8b-69e9-4530-bc0b-7dbc59f84381,Harry Potter Museum - W,145.6,56.4
+rejected,Q23016804,Edgemar,3d441d7d-7ebb-42a3-ba83-f3bc334ef553,Edgemar Restaurant + Lounge,28.5,56.0
+rejected,Q23950173,Armory Center for the Arts,d55e7e35-5c6e-4cbb-b27b-6fd08a16f667,Ccc Entertainment Corporation,147.1,47.3
+rejected,Q24439147,Art's Famous Chili Dog Stand,51106bb1-7a0a-4f40-97b3-f6db7c5b8b68,The Breakfast Shack,25.5,32.6
+rejected,Q44836694,El Monte Drive-In,aa168f3b-9f90-45c8-9da4-72f04f68dd6f,Louisiana Fried Chicken,109.6,35.0
+rejected,Q44836940,Twin-Vue Drive-In,3cc84ddf-92d9-4f22-bed4-32f409e14bf9,Belly's Sliders & Wings,149.6,36.8
+rejected,Q44836959,Vermont Drive-In,ea3c3079-f906-4342-9ef7-3e5e5f29c3b6,Trevor's Hideaway,133.4,36.4
+rejected,Q44837498,Los Feliz Drive-In,a4f51c1f-112a-4e66-a9f9-138eae54d443,Ricky's Fish Tacos,4.9,38.9
+rejected,Q44837446,Lakewood Drive-In,5edb2337-958d-402e-9800-f79eff8553bb,"AMID Logistics, LLC - U.S. International Sea freight Shipping Company.",140.7,22.0
+rejected,Q20714632,Lineage Performing Arts Center,2c18c30e-8a56-4853-91d3-77302dde5387,Green Street Tavern,137.4,44.9
+rejected,Q20744163,Sierra Madre Memorial Park,32cdaa84-1f2c-4bb3-802d-3d6d478efd67,Sierra Madre Park,54.7,79.1
+rejected,Q44837531,Victory Drive-In,f76ce3b7-dfdb-4fab-b557-dc0580632cd8,King Grill House,69.3,37.5
+rejected,Q44837549,Olympic Drive-In,2e40b951-ed2d-4000-b34a-65222d10c301,Pizza Olympic,99.4,48.3
+rejected,Q44837569,Pico Drive-In,2cb1b6f8-ab30-461c-9f28-ca0706f5cf33,Jaipur Cuisine of India,96.1,44.4
+rejected,Q44837722,Floral Drive-In,324d8e14-6dd8-4ff6-ae7d-26d091e3d4c8,Sanchez Burrito Co.,145.3,36.4
+rejected,Q44838122,Rosecrans Drive-In,a6c719a1-f7fa-4f28-91d8-6ed19adc8e0e,Coca-Cola Freestyle,82.1,27.0
+rejected,Q44838142,Hastings Drive-In,020b6a60-c5cf-4b2a-9773-7a4a738c5f41,Baskin-Robbins,130.4,45.2
+rejected,Q44838185,Fiesta Four Drive-In,dcdf7d83-fcd2-4e95-b0fc-abeaab970464,Bimbo Bakeries USA,96.2,36.8
+rejected,Q44868025,Seville Theatre,9c39f40b-5f2d-4790-959e-a804525e788f,Pacific Theatres-the Grove,91.1,53.7
+rejected,Q44868045,United Artists Inglewood Theatre,22c9e941-7c0e-449d-a22e-2865e370e806,Fox Inglewood Theater,68.6,64.2
+rejected,Q44868320,UA La Canada 8,67621c2f-2dd4-4139-b5c3-f51d94711751,"Gold Coast Retail, Llc",117.0,40.0
+rejected,Q44869258,Lennox Theater,e1ec68e9-b12a-4da6-92ee-d768c2c9502c,Tacos el ilegal,109.8,34.5
+rejected,Q44869656,Towne Theater,a0d64c80-445f-4722-a9e4-bc3e65a08d8f,Everytable,52.8,43.5
+rejected,Q44869677,Crest Theatre,973d0f9d-613f-471d-ba14-b9e32e9cf621,The Richard Goad Theatre,55.1,60.6
+rejected,Q44870149,Atlantic Theater,86c8854d-f788-4d58-82fb-f7a82288f20a,Paradise Theater,35.9,68.8
+rejected,Q44869061,Lakewood Center 16,8d267892-df39-4ca8-8bd7-b037010e69de,Lakewood Center Pizza Inc,90.4,69.8
+rejected,Q44869075,Lakewood Center South 9,d6f66589-a7b2-4b47-80a5-2d9c5fa9323f,Starbucks,149.8,25.0
+rejected,Q44870168,Front Door Theatre,86c8854d-f788-4d58-82fb-f7a82288f20a,Paradise Theater,55.1,47.1
+rejected,Q44870184,LaShell Theater,fc20b5b9-48a0-4c44-aeac-4dcf34ebcec7,Avilas El Ranchito Mexican Resturant,114.0,43.1
+rejected,Q44870502,Arden Theatre,f6914df0-a59d-4667-9051-ed514bcefca3,Tam's Burgers,140.4,38.5
+rejected,Q44870522,Lynwood Theatre,a81d42a1-af4b-4731-975a-ed25d7511b59,Balam Gastro Taco,58.3,31.2
+rejected,Q44870662,La Mar Theatre,e697ba62-9f1b-462a-8f7f-41985025c455,El Sombrero,136.5,48.0
+rejected,Q44870845,AMC Dine-In Theatres Marina 6,699d0df5-34a7-4a04-843b-f7836a9735e0,Shershah Cuisine Of India,115.3,51.9
+rejected,Q44871136,Maywood Theatre,af6a7172-3090-4aeb-8242-19432ea2cac1,Terraza Tequila Family Restaurant,74.3,43.2
+rejected,Q44871833,Mann Huntington Oaks 6,7c6c2927-a25f-4cd2-9bca-1da98e9e07b7,Round Table Pizza,50.7,25.6
+rejected,Q44871869,Monrovia Cinema 12,5cbc59c5-8dbe-451a-acda-58cf589588e8,LOOK Dine-In Cinemas Monrovia,33.4,63.8
+rejected,Q44870800,Marina Del Rey Theatre,f72d94e9-994c-4cc1-8e64-d8645834828b,Cousin Cheryl's,127.6,32.4
+rejected,Q5393002,Ernest E. Debs Regional Park,d67e1a1b-19fe-4358-b794-4f90c286c7af,Montecito Park Union Church,136.2,48.1
+rejected,Q5421609,Exposition Park Rose Garden,1e42136e-2313-4fae-b6a7-8cfcd7534447,Exposition Park,79.2,71.4
+rejected,Q5436736,Fashion Institute of Design & Merchandising Museum,1d0d9877-2991-4abe-8b55-502ab0dfc0e5,Yojie Japanese Fondue,134.9,34.8
+rejected,Q5437546,Father's Office,efda314a-0fbb-4d3d-88e3-f90350285432,The Brothers Sushi Santa Monica,53.8,47.6
+rejected,Q5445606,Ferus Gallery,77ee0b9c-58a6-4d9d-8287-41902a6f4ae1,Gallery 825,144.1,66.7
+rejected,Q5476617,Regency Bruin Theatre,6f55cd58-7346-4af2-9030-f47b567349a1,Bruin Theater Westwood Los Angeles,41.4,50.9
+rejected,Q44838982,Norwalk Drive-In,188403d4-4935-4708-a9a6-908ed47df987,Mariscos Don Monchis,131.9,27.8
+rejected,Q44839166,Starlite Drive-In,e3dec095-2c1b-4545-b297-5b5c2492b379,Pho 24,149.7,8.7
+rejected,Q49569454,Ted Slavin Field,da904fb2-8658-439d-b525-541a19ef1d5b,Westlake School for Girls,136.1,43.9
+rejected,Q49569484,Tellefson Park,0c6c9310-311b-44ed-875a-0ef311c71e34,MillCross Coffee Bar and Kitchen,122.8,36.8
+rejected,Q49570088,Theresa Lindsay Park,cb9183a4-82ec-4ca2-88f3-cb001b96a730,Clinica Medica el Divino Salvador,78.0,37.7
+rejected,Q49571816,Treder Park,2d11ee8f-60f6-497e-87a6-b97cbbd0070e,Adolph Treder Park,46.5,75.9
+rejected,Q49572079,Trinity Park,205aa797-34e7-4655-b665-7deb4e95fdeb,Flats/trinity Park.,57.0,80.0
+rejected,Q49573909,Valley Park,7392c2eb-03b6-4097-b502-2e113215a6fb,Valley Skate Park,29.9,78.6
+rejected,Q49574108,Van Ness Playground,c5f24082-a949-4ddc-9e9d-380ae4a823e6,Sensational Cafe,109.7,40.0
+rejected,Q44867956,Granada Theatre,22c9e941-7c0e-449d-a22e-2865e370e806,Fox Inglewood Theater,48.8,50.0
+rejected,Q44867973,Imperial Theatre,2cf0d9e1-8eec-493e-bf06-fa671e5a185c,Whitehurst Fish Market,117.3,36.8
+rejected,Q44867992,Inglewood Theater,3d71a89e-544d-4cd9-8465-ce13ab71754d,Memo's Mexican Grill,117.0,32.3
+rejected,Q44868008,Ritz Theater,663a38b3-9814-4a80-9bca-b76c7d98fbf1,The Miracle Theater,28.2,66.7
+rejected,Q5528515,Gay's Lion Farm,842abf19-a951-4cb5-b110-76af20bc5f64,Shakey's Pizza Parlor,51.7,38.9
+rejected,Q5530790,Gen. Charles S. Farnsworth County Park,3945e134-afef-4060-a768-f54607038dff,Los Angeles County Parks Department,87.7,64.8
+rejected,Q5579468,Golden Gate Theater,f6f6053c-2801-4fed-8cbd-c10187fc8dbf,Cemitas Y Antojitos Poblanos Cinco De Mayo,104.0,29.5
+rejected,Q5503499,Friday Morning Club,65f4a5ab-9940-4a85-9c0e-e0c33073e4d4,Casa Nostra Ristorante & Bar,115.5,39.0
+rejected,Q6461820,La Cienega Park,9121295a-452d-4d12-85ed-becd29c3fa98,La Cienega Park & Community Center,43.8,63.8
+rejected,Q6463544,La Luz de Jesus,0e4d4bd8-1918-4f48-9538-ab0eec5c7dcd,La Luz De Jesus Gallery,19.0,78.9
+rejected,Q6489273,Largo,d9f08bcb-e2c4-429b-98d3-2c2c3f38751d,The Roger Room,25.4,40.0
+rejected,Q6551043,Lincoln Theatre,f2ea9d78-dad0-4d5f-8100-06ac68cb6187,Inferno tattoo art gallery,136.9,39.0
+ambiguous,Q20714427,Hollywood Museum,05394c96-99e8-4db0-b57f-fb512bf8e61a,Hollywood Wax Museum,65.4,88.9
+ambiguous,Q20714427,Hollywood Museum,db0650ff-d573-4412-8e61-8f2b839ce6b6,The Hollywood Museum,13.1,100.0
+rejected,Q6796829,Mayan Theater,6d8bf8b4-5d54-4405-b0a8-084fa161ccca,Wok N' Tenders,128.1,46.2
+rejected,Q6731066,Magicopolis,cb5bf0a8-b91c-44e5-bc4b-dc5a562de21b,Illusion Magic Lounge,2.7,40.0
+rejected,Q6737691,Majestic Crest Theatre,dc7a4925-da62-40b9-aeab-46f339b11055,Crest Westwood,29.7,50.0
+rejected,Q6800872,Uytengsu Aquatics Center,32a15174-c58c-435b-a4ea-0762e75951d6,Baja Fresh,134.6,35.3
+rejected,Q44866289,Galaxy Glendale Marketplace,392de965-4bd3-4b47-9a0d-d5a0e089f408,It's Boba Time- Glendale Marketplace,90.7,71.0
+rejected,Q44866304,Glendale Cinemas,01eb91d7-1ba1-4839-8226-21f13200c80f,Glendale Center Cinema,97.9,78.9
+rejected,Q44866322,Glendale Theatre,6e59673a-f82b-4c7b-bf5f-fe7ac54b966d,Sasabune Glendale,138.6,66.7
+rejected,Q44866426,Cosmo Theatre,bf8563da-39a8-435d-bcca-34ec674e8fa6,Acai Village,59.1,32.0
+rejected,Q44866445,Vogue Theater,def7651a-77aa-445d-b024-2c50817a3d54,GELATI gelato,76.0,46.2
+rejected,Q44866463,Gateway Theatre,5ceb7542-e188-470b-837b-78089c6c29cb,Gold Star Hamburger,132.3,41.2
+rejected,Q44866479,Villa Glen Theatre,01eb91d7-1ba1-4839-8226-21f13200c80f,Glendale Center Cinema,147.8,45.0
+rejected,Q44866359,Palace Grand Theatre,15a70717-0c1c-439a-961c-ff3fc69d2661,Antaeus Theatre Company,117.6,60.5
+rejected,Q44866375,Regency 1 Theatre,a9a71e85-d6d5-4126-9b09-2961703a31f5,The Coffee Bean & Tea Leaf,40.2,43.2
+rejected,Q44866392,Star's Palace,380e0d93-581e-49b7-9179-e13dbf7f1dec,Alegro Restaurant,14.6,42.1
+rejected,Q44866407,Temple Theatre,37474331-40e2-45f8-a1b7-eef6d5f6f368,Seabutter Sushi - Glendale,22.5,42.1
+rejected,Q44867406,Hermosa Beach 6 Theatres,1e8edb5e-4d6b-44f6-a132-0d40b8766473,Holy Cow Bbq - Redondo Beach,58.5,48.0
+rejected,Q44867665,California Theatre,b9d5ab06-4e21-4a0e-9380-d2f2ebec1d75,California Cafe,91.5,71.4
+rejected,Q6682068,Los Angeles County Arboretum and Botanic Garden,573c955c-6906-42f2-8f9a-e8d881301ff1,Baldwin Lake,31.2,23.7
+rejected,Q6682231,Los Angeles LGBT Center,91a49b40-309a-4fc8-a17d-2849cf9b4706,"The Little Italy - Los Angeles, CA",130.6,68.0
+rejected,Q6682258,Los Angeles Live Steamers Railroad Museum,04418624-bbb1-46d1-9e40-3ca0de73be42,Walt Disney's Carolwood Barn,46.9,34.8
+rejected,Q6682346,Los Angeles State Historic Park,6054f8d1-3d1a-4b00-b84e-19e28828ec71,Highland Park Brewery,78.1,42.3
+rejected,Q6682355,Los Angeles Theatre,a14d1931-0ae7-4adc-9749-8545be95327b,Palace Theatre,63.7,66.7
+rejected,Q6714265,MAMA,70f76e1b-09ff-4879-a346-ae93adc061c0,Paddy's Pub,122.9,13.3
+rejected,Q44867072,AMC Hawthorne Plaza 6,d52e5781-1348-497b-80b0-4599074dd9d3,Channy Restaurante Guatemalteco,57.7,38.5
+rejected,Q44867085,Plaza Theater,988332b3-5864-4ced-a666-1ad3d819a652,Tata's Cafe,144.9,42.1
+rejected,Q44876275,State Theatre,d2dba6bf-0e9c-4891-87e5-f5eb445469be,Seven Tea,49.6,54.5
+rejected,Q44876291,Strand Theatre,cfa52ae5-6e99-4e31-b540-6376e58ad03a,Paseo Restaurant Venture Llc,77.4,47.6
+rejected,Q44876310,Tower Theatre,29f28f2e-cf3b-4661-82c4-b83e63fadb59,Sato Ramen House,95.1,48.3
+rejected,Q44876114,Washington Theatre,d29453f8-1132-4d4d-9d96-3861168be1e3,Wingstop,142.3,46.2
+rejected,Q44876132,Mann's Hastings Ranch 3,3b76f696-c381-4646-b4b0-441e1272bc87,Stone and Gomez,113.2,31.6
+rejected,Q44876147,Pacific's Hastings 8,c9403e19-bd24-43f8-b2e7-e46dd1ca1b05,Lucky Strike Pasadena,91.9,34.1
+rejected,Q44876163,UA Marketplace 6,a7aa5b75-f23b-4ccf-9b85-f4b6e0a742fe,Alma de la Rosa,133.8,45.2
+rejected,Q44876181,Colorado Theater,f509ac99-475a-49d9-9ed6-d86812402aca,The Colorado Bar,97.6,66.7
+rejected,Q44876198,Esquire Theater,a4c882bd-f82d-4140-9e6a-ebbe571670ce,Kabuki Japanese Restaurant,42.8,33.3
+rejected,Q44876215,Uptown Theatre,f2e5dee5-19bb-4a96-a88a-b96d64a8963f,Rosarito,114.8,36.4
+rejected,Q44876253,Pasadena Photoplay Theatre,fcdde08e-e3bd-4ba7-b7a1-b64a36cbb2be,SushiStop Pasadena,50.8,59.1
+rejected,Q44872287,Montrose Theatre,1b6b31a4-3fd6-423a-bd29-fc917123822a,Pepes Montrose,127.9,73.3
+rejected,Q44873198,Norwalk 8,17e2aabf-fc51-45b9-ba04-d0bb8e45ce06,Yogurtland Norwalk,109.6,51.9
+rejected,Q44873216,Norwalk Theatre,8d2261fa-aac5-47ab-8e58-9df124170f3a,Burly Custom Screen Printing,140.5,32.6
+rejected,Q44867683,Huntington Theatre,5ced9c7f-ac25-47ab-b591-777bb8005961,Yogurtland Huntington Park,73.6,59.1
+rejected,Q44876330,United Artists Theatre,b481fd76-4cc9-49d1-be26-6761abda2aac,Fresh Brothers - Kitchen United Pasadena,120.9,56.7
+rejected,Q44876094,Park Theatre,aaf9ffc8-a63f-4023-8020-4224e55f3eb4,La Pintoresca Park,90.8,53.3
+rejected,Q44867918,Academy Theater,4476d9dd-f351-4e82-97e6-f9ae6f18e574,Fatburger,125.2,33.3
+rejected,Q44867938,Arcade Theatre,ca3f429e-e5f5-4b01-931e-416cc046b686,Queen Street Plaza,114.7,43.8
+rejected,Q44871889,Monrovia Theatre,9f11a7cd-33cc-4b92-92f8-80e0f4ec5683,Monrovia Parks & Recreation,140.8,58.5
+rejected,Q44867737,Park Theatres,eafa6d15-e3d7-461c-ad25-8f0cc6dd6f49,Metropolitan Park Twin 2 Theatre,21.5,53.3
+rejected,Q44867758,Warner Huntington Park,eaf399a0-49cf-42ee-bbc8-7dad0a9ff4a2,Huntington Park CA Locksmith Store Huntington Park,12.0,52.8
+rejected,Q44867901,5th Avenue Theatre,d865a313-5eb2-48c2-b8b5-d89a33fe57bd,L.A. Lounge Premium Cigar,28.2,33.3
+rejected,Q44871980,Garmar Theater,9b21761e-a264-44cf-979f-92d8084c6671,La Garrafa MX,129.6,44.4
+rejected,Q44872001,Vogue Theatre,a68b204f-526f-459e-b8c8-ee2d23678734,Angry Horse Brewing,132.9,37.5
+rejected,Q44872020,AMC Atlantic Times Square 14,2f06f8f6-f922-4b30-bda6-f1b2cea26912,Atlantic Seafood & Dim Sum Restaurant,60.2,50.0
+rejected,Q44872036,Monterey Theatre,2dccce26-e02c-48ae-a182-1b33ae46406c,Pho Ever - Alhambra,104.5,30.3
+rejected,Q44867699,Lyric Theatre,a99e2641-674e-4a50-a748-45f8792823f9,Malibu Travel,110.9,46.2
+rejected,Q44867717,Park Theatre,eafa6d15-e3d7-461c-ad25-8f0cc6dd6f49,Metropolitan Park Twin 2 Theatre,21.5,54.5
+rejected,Q44882726,NuWilshire Theatre,18638b84-e027-484b-aba9-d5cc8636ab45,The Coffee Bean & Tea Leaf,62.4,36.8
+rejected,Q44882739,Pussycat Theatre,db681f46-facd-4285-b97f-7a759376c82b,The Sunset Terrace,88.2,53.3
+rejected,Q44882772,Starland Theatre,f52d29fd-9e72-4d31-bab5-7856776b5a03,Ocean Park-Hacola,89.0,42.4
+rejected,Q44882787,Vixen Theater,85248adf-b0a6-4b9d-85a2-90dc70d3b9cd,Chaya Venice,146.3,48.0
+rejected,Q44882694,La Petite Theatre,b5c4cb98-1030-4df3-88de-9d3f785484fa,Santa Monica Beach Tower 26,100.4,36.4
+rejected,Q44883371,Action Theatre,88cefad6-c4e7-4b1c-a613-e0a89cbe7e27,Simple Touch Massage Therapy Studio,78.8,40.8
+rejected,Q44883403,GCC Sherman Oaks 1 & 2,47df4d1e-48e7-4983-a7d1-3b0005c62907,Pacific Theatres - Sherman Oaks 15,75.1,53.8
+rejected,Q44883418,La Reina Theatre,9e376491-b4ba-417c-ac4b-4a1540dca685,La Reina Plaza,34.2,53.3
+rejected,Q44883432,Pacific 4,fb63d576-ac07-41fd-8074-d9043c7a75f3,Frida Mexican Cuisine,0.2,33.3
+rejected,Q44883450,Pacific Sherman Oaks 5,47df4d1e-48e7-4983-a7d1-3b0005c62907,Pacific Theatres - Sherman Oaks 15,41.6,81.5
+rejected,Q44882803,Wonderland Theatre,df907737-188c-456b-8efa-a67ea87d6daa,Ocean Park Beach,68.3,41.2
+rejected,Q44882819,Yale Theater,fdca8dfb-ec35-49c3-8f21-5a7ade61f808,Hakata Sushi,32.8,33.3
+rejected,Q44883461,Sherman Theatre,76252247-baea-4fbd-8181-0a120ac7718d,Galaxy Theatres Llc,45.8,52.9
+rejected,Q44883764,Allen Theater,46ffb4f5-93f0-4924-9125-9f4dad2b70ca,Sand One Art Gallery South Gate,142.1,40.9
+rejected,Q44883770,Avon Theatre,1790306c-321a-4cfe-b4c3-ac242138ccec,Meat Bowl,103.3,47.6
+rejected,Q44884936,Mann Old Towne 6,afb719db-a5b5-4075-925c-97ddd6b7bd71,Subway,63.5,9.1
+rejected,Q44885108,Jewel Theatre,85468a2a-e27d-47e6-a855-e5cf3b3b88de,Little Landers Park,55.8,37.5
+rejected,Q44885470,AMC Universal CityWalk 19,50b5da0a-3208-498b-a04f-8c62c2a4ea72,Universal Pictures,111.4,55.8
+rejected,Q44883855,Ritz Theatre,dbd1e895-3bd1-4bd2-98a3-e1c6d1e109f8,Space Arts Center,98.3,48.3
+rejected,Q44884346,Fox Studio City Theatre,f749ae50-75c3-46a7-9578-544626071e07,Decor Art Galleries,71.7,38.1
+rejected,Q44884698,Temple City Cinemas,6e93c235-83ff-4fe2-a117-71654f48f777,Baekjeong Temple City,36.2,65.0
+rejected,Q44883782,Regal Edwards South Gate & IMAX,af2ed543-3ffe-4b34-b4c8-189da6fe5b27,Egg South Gate,118.1,55.8
+rejected,Q44884716,Temple Theatre,8854819b-f91f-4fe0-8bab-3b2901ab95b1,Meet Tea,142.3,54.5
+rejected,Q44884837,Alpine Theatre,bdf7b0fc-093f-4cac-9d30-fad07f9024c8,Alpine Village Dental,24.9,57.1
+rejected,Q44885973,Capri Theatre,ddd42bd3-0df1-4368-bc04-77b411fdb5dd,Los Tres Hermanos,19.1,40.0
+rejected,Q44885988,Fox Van Nuys Theatre,32711bd3-a2ab-4ff9-a5bc-be064d0f1d5b,Tacos Al Vapor,21.2,35.3
+rejected,Q44886025,Fox Venice Theater,0afb55a8-8940-451d-8c1c-bdda5d7ac84d,Cerveteca Venice,133.2,58.8
+rejected,Q44886040,Neptune Theatre,f39ab93c-43e1-4944-9ad4-029cba1cc6a7,The Del Monte Speakeasy,146.6,41.2
+rejected,Q44886056,Venice Theatre,ad5938e8-a45c-4a88-906d-4fb5aac64f11,Venice Skatepark,132.0,73.3
+rejected,Q44886805,AMC Dine-In Sunset 5,c68fd58a-b8b5-4f72-9f80-3eeab69c1aaf,Amc Sunset 5,85.1,75.0
+rejected,Q44886824,Carmel Theatre,f8a01765-39ba-4b5c-b067-25d504f8a9f2,Marco's Trattoria,53.7,45.2
+rejected,Q44886871,D'Anton Cinemateque,843f96bc-39ea-4ca4-a704-d05b39020ddf,Flavor of India,27.0,41.2
+rejected,Q44886885,DGA Theater Complex,fe6d756e-b268-41b9-a3a9-a4239fc7631a,DGA Theatre,72.6,66.7
+rejected,Q44886896,Granada Theatre,d599556c-dbc4-48d3-a13c-5d60612408ed,The Roxy Theatre,39.3,66.7
+rejected,Q44886909,Marquis Theatre,a437e655-f625-4b06-98b9-ef7614c507e5,Trattoria Amici,81.5,46.7
+rejected,Q44886928,Quickie Theatre,c41d083b-b468-4998-b174-c4c633cf788b,Coffee Juice Smoothie BAR,102.4,44.4
+rejected,Q44886942,Studs at the Pussycat Theatre,13c32398-c97a-477a-b773-4bf30d2ef630,New York Delicatessen,85.4,36.0
+rejected,Q44887058,Berry Grand Theatre,3e97b653-a877-4c1e-8b4f-2c8ef7760982,La Monarca Bakery & Cafe,117.6,50.0
+rejected,Q44887075,Family Theater,45e24743-07b9-47c8-a110-e7ac7b7521d9,Little Monster Ice Cream,22.2,47.4
+rejected,Q44887106,Optic Theatre,119a9d25-b381-4fac-832e-31b1d9d4671a,All Star Boxing,50.1,42.9
+rejected,Q44887122,Roxy Theatre,89be8fda-c0aa-4788-84a6-2d7e62fc63ee,Next Level Theatre,143.4,60.0
+rejected,Q44887139,Strand Theatre,0e3166c9-9f22-474d-8824-1792352d85ac,Turnbull's Tavern,91.3,45.2
+rejected,Q44887151,Whittier Theatre,3c78fcb2-f5be-40e5-a908-f2c4db8ac13c,Pizza Hut,132.0,32.0
+rejected,Q49574304,Venice Recreation Center,4828bf4d-1845-49fa-be96-f0f9d90422e3,Venice Beach Fashion Week,116.4,53.1
+rejected,Q49574346,Verdugo Recreation Center,d68bde94-290a-4cd1-8573-cfa5d84e6611,Glassell Park Recreation Center,65.2,60.7
+rejected,Q49574344,Verdugo Park,dc36e1ef-70df-47ee-a043-a2cf5dc64d16,The Towne at Glendale Apartment Homes,145.6,31.1
+rejected,Q49574404,Vernon Hemingway Memorial Park,b2c8a1b9-82a3-4e2b-85f0-fe4f377e17d4,Hemingway Park,105.6,63.6
+rejected,Q49574743,Veterans Park,529b79e6-3489-46aa-a8cc-b69320490428,Veterans’ Memorial Park,113.9,74.3
+rejected,Q49575455,Village Park,a0021acb-2285-4ab6-843e-59c000f15aa7,Village Skate Park,47.7,80.0
+rejected,Q49575452,Village Park,f612cd16-8777-4498-a23e-14564fccb325,Oasis el chuekoo,138.3,28.6
+rejected,Q49576017,Wabash Playground,fd7c419b-f964-4c67-a250-065fc270a874,Wabash Recreation Center,77.7,48.8
+rejected,Q2620204,Pacific Park,7bab486d-1b8d-48c7-9eae-c8b4063e2640,Seqoia National Park,48.6,43.8
+rejected,Q2870804,Pan-Pacific Auditorium,ceafecb1-b5f3-4fc0-966f-e394be033b52,Madela Pizza Pasta,135.4,40.0
+rejected,Q2900388,Beverly Hills Playhouse,8d788ba4-7dbd-48b6-89de-653b0e0e36ff,Yummy's,61.6,26.7
+rejected,Q2940590,Carthay Circle Theatre,16e673dc-e539-4161-bc75-02cbbcba8946,Carthay Circle Park,98.6,82.9
+rejected,Q2972810,Cinerama Dome,a0c07422-81eb-4a0f-8014-8556ae3da53b,Caffe Primo,30.6,41.7
+rejected,Q3080246,MacArthur Park,dd2feb13-f3d5-4dc8-b900-1f29a86e80f6,MacArthur Park Lake,47.5,84.8
+rejected,Q3241306,Lincoln Park,6d75465a-bbff-4372-90d2-162b277d39f5,Yosemery National Park,109.3,47.1
+rejected,Q3258958,London Fog,043bf337-8adb-4b7d-8892-44067b64ede1,London Fog ('60s Nightclub),0.0,58.8
+rejected,Q15265183,Palisades Park,ea475afa-1884-457b-93fe-7bb16d5aa315,Ocean Ave Park,131.4,50.0
+rejected,Q15961580,Martial Arts History Museum,30bb8aec-f598-4b58-99db-05dc2d511aa5,Random Acts of Breadness,116.2,39.2
+rejected,Q15964421,Los Angeles Institute of Contemporary Art,fed75be5-a848-4e1f-8a8e-689770334054,Craft Los Angeles,96.5,55.2
+rejected,Q6850966,Mildred E. Mathias Botanical Garden,a1ef5408-d29a-4a08-8d7b-367ed94dd915,UCLA Mathias Botanical Garden,131.7,82.5
+rejected,Q6887470,Mocambo,1538e7b8-5380-4de4-a660-703c69719d39,Trocadero,58.7,50.0
+rejected,Q7048038,Q7048038,f3d063e1-d122-471c-a773-f2f06e1fcbc2,Wp24,110.8,16.7
+rejected,Q49577765,Watts Towers of Simon Rodia State Historic Park,dd4a50c1-92b7-4bd9-b277-b4dcebfa6e6f,Watts Towers Arts Center,56.3,53.5
+rejected,Q49578052,Weddington Park,ffec59e1-e91d-4095-a1c9-29e962bea6ce,South Weddington Park,48.9,83.3
+rejected,Q49579150,West Wilshire Recreation Center,651ee572-8f3c-4f2a-b777-351e2b306c39,West Wilshire Playground,104.8,61.8
+rejected,Q49579214,Westchester Playground,b0868528-b07e-48ea-8590-c9ab13819225,Westchester Park,33.7,78.9
+rejected,Q49579599,Westwood Park,528f83ea-005b-4446-9821-838b428c6440,Westwoof Dog Park,102.8,80.0
+rejected,Q49580260,Whitnall Highway Park,f3adbd02-732d-4016-a9ab-2ba461c51fd6,Whitnall Park,108.3,76.5
+rejected,Q49580930,William A Smith Park,d6b23efa-53e0-4746-8e36-6fcf6281c483,Smith Park,100.8,66.7
+rejected,Q49581090,William Mulholland Memorial,7f694b47-156b-449c-b2d9-0c1ae372e5c8,Viking Pizza & Kabob,147.0,26.7
+rejected,Q49581104,William Penn Park,13c468fc-e391-4841-9c0a-d09ebe72d631,Penn Park,90.7,69.2
+rejected,Q4653612,ARCO Center for Visual Art,bdfa0dcc-fe86-44d4-9bbb-e96d910ac398,North Plaza Restaurant Partners Llc,16.7,45.9
+rejected,Q4672976,Ace Gallery,c5e70cc3-4602-4aa2-883a-265e85500275,Ace Gallery Los Angeles,18.1,64.7
+rejected,Q4672984,Ace Hotel Los Angeles,3111a9d8-832c-42c2-a78b-dc943439d602,Rehab Furniture Los Angeles,145.5,58.3
+rejected,Q4763041,Angels Attic,43082fc6-08b6-427d-bfe0-75b592c6ddac,Ninjin,134.4,22.2
+rejected,Q4817695,Black Cat Tavern,4bc95ff9-57af-456f-b0f8-1a3aeebf5578,The Black Cat,38.3,72.0
+rejected,Q44859398,WGA Theatre,3f60a968-262b-429a-9587-1204eb578126,Writers Guild Theater,8.7,50.0
+rejected,Q44859932,AMC Burbank 14,165c0a31-953e-49cf-af90-a6aa16b123e8,Tortilla Beach Burbank,109.8,55.6
+rejected,Q44859950,AMC Burbank 16,391a4452-e270-4cb2-864d-6bb0956102b8,Burbank Theaters,62.9,46.7
+rejected,Q44859963,AMC Burbank Town Center 6,d487ca1c-552c-4b8f-9e17-c5bc38e80e17,Amc Burbank Tc 6,36.6,73.2
+rejected,Q44859981,AMC Burbank Town Center 8,7bf90a0b-5fd7-46c9-99ce-b132d08b3081,Teaspoon Burbank,58.1,58.5
+rejected,Q44859996,Burbank Theatre,eb3cee3c-911e-4aa9-a548-0029a431bbd8,The Carving Board Burbank,138.5,55.6
+rejected,Q44860016,California Theater,88873b2e-5c13-4dc5-9b72-16fdd8e140f2,Romancing the Bean Cafe,107.5,44.4
+rejected,Q44860031,Cornell Theatre,823f7803-0518-4061-9d4c-0f7b056554a5,Masterpiece Theater,88.0,52.9
+rejected,Q44860047,Loma Theatre,4ad78a36-1bd9-4672-b9d4-5ce334b0b1ed,Great American Grill B,94.9,41.2
+rejected,Q44860065,Magnolia Theatre,b0002322-a3d1-4736-a42f-10fefd2ec9ef,Tequilas Burbank,88.7,37.5
+rejected,Q44860078,Major Theatre,391a4452-e270-4cb2-864d-6bb0956102b8,Burbank Theaters,119.7,55.2
+rejected,Q44860787,Cinemark Carson & XD,4e9fde42-f7b1-4a53-9487-618da9949b24,Charleys Cheesesteaks,127.6,46.2
+rejected,Q44860919,AMC Alondra 6,99285c70-c85b-4e05-a534-22990e9c9c07,Frantone's Pizza and Spaghetti Villa,127.5,28.6
+rejected,Q4827110,Autry Museum of the American West,30574d1a-5c78-4891-9991-0d7d43c7224e,Eat-See-Hear at The Autry,118.9,51.7
+rejected,Q4886110,Ben Maltz Gallery,fe9ec5bf-5466-4a2d-a43f-613fd18856b3,Helen and Abraham Bolsky Gallery,80.4,49.0
+rejected,Q4899925,Beyond Baroque Literary Arts Center,cf392890-7c40-4a02-94f9-0059e28ec3a7,Pacific Resident Theatre,106.2,44.1
+rejected,Q4903744,Bicycle Casino,3bbe9255-e581-46a2-9d4f-d71d64e9ff40,Premier Fiesta Mexicana,119.3,32.4
+rejected,Q4940176,Bolton Hall,19ecaffc-2063-493c-8300-2ce14a50ab2a,Bolton Hall Museum,34.7,75.9
+rejected,Q44859381,Warner Beverly Hills Theatre,53b053c7-93a0-4f05-9521-fdc05dd6abc6,Nusr-et Steakhouse Beverly Hills,134.9,60.0
+rejected,Q44862748,Meralta Theatre,ff470021-085d-4277-baab-1e783e313f4b,Arth Bar & Kitchen,58.1,43.5
+rejected,Q44862766,Culver Plaza Theatres,2ee4502c-227c-4d91-848f-999c81c5b414,Kirk Douglas Theatre,114.8,53.7
+rejected,Q44862783,Palms Theatre,f5ce02d3-ac50-4f6c-81c7-e83f64c8d603,Wonder Cha Tea Place,96.3,42.4
+rejected,Q44863324,Avenue Theatre,5e2b39b7-a41d-46d7-bed1-1db033192be2,Avenue Pizzeria,30.7,62.1
+rejected,Q44863360,Downey Cinema 10,e19a40c1-623c-4785-a714-415d0c81bba3,Look Dine-in Cinemas Downey,60.6,60.5
+rejected,Q44861906,Fox Compton Theatre,d94cf89d-2d3e-4a22-abfc-e42fd88cd710,California Steak & Fries,65.5,43.9
+rejected,Q44861923,Symphony Theatre,f392ba75-c3a2-4b1d-96d5-bb47ddc757fd,Egg Roll King,108.5,20.7
+rejected,Q44861938,Tower Theatre,ad263534-2293-4cc5-94df-b0ffa5681b13,Compton Fish Market,35.1,37.5
+rejected,Q44863378,El Teatro,512f9d45-0f4f-4133-9516-91f6c300e8cc,OLA Restobar Downey,148.9,42.9
+rejected,Q44863395,Meralta Theatre,0ed7dff5-608d-4fda-81dd-5fde489b2845,Hall Of Fame Market & Deli,65.1,41.0
+rejected,Q44863413,Showcase Cinema I & II,3123d214-05c7-4289-a874-974aac00a8f5,PitMasters Society BBQ & Grill,113.2,38.1
+rejected,Q44863568,Alameda Theatre,28a4636d-78b4-44ff-b10d-c17acb0ae1e7,Birrieria hernandez,64.8,41.2
+rejected,Q44863585,Boulevard Theater,53719bca-775a-459c-87f6-f08f0385b36a,Boulevard Cafe,20.3,69.2
+rejected,Q44863607,Center Theatre,ff4f09a0-93fe-4ff5-98ba-4b168937f810,Acapulco Mexicatessen Inc.,97.8,35.9
+rejected,Q44863678,Ivy Theater,2c45469b-ef72-4eff-b3dd-3f26488b861a,El 7 Mares,68.2,38.1
+rejected,Q44863698,Jewel Theater,f200a75b-691a-4908-bbdd-528a61d63300,El Paraiso Bakery,99.5,40.0
+rejected,Q44863715,Royale Theatre,d83da009-b3fb-4dc4-9afb-c28d188ef1f7,Crabby Street,24.6,44.4
+rejected,Q44864161,El Monte Theatre,9dcce2fe-ee16-41ac-8419-982b7ac9a1f8,Mariscos La Palma,15.4,36.4
+rejected,Q44864176,Valley Theatre,607b21a6-ca72-43bc-8d9c-c687e670d85f,Nature Pagoda,58.4,44.4
+rejected,Q44864192,CinemaWest Beach Cities,7e613379-1c7e-4a4e-8e3c-e4bbe5246b50,ArcLight Cinemas - Beach Cities,23.4,76.9
+rejected,Q44863749,Unique Theatre,28820ba9-98f6-4a7b-8a53-096df6496252,La Imperial Tortilleria,117.2,32.4
+rejected,Q44864144,El Monte 8,b56ca8cd-68e1-41c2-80ef-9ee49c5865c1,Flame Broiler,90.4,34.8
+rejected,Q44863635,City Terrace Cinema,6144471c-6e05-4b9a-aef4-14f51a57aa5d,La Terraza Cafe,108.3,48.3
+rejected,Q44866092,Embassy Theatre,d438e5cc-429b-4072-b1ec-5b1d0a496cb2,Hide Away Cafe,95.0,41.7
+rejected,Q44866130,Gardena Theatre,84efec83-e72b-429c-8531-42c39604dfa1,Nutricion Gardena,116.9,62.5
+rejected,Q44866147,Little Fox Theater,1bdc9547-c28b-44b2-8dad-cff15d57ad45,Long John Silver's,129.1,38.9
+rejected,Q44866214,Glen Theatre,6fd2671e-7b2b-4a9d-9ac1-06a717861922,Tea Zakare,45.6,45.5
+rejected,Q44866231,California Theatre,68b3e079-1b4b-4156-8ff3-53629a60bb94,Nocturne Theatre,128.2,64.7
+rejected,Q44866248,Capitol Theatre,15a70717-0c1c-439a-961c-ff3fc69d2661,Antaeus Theatre Company,104.7,57.9
+rejected,Q44866269,Five Star Cinema Glendale,7247aa54-e3ef-4e4f-b2cc-9a68125fd3ee,Poke Bar (Glendale),122.7,52.4
+rejected,Q14683070,Le Prive,719ea588-79a3-469c-a5f9-2a55a430321c,Purple Wine & Coffee,149.8,46.2
+rejected,Q14683184,Los Angeles Nurses' Club,ae5a3612-f441-493a-87f3-cfc409320101,Planet Restaurant & Pizza,146.7,30.4
+rejected,Q14683528,Nuart Theatre,47a5e85c-88d3-4538-8a60-8f953b37e4ce,Landmark's Nuart Theatre,8.8,70.3
+rejected,Q14683622,Pavilion for Japanese Art,bef378a7-8ff9-4039-b812-4dd02f4bcd2b,The Falafel Factory,75.7,45.0
+rejected,Q15223406,Hazard's Pavilion,545a9a79-86e5-4dc5-be76-0f6d0aa916aa,Dalian's Café,123.4,53.3
+rejected,Q44958564,Atwater Theatre,6b9b5b84-1d7d-45cd-95a2-3d2715117686,Merchant East,144.9,50.0
+rejected,Q44958583,Balboa Theatre,f8099e58-9ce6-49f8-bd6b-679d79aa8ffb,Monarch Market,94.2,28.6
+rejected,Q14683969,Shubert Theatre,468d4d18-f317-4d53-a6ef-eeefd9728f4d,Shubert Theatre (Los Angeles),7.5,71.4
+rejected,Q44958624,Crystal Theatre,266fceac-7f98-4938-83e7-1fcd46514475,Cafe Restaurante Jarenis,131.1,41.0
+rejected,Q44958639,Joy Theatre,26a140d2-8762-4b36-9156-64fb3ec35554,Macha Theatre/film,108.1,55.2
+rejected,Q44958656,Meralta Theatre,26a140d2-8762-4b36-9156-64fb3ec35554,Macha Theatre/film,42.5,66.7
+rejected,Q44958598,Bonito Theatre,077fdf32-029a-4cda-8dcd-33b6039049eb,Cemitas Tepeaca,114.0,41.4
+rejected,Q44958609,Brooklyn Theatre,d12124d6-dc76-4017-aeca-697e65da1b65,Antojitos Carmen,54.5,37.5
+rejected,Q7988991,Westlake Theatre,d803affb-d680-43b6-a539-99834c8ae35e,Westlake Macarthur Park Market,123.0,60.9
+rejected,Q7998090,Wich Stand,5b8ff886-5f9d-42c5-abce-8ccf45b43976,Hilltop Coffee and Kitchen,126.6,42.9
+rejected,Q8003060,Will Rogers State Historic Park,1b1ced63-0cb1-4d01-a50b-f4e65097328a,Street Food Cinema,134.0,32.7
+rejected,Q8030619,Woman's Building,af11a6fc-6704-4412-9462-eb98e7a7a91d,Spring Naud Studios,76.5,45.7
+rejected,Q8071889,Zilkha Neurogenetic Institute,fe32a4a2-7697-46d0-a262-9202477f7e49,Einstein Bros. Bagels,11.6,32.7
+rejected,Q8072655,Zipper Hall,96178a08-4b41-422a-9d99-ade267ae01f6,Zipper Concert Hall,5.0,73.3
+rejected,Q9005444,Huntington Desert Garden,3b928720-7a5a-45ee-800f-9ea59c66abe3,Huntington Garden Café,100.0,78.3
+rejected,Q11237612,Los Angeles Fire Department Museum and Memorial,739cd6f7-fc95-4abf-85e2-0f8380179a2c,Los Angeles Fire Department Historical Society,16.7,71.0
+rejected,Q7919976,Venice Branch,d8dadab9-0dd2-4276-a00a-3310982f62e5,Larry Bell Venice Studio,102.6,48.6
+rejected,Q44958812,Elite Theater,364f0598-f414-4ef6-b6ce-68f6b0dd8632,Casa del Tlacoyo,106.6,34.5
+rejected,Q44958833,Florence Mills Theatre,4dcb2b71-51d8-4f41-ba27-718097f2d1c3,Los raspados locos,31.8,40.0
+rejected,Q44958861,Gayety Theater,f2ea9d78-dad0-4d5f-8100-06ac68cb6187,Inferno tattoo art gallery,79.4,40.0
+rejected,Q44958754,Allena Theatre,0154df8f-0152-4bce-b9e6-3c98ac73b460,Panaderia Hispano Americana,51.7,39.0
+rejected,Q44958769,Barbara Theatre,0154df8f-0152-4bce-b9e6-3c98ac73b460,Panaderia Hispano Americana,21.2,38.1
+rejected,Q44958668,Monterey Theatre,b6824af3-5e01-4776-8f5f-6592bbeec6b2,El Paraiso Bakery #2,95.3,40.0
+rejected,Q44958686,National Theatre,d55d6e1d-d1ae-477c-8d7f-3778ae09a6ef,La Monarca Bakery and Cafe,135.1,37.8
+rejected,Q44958702,Vern Theatre,87a37b21-73a2-43b0-a89f-7370b54354bb,Ramirez Beverage Center,97.9,34.3
+rejected,Q44958884,Rosebud Theatre,dd0e419e-d17f-4ac8-90fc-3f7253bea420,China Chef's Express,82.2,34.3
+rejected,Q44958906,"Star Theater, Central City",97f20603-bba7-44c3-88ef-6caa45f663b4,Mother's Nutritional Center,84.3,46.2
+rejected,Q44958925,Vernon-Vogue Theater,9aa0af17-50bb-4d2a-a1d7-3173b9765579,Coffee and Donuts Peña,149.3,33.3
+rejected,Q44958718,Wabash Theatre,80941c9f-7e25-438d-95ed-af47f2f912eb,"Evergreen/Wabash, Boyle Heights",65.1,45.5
+rejected,Q44958738,Aliso Theatre,ef2c6850-b2f2-493d-8909-4e33393bfe8d,Pecan Park,115.9,34.8
+rejected,Q42715726,Bing Theatre,4d2f5a39-cba9-4f39-9a20-983e1b6c9782,McClintock Theatre,81.3,66.7
+rejected,Q44635239,Edwards Century Theater,74f0bd5e-4178-454f-93fc-c1a238062aab,Mega Liquor,101.4,29.4
+rejected,Q44635256,San Gabriel Drive-In,4e72e61e-4a2d-4df3-b3e9-3471c54449c4,ALittle Tea - San Gabriel,29.8,65.1
+rejected,Q44835890,Edwards Drive-In,ab7cc75d-ebbf-4d99-ab3c-b28c7972bfb9,Eat Fantastic,47.3,34.5
+rejected,Q44836015,Edgewood Drive-In,bbfa2bb0-fc98-420c-ab1c-6d029ee0d8b2,Starbucks Coffee Company,132.9,19.5
+rejected,Q44836197,Pickwick Drive-In,ed0630a9-1fbf-4587-9043-fb58c6ad9b99,Pickwick Drive-In Theater,0.8,81.0
+rejected,Q44958949,Victor Theatre,9548d159-4afe-4a2b-a67a-f9600f8b63e5,Trap Tacos,124.6,41.7
+rejected,Q44958973,Washington Theatre,dd692ff2-e494-4d6f-aa6e-62068cb467fb,Bob Hope Patriotic Hall,118.2,34.1
+rejected,Q44958993,Centro Theatre,fe10392c-093a-4733-a5c2-cf0493d704c1,Mariscos El Peri,61.1,40.0
+rejected,Q28451078,Gilbert Lindsay Park,35e2f53d-1225-4399-a0a7-9a9a27624a1a,41st Park,112.7,41.4
+rejected,Q30099919,Luna Park Zoo,80221425-28c1-4b65-91f6-6df1376bb9b9,gallery ALSO,105.7,32.0
+rejected,Q30592803,Ricardo Montalbán Theatre,2596e01d-666f-4285-a40f-31d49891fdc1,Comes With Fries,119.5,34.1
+rejected,Q38252108,State Theatre,a14d1931-0ae7-4adc-9749-8545be95327b,Palace Theatre,124.1,74.1
+rejected,Q44959010,AMC Century 14,9395de10-5038-4bc3-bd6e-1a39da66d0b8,Zinqué - Century City,83.9,42.4
+rejected,Q25004620,La Brea Theatre,9b5f7735-9894-4f6b-918d-5c747d12a1f2,Candela La Brea,59.4,60.0
+rejected,Q26955483,Community Clubhouse,d528db19-759f-4741-bee2-3ae70ef19a32,Plummer Park Tennis Courts,70.4,40.0
+rejected,Q28128559,Marciano Art Foundation,e1bcac33-daf2-430c-b484-ecdc3e899ace,Taiwan Academy in Los Angeles,115.7,38.5
+rejected,Q44959051,Century Plaza Cinemas,e166655c-cc15-4122-9948-4a0be2d97c84,Java City Bakery Cafe,67.1,48.6
+rejected,Q44959076,Cinemaland,f52bd9f2-50ac-4557-8b47-0990f92fa0a4,Chinese Friends Restaurant,105.3,48.0
+rejected,Q44959096,Estella Theater,1ff70d07-2c8c-43a3-8d5a-0cc51cc80850,Merced Theatre,14.2,62.1
+rejected,Q44959123,Kim Sing Theatre,3d872a3a-f07a-4748-bfcc-1b2ffd26a389,Mexicali Taco & Co,64.8,31.2
+rejected,Q44959145,King Hing Theatre,645ba7db-ce61-4ec3-9ad0-c6a81f45e96b,Aloha Catering Services Inc,112.3,50.0
+rejected,Q44959167,Playo Theatre,8e0737f4-e8ab-48ec-873b-9b822c0f3294,BFA Theatre,114.6,75.0
+rejected,Q44959190,Principal Theater,1ff70d07-2c8c-43a3-8d5a-0cc51cc80850,Merced Theatre,27.0,58.1
+rejected,Q44959289,Cinemark Baldwin Hills Crenshaw Plaza 15,a127f2dc-d665-4499-8d4e-bd8aded03371,Cinemark Baldwin Hills,20.0,71.0
+rejected,Q44959307,Fox Arroyo Theatre,c6173851-ad62-4e14-85ac-c7bf3724e127,Restaurante y Salón Arroyo Hall,84.8,49.0
+rejected,Q44959326,Alhambra Theatre,c734f1de-7f5e-4b8c-be74-6b21e9461b9b,Cassell's Hamburgers,102.9,50.0
+rejected,Q44959347,American Theatre,19ba7bf5-278a-4568-b402-a55a792bd27e,Arcade Theatre,148.1,80.0
+rejected,Q44959212,Fuji Kan Theatre,775bcc63-552b-44e1-aee3-7012ad75176f,Cafe Take 5,33.8,44.4
+rejected,Q44959233,"Roosevelt Theatre, 212 North Main Street",3e08565a-de64-4d0a-a10d-1f33e12f3b82,"The Latino Museum of History, Art and Culture",86.0,40.5
+rejected,Q44959256,Teatro Hidalgo,8e0737f4-e8ab-48ec-873b-9b822c0f3294,BFA Theatre,123.7,56.0
+rejected,Q44959272,Baldwin Theatre,e98898d1-ce51-43ee-ad5e-8139498ff215,The Real Cake Baker,58.7,40.0
+rejected,Q14682433,Hustler Casino,d438e5cc-429b-4072-b1ec-5b1d0a496cb2,Hide Away Cafe,121.4,34.8
+rejected,Q44959402,Astro Theatre,aa4e99fc-2788-4833-8f33-cb60cbfe4ac1,Million Dollar Theater,74.2,57.1
+rejected,Q44959422,Bandbox Theatre,a14d1931-0ae7-4adc-9749-8545be95327b,Palace Theatre,137.7,62.1
+rejected,Q44959439,Banner Theater,d5d0f009-c094-45fa-917f-69f020c5c2c0,Regent Theater,32.5,64.3
+rejected,Q44959480,Bijou Theatre,aefe1aae-b19c-4528-b2c4-b76a71c39d14,The Robey Theatre Company,103.1,52.9
+rejected,Q44959387,Art Theatre,aefe1aae-b19c-4528-b2c4-b76a71c39d14,The Robey Theatre Company,102.5,62.5
+rejected,Q44959531,"Broadway Theatre, 601 South Broadway",19ba7bf5-278a-4568-b402-a55a792bd27e,Arcade Theatre,120.5,49.0
+rejected,Q44960310,Rosslyn Theatre,d5d0f009-c094-45fa-917f-69f020c5c2c0,Regent Theater,30.8,62.1
+rejected,Q44960325,Roxie Theatre,19ba7bf5-278a-4568-b402-a55a792bd27e,Arcade Theatre,48.1,74.1
+rejected,Q44959503,Biltmore Theatre,9dd0ba7f-6eb1-4144-a8d6-52aa8cb03834,Olive Bistro & Catering,79.1,48.6
+rejected,Q44959517,"Broadway Theatre, 428 South Broadway",06888469-b230-43ec-a89f-73b53dfcedc4,PE 430 Broadway,30.7,48.0
+rejected,Q44960338,Scenic Theatre,08e9fc54-26c2-4b94-9133-94f89c2c095a,Cameo Theatre,125.3,74.1
+rejected,Q44960357,Shell Theatre,08e9fc54-26c2-4b94-9133-94f89c2c095a,Cameo Theatre,63.9,69.2
+rejected,Q44960377,Star Theatre,d5d0f009-c094-45fa-917f-69f020c5c2c0,Regent Theater,137.8,61.5
+rejected,Q44979883,Euclid Theater,f34197c0-e5fe-430e-b896-4c99ada97146,La Barca Tortilleria,69.7,41.2
+rejected,Q44979896,Airdome Moving Picture Theater,dde12324-be41-4894-8d6a-03273d402c2f,Beyond The Lines Gallery,112.4,40.7
+rejected,Q44979908,Hub Theatre,ce095dd7-7ac8-4071-be26-1e2309cc00fd,Antojitos,84.8,20.0
+rejected,Q44979920,Fox Florence Theatre,ff97dc37-a329-48f7-9a93-84cbc2a3dc2e,Florence Bakery,109.7,45.7
+rejected,Q44979939,Florencita Theatre,b2d5693d-b04f-4e5f-bfee-73d116a28bcf,Paleteria El Paraiso,120.5,36.8
+rejected,Q44979956,Gentry Theatre,a2b7da00-24cc-4a0c-ae5d-688d57322052,Birreria Gonzalez,123.8,32.3
+rejected,Q44839283,Sunland Drive-In,931d575b-804f-4138-8a19-1c6046bc7b1b,La Vaquita Sunland,112.4,47.1
+rejected,Q44876346,Venus Adult Theatre,9427fa79-ddcc-4531-9c22-6554c2b8d1ee,Ama Ventures Llc,8.2,45.7
+rejected,Q44876366,Academy Cinemas,831ccfb4-bcd7-4072-ad21-18aef727c02b,Regency Academy Cinemas,3.6,78.9
+rejected,Q44876384,Fox Pasadena Theatre,b000a3c6-5798-4e6c-bff1-713175159edb,Frida Tacos - Old Pasadena,103.9,63.6
+rejected,Q5015241,Cabaret Concert Theatre,fa238560-a8c7-4d50-bd05-657e47ab05f0,Sunset Pacific Motel,119.2,32.6
+rejected,Q5020327,California Club,9c1e4f94-a6d5-4340-9517-3d7a098e9fd9,City Club LA,147.3,51.9
+rejected,Q5033602,Canter's,a2390a52-1d97-43c6-be91-36c7d9d025e1,Canter's Deli,28.5,76.2
+rejected,Q5044022,Carney's,46c37e7f-ee9b-4e7b-8c7f-70d391bde6f2,Santa Monica Pier,130.5,40.0
+rejected,Q44878072,AMC South Bay Galleria 16,0596d535-b9cd-4879-a103-4986b0afa410,Cold Stone Creamery,141.4,36.4
+rejected,Q44878086,Redondo Beach Cinema 3,7e5dfefc-101c-4d36-b105-fad1ca797081,Tortilla Beach Redondo Beach,93.1,64.0
+rejected,Q44878974,Garvey Theater,d94a861c-de6d-4d99-b611-e9d8b32cbd46,Lien Phat,146.2,43.5
+rejected,Q44882540,ArcLight Santa Monica,cd608f29-0fd3-43ec-950b-159166a52dd5,Sensible Sensational Healthy Food,143.5,37.0
+rejected,Q44882555,Brentwood 1 & 2,5d218373-d9d6-41b2-91b1-1749cef7b123,The Charleston,92.0,34.8
+rejected,Q44882568,Criterion Theatre,76a61fb8-409a-402c-bd5c-8a83305a62a4,Westside Comedy Theater,47.9,50.0
+rejected,Q44879004,Rosemead Theatre,f57cde36-3d75-441c-80b8-6d403839f412,Sea Harbour Seafood Restaurant,142.7,45.7
+rejected,Q44882495,AMC Criterion 6,b7163222-c3ac-4c78-b660-da34f170f3f3,Silicon Beach,110.0,50.0
+rejected,Q44882509,AMC Loews Broadway 4,020ebc07-7b0c-4b02-94d0-d51e36bd8983,AMC Broadway 4,7.3,82.4
+rejected,Q44876423,Oaks Theatre,276c780f-f8d2-4e26-a7a4-47fcce86cfe3,IPIC Theaters,118.7,56.0
+rejected,Q44876720,Pico Rivera Village Walk 15,6dece93b-101f-412d-b1bd-15a329af7422,Chop Teriyaki,100.3,40.0
+rejected,Q44960394,Symphony Theatre,a14d1931-0ae7-4adc-9749-8545be95327b,Palace Theatre,47.1,60.0
+rejected,Q44960410,Tally's Broadway Theatre,012d9eb8-242f-4d90-a287-9558839b7df1,Plant Nation Broadway,71.9,57.8
+rejected,Q44960424,Tally's Electric Theatre,aa4e99fc-2788-4833-8f33-cb60cbfe4ac1,Million Dollar Theater,132.5,52.2
+rejected,Q44960440,Town Theatre,3f59b9c0-e81f-4677-836e-293e1a71676a,Ecf Downtown Art Center,94.0,51.4
+rejected,Q44960453,Union Theatre,7491d0d8-a92c-4b4a-9c66-cbd2a49ad817,The Edison,141.0,42.1
+rejected,Q44960471,Warrens Theatre,71dbf5de-07a2-482f-bbab-f03de2f1dc01,Mima's Mediterranean,139.5,45.7
+rejected,Q44960482,Eagle Rock Plaza Theatre,8a0e445e-b63e-41dc-b5f9-cc3de7ddaf40,Chuck E. Cheese,90.8,36.8
+rejected,Q44960498,Eagle Theatre,d7201d46-5c0e-4576-80f3-5ee44dc5aa77,Mediterranean Triangle,61.9,40.0
+rejected,Q44960513,Sierra Theater,90e0b91f-4ee1-4c60-9bed-b249cedf6e2c,5 Line Tavern,69.7,51.9
+rejected,Q44979844,Knightsbridge Theatre,4f887f16-6d01-4179-be46-04ac2a6fb8fb,Knightsbridge Theatre Of Los Angeles,14.9,73.7
+rejected,Q44979860,El Cameo Theater,7051a13b-38d0-4023-9dcd-42e6dcb2a553,Little Caesars Pizza,139.7,44.4
+rejected,Q44979870,Mazatlan Theatre,a88e0430-1fbf-46f7-99b3-7bc86e9c7bf9,Tamale Man,141.7,53.8
+rejected,Q44960531,York Theatre,c7b1b30a-f939-4d60-b21f-666d5cea8fc3,Church on York,145.2,53.8
+rejected,Q44979827,Holly Theatre,36eff097-56b1-4d44-a5aa-732ad1ead159,Red Hill,109.3,57.1
+rejected,Q44882583,"Crown Theatre, 502 Santa Monica Boulevard",875bad2e-e5ef-4fba-b633-7359ecc4923e,Herringbone Santa Monica,27.0,56.2
+rejected,Q44882599,"Crown Theatre, 342 Santa Monica Boulevard",ded2729a-c0f0-4216-8cae-2ad57db2d346,Mercado - Santa Monica,138.5,56.7
+rejected,Q44882616,El Miro Theatre,14013304-cb87-4fc9-aa51-92cf722ebe5d,Einstein Bros Bagels,98.5,51.4
+rejected,Q44882628,Empress Theatre,c170872d-22c9-4b4c-bcca-ae704c06de64,Cafe at the Shores,141.3,48.5
+rejected,Q44882646,Fox Dome Theatre,d03ca729-9a78-4d4c-9f0c-5ead9b0fc22b,Oceanfront Restaurant,68.4,38.5
+rejected,Q44882662,Fox Rosemary Theatre,8689004a-8844-4d1a-85fa-1c82077db0da,Sunday Brunch at the Veranda,64.4,41.7
+rejected,Q44959947,La Petite Theatre,08e9fc54-26c2-4b94-9133-94f89c2c095a,Cameo Theatre,51.5,66.7
+rejected,Q44959966,Lark Theater,cc9a1aec-3335-4e4d-bf53-e0973fdc14c5,Wake and Late,79.7,48.0
+rejected,Q44959982,"Liberty Theatre, 136 South Main Street",7c6501c3-3b88-4511-b413-e2e0b80fd20b,"Playa Del Rey / Marina Del Rey, California",50.2,39.5
+rejected,Q44882676,Hitching Post Theatre,171922b5-9b28-4a38-aa79-3b38f9af6633,Trejo's Tacos - Santa Monica,145.0,46.8
+rejected,Q44959932,Jade Theatre,4086d0ea-e258-40d4-ba66-4a47fc865020,Five Star Bar,59.6,47.6
+rejected,Q44960036,Main Theatre,d5d0f009-c094-45fa-917f-69f020c5c2c0,Regent Theater,28.4,61.5
+rejected,Q44960050,Mason Theatre,8ffde088-2ea9-4ca2-98dc-c281f4cf5b6e,Open Fist Theatre Company,38.0,68.4
+rejected,Q44960066,Mission Theatre,713d0c91-bbf4-4374-9f3f-531428bf74c1,The Orpheum Theatre,12.3,60.0
+rejected,Q44960082,Muse Theatre,d5d0f009-c094-45fa-917f-69f020c5c2c0,Regent Theater,71.5,61.5
+rejected,Q44960100,Olympic Theatre,f3714bd8-60ec-4d89-8596-cc2012a80fce,Tower Theatre,70.5,50.0
+rejected,Q44960115,Optic Theatre,d5d0f009-c094-45fa-917f-69f020c5c2c0,Regent Theater,145.0,59.3
+rejected,Q44960130,Orchestrion Theatre,08e9fc54-26c2-4b94-9133-94f89c2c095a,Cameo Theatre,114.3,68.8
+rejected,Q44960145,Palace of Pictures Theatre,a14d1931-0ae7-4adc-9749-8545be95327b,Palace Theatre,38.5,70.0
+rejected,Q44960189,Picture Theatre,aefe1aae-b19c-4528-b2c4-b76a71c39d14,The Robey Theatre Company,87.0,61.1
+rejected,Q44960201,Quinn's Superba Theatre,aefe1aae-b19c-4528-b2c4-b76a71c39d14,The Robey Theatre Company,145.9,54.5
+rejected,Q44960213,Regal Theater,4086d0ea-e258-40d4-ba66-4a47fc865020,Five Star Bar,75.2,45.5
+rejected,Q44960244,Republic Theatre,8514acf2-2721-48c8-9ae6-f38aba1f51a8,LA Art Experience,115.0,42.4
+rejected,Q44959996,"Liberty Theatre, 266 South Main Street",cd78a201-2bda-4001-8b76-87b730f9e0b2,I Smoke Wholesale,113.5,37.0
+rejected,Q44960008,Linda Lea Theatre,6300bd89-d45c-4fcb-8789-b23866344aed,Dalia Cocina Mexicana,98.3,42.1
+rejected,Q44960024,Lyceum Theatre,4086d0ea-e258-40d4-ba66-4a47fc865020,Five Star Bar,134.1,43.5
+rejected,Q44960260,Rialto Theatre,713d0c91-bbf4-4374-9f3f-531428bf74c1,The Orpheum Theatre,76.6,62.1
+rejected,Q44960275,RKO Hillstreet Theatre,83bdd7c7-fa76-4de5-abd1-d5cd0d53fc9b,South Park Hotel,126.4,47.4
+rejected,Q44960289,"Roosevelt Theatre, 842 South Main Street",c34f2676-c8b2-4f35-960e-fd36c666eb4f,RI2 Mens Luxury Sports Wear,127.1,42.4
+rejected,Q44959544,Burbank Theatre,aefe1aae-b19c-4528-b2c4-b76a71c39d14,The Robey Theatre Company,129.8,55.6
+rejected,Q44959558,"California Theatre, South Main Street",c43c259d-dbd0-4bdd-bc1b-831df630c47a,Rialto Theatre,142.1,48.0
+rejected,Q44959575,"California Theatre, South Spring Street",c5d1cc5c-bbab-420a-911e-4d596b8398f0,Skid Row History Museum and Archive,124.2,32.9
+rejected,Q44959607,Capitol Theatre,2013c6ee-f6f4-4e23-8134-5c99188ed851,Burrito Project DTLA,131.7,45.7
+rejected,Q44959623,Cecil Theatre,aa4e99fc-2788-4833-8f33-cb60cbfe4ac1,Million Dollar Theater,60.5,51.4
+rejected,Q44959643,Central Theatre,dc027780-c2ef-4f3e-83f9-ea1e56ec881b,Golden Road - Grand Central Market,107.1,51.1
+rejected,Q44959663,Clune's Theatre,4f0c94d0-398d-49d7-8a2e-b0d567866978,Tierra Mia Coffee,132.5,43.8
+rejected,Q44959681,College Theatre,ce6cb168-067d-4dfd-9c3e-9d37b3a97fc2,Hill Street Pizza,47.0,43.8
+rejected,Q44959694,Edison Theatre,7491d0d8-a92c-4b4a-9c66-cbd2a49ad817,The Edison,142.6,60.0
+rejected,Q44959712,Follies Theatre,4086d0ea-e258-40d4-ba66-4a47fc865020,Five Star Bar,102.5,58.3
+rejected,Q44959726,Gaiety Theatre,d5d0f009-c094-45fa-917f-69f020c5c2c0,Regent Theater,126.9,71.4
+rejected,Q44959742,Galway Theatre,aefe1aae-b19c-4528-b2c4-b76a71c39d14,The Robey Theatre Company,138.2,57.1
+rejected,Q44959757,Garnett Theatre,19ba7bf5-278a-4568-b402-a55a792bd27e,Arcade Theatre,62.7,75.9
+rejected,Q44959771,Garrick Theatre,d83e59e9-2bb4-45b2-9ee6-ad8c105e3188,Art Theme Park,135.7,62.1
+rejected,Q44959787,Gaumont Chronophone Theater,aefe1aae-b19c-4528-b2c4-b76a71c39d14,The Robey Theatre Company,100.4,54.2
+rejected,Q44959802,Gem Theatre,93128cd0-31cd-4fef-81cf-50f4111812eb,Little Damage,131.5,50.0
+rejected,Q44959818,Globe Theatre,d5d0f009-c094-45fa-917f-69f020c5c2c0,Regent Theater,122.0,66.7
+rejected,Q44959830,Globe Theatre,f3714bd8-60ec-4d89-8596-cc2012a80fce,Tower Theatre,64.1,53.8
+rejected,Q44959854,Grand Theater,c03991e2-6c09-4f34-bf05-32434cb7f2a2,Griffith Park,84.0,46.2
+rejected,Q44959867,Happy Hour Theatre,612e8444-d651-49cb-bd33-4fead75ba406,"Rivera Heights Echo Park, Ca.",85.5,44.4
+rejected,Q44959884,Hippodrome Theatre,cd78a201-2bda-4001-8b76-87b730f9e0b2,I Smoke Wholesale,145.9,45.7
+rejected,Q44959900,Horne's Big Show Theatre,9bc39503-a4a4-4ed8-948e-f581e33c3278,Howard Griffin Gallery,60.8,43.5
+rejected,Q44959843,Glockner's Automatic Theatre,cd78a201-2bda-4001-8b76-87b730f9e0b2,I Smoke Wholesale,114.1,44.4
+rejected,Q3528262,Tiffany Theater,0af6f070-30bd-476c-8e1c-ad09f35bda91,Daughter's Deli,125.6,40.0
+rejected,Q3931687,Regency Village Theatre,8c7d2580-2cde-472f-bc00-64b847112e29,Fox Westwood Village Theatre,49.0,62.7
+rejected,Q3988247,The Masque,420820eb-27f3-48ad-967f-c8c19dee8b63,BlackSteel,143.6,37.5
+rejected,Q4643194,72 Market Street Oyster Bar and Grill,99523af2-bacc-4a88-8d24-5bce7a082f87,The Gallery at 74 Market,16.8,51.0
+rejected,Q49582946,Woods Avenue Park,105da08b-53a5-4321-b936-8fbdd2e462dd,Birrieria Morales,131.1,29.4
+rejected,Q49583919,Zella Davis Park,9fa47b2e-c50c-4b59-a5e7-8915353be9a5,Manhathan Beach,116.1,25.8
+rejected,Q52647902,Japanese American Cultural And Community Center,b27cad6d-7e55-41c4-a716-fc0d87998e22,James Irvine Japanese Garden at JACCC,18.5,47.6
+rejected,Q56193709,Langer's Deli,9b91ce4c-b5f9-4bf7-b9d6-e06d2ff4a8a1,Langer's Delicatessen Restaurant,8.8,76.5
+rejected,Q59240387,Annenberg Space for Photography,468d4d18-f317-4d53-a6ef-eeefd9728f4d,Shubert Theatre (Los Angeles),27.6,41.4
+rejected,Q60740839,Lyon Center,25b55ace-80e8-46c7-ad24-fd3fd5de0116,Moreton Fig,137.1,36.4
+rejected,Q44959918,Isis Theatre,08e9fc54-26c2-4b94-9133-94f89c2c095a,Cameo Theatre,140.8,64.0
+rejected,Q3309185,Philippe's,cb2da762-274b-4ab5-9f19-1587f24c074c,Philippe The Original,9.1,58.1
+rejected,Q3329879,Hollywood Erotic Museum,f9bc257c-8bf1-409a-8b14-ec150fa8ddfb,Frederick's Lingerie Museum,149.2,52.0
+rejected,Q3365423,Park Plaza Hotel,95ca4b1c-f6b1-4a00-b7d8-59a08d3f9f38,Wilshire Park Plaza Llc,17.5,61.5
+rejected,Q3520148,Brown Derby,9cb82970-d65c-4c3c-8af8-83d89e4117ef,Cocoanut Grove,88.2,32.0
+rejected,Q44980062,Arena Cinema,8518da23-fa94-463b-8aaf-342be703d2e3,American Cinematheque,79.9,60.6
+rejected,Q44980080,Avon Theatre,fde52659-6096-4aa3-ac95-4a95d49bb487,Cameo Content,125.4,48.0
+rejected,Q44980095,Bijou Adult Theatre,98ec7de5-e31f-424c-b723-ddd16a6ffd3a,The Palm & The Pine,55.8,50.0
+rejected,Q44980016,Park Theatre,fe26166c-7668-4ce0-9e77-58df8d301364,Triple Beam Pizza,66.4,41.4
+rejected,Q44980034,"Sunbeam Theatre, Highland Park",b24d8a86-13a1-43ed-947d-3b20f48384b9,ETA Highland Park,94.8,56.5
+rejected,Q44980045,Apollo Theatre,85e7930f-a323-4ae7-925d-c64c440f2240,Farmer Boys,102.0,40.0
+rejected,Q44979970,Graham Theatre,beceb249-e902-4cb1-a6a3-73314505c124,El Paraiso Night Club,21.9,28.6
+rejected,Q44979984,Franklin Theatre,c995203b-1564-4fb1-938a-66ae273f9d8d,Fanny's Restaurant,85.7,43.5
+rejected,Q63258463,Bardot,4fa975f4-e9e1-48c3-8835-e2ff3f9c9824,The Library,65.9,46.2
+rejected,Q63386474,Resident DTLA,d57defc0-be4c-433f-a3ef-5de46340d831,Resident,8.1,76.2
+rejected,Q64114905,Carnitas El Momo,67a3700e-0e25-482e-bc57-d27525ee02bb,Carnitas El Momo Boyle Heights,2.2,69.6
+rejected,Q64148701,Konbi,3c8ebb3b-0d20-4ac8-8d54-34076a29764b,Konbi Ni,18.0,76.9
+rejected,Q64148729,Umi by Hamasaku,2689ba9f-7f62-4afc-9bfd-3213d38e6394,Mendocino Farms,81.5,40.0
+rejected,Q44980108,Bijou Theatre,9e2261e3-9596-4e39-acf1-49c807a77018,Sabotage by Stream Live,67.5,44.4
+rejected,Q44980120,Cave Theatre,11d019d7-00e2-46cd-88ab-07976f88a40a,Vine Theatre,54.9,58.3
+rejected,Q44980136,Cinema Theatre,bf02579a-6ed7-41e2-9b87-08293cc31d94,Tiki Adult Theatre Inc,132.4,55.6
+rejected,Q44980163,Cinne Arts Theatre,2981c181-dba9-40b0-a14b-8fc1d12ebc97,C4 Contemporary Art,17.2,54.1
+rejected,Q44980221,Harmony Gold Preview House,3e3b38ab-498a-4d11-a413-037502e41d93,Harmony Gold,14.8,63.2
+rejected,Q44980234,Hawaii Theatre,d7a4b5fd-f501-41b9-8b50-e66bd400065d,Palms Thai Restaurant,106.9,41.7
+rejected,Q44980177,Film Festival Theatre,bf02579a-6ed7-41e2-9b87-08293cc31d94,Tiki Adult Theatre Inc,104.9,55.8
+rejected,Q44980189,Flick Theater,6d362dbd-ca26-4147-8679-c21ac1cd5279,Doma Theater Co,104.3,64.3
+rejected,Q44980267,Hollywood Galaxy,8c459988-a1b9-430f-91c8-bbcbde618c9f,Madame Tussauds Hollywood,125.1,43.9
+rejected,Q44980264,Hollywood Century Theater,44acc726-3af7-441c-9724-bdcb54003eb8,BEST FCKN PIZZA (HOLLYWOOD),19.1,56.0
+rejected,Q44980273,Hollywood Playhouse,0b6b7dd2-a956-4e9b-a1af-b9544b336764,Chefpla Thai Bistro Inc,137.5,28.6
+rejected,Q44980291,Hollywood Theatre,0e3afa21-7dc6-48fc-adbc-d3b49b860a2f,Hollywood Court Theater,27.7,80.0
+rejected,Q44980249,Hitching Post Theatre,703f6d62-f3af-4b53-adeb-49060268731c,Hollywood Pantages Theatre,51.4,51.1
+rejected,Q44980262,Holly Cinema,4a5b1cab-baf8-4641-9c45-1354afc40916,La Cantina,86.0,54.5
+rejected,Q44980319,Iris Theatre,cca68767-731d-4310-8be1-0da03a825a72,Fox Theatre,117.5,69.6
+rejected,Q44980348,Las Palmas Theatre,9e21061c-ad11-4b89-8519-5b5f3c1933a0,The Egyptian Theatre Hollywood,46.8,50.0
+rejected,Q44980377,Loma Theatre,e77d7741-8aa1-4d0b-b0db-b3ea043db74a,Coma Pronto Restaurant,101.6,43.5
+rejected,Q44980395,Movie Parade Revival Theater,ece9ac1f-bf3d-4810-ba6b-dbf72b526c04,Taste Of Thai,99.5,39.0
+rejected,Q44980412,Odyssey Cinema,fad490d6-2d61-473f-8d23-b082ad89fcd0,See You at,147.4,41.7
+rejected,Q44980425,Oriental Theatre,19613997-6bdc-4df8-a102-3c20e202cb26,The Renegade Theatre,83.2,75.0
+rejected,Q44980473,Richard's Theatre,833cda5c-99a4-4acb-9d6c-972a455188a3,Harvard & Stone,26.9,53.3
+rejected,Q44980485,Ritz Theatre,9e21061c-ad11-4b89-8519-5b5f3c1933a0,The Egyptian Theatre Hollywood,142.5,47.4
+rejected,Q44980500,Smodcastle,3181d65f-fa36-43d5-b791-f32ab030255e,MC² Actors Studio,15.0,37.0
+rejected,Q44980518,Sunset Theatre,cfedfeea-5d95-4a3c-8589-e713f792277a,Upright Citizens Brigade Theater Sunset,110.7,49.1
+rejected,Q44980546,Tom & Cat Theatre,cca68767-731d-4310-8be1-0da03a825a72,Fox Theatre,116.0,61.5
+rejected,Q44980787,Studio Theatre,bcacffa7-6e46-4bcb-9dd0-a2b9283a7696,Impro Theatre,49.3,74.1
+rejected,Q44980799,AMC Beverly Connection 6,d93cbb29-c991-4ba4-9f5a-f0078924e056,California Pizza Kitchen at Beverly Center,112.2,51.5
+rejected,Q44980810,Cine Cienega Theatre,b86fe2e1-6026-4c71-bf17-a58586a5dd01,Chez Camille,70.6,43.8
+rejected,Q44980827,Drake Theatre,ae3b4567-dec3-4f0b-b806-07ddb9f7045d,The Coffee Bean & Tea Leaf®,133.0,42.4
+rejected,Q44980845,Esquire Theatre,abfff6c7-36d4-48c4-b47f-fff722ea0e34,bang. Comedy Theatre,114.5,52.9
+rejected,Q44980857,Fairfax Cinemas,7a0fcf8a-59ad-4420-965a-0a10388c99aa,Diamond Bakery L.a. On Fairfax,98.6,45.5
+rejected,Q44980875,Laurel Theatre,d36a35f9-58fe-45ac-960b-4c79b2b1e4f8,Harvey Easton Cafe,51.5,44.4
+rejected,Q44980889,Pacific Theatres at The Grove,8c35974e-39d5-4a21-b0af-de1b14072568,Pacific Theatres,82.3,71.1
+rejected,Q44980902,Pan Pacific Theatre,8bb95ee0-4ed4-4337-8bfa-b28c105635e0,Tab Dining Group Inc,99.1,41.0
+rejected,Q44980917,Xanadu Theatre,577aba28-fbe3-415a-be3d-b3628a397a5b,Pasta Amore,65.7,48.0
+rejected,Q44980936,Arlington Theatre,614f77f0-ae83-4bf6-b25f-22dd9c8378ac,Chikos Tacos Truck,51.9,40.0
+rejected,Q44980953,Boulevard Theatre,1b70092a-51d9-4412-b947-4a1da155e04d,Burger King,23.5,35.7
+rejected,Q44980970,Butterfly Theatre,42ec5288-2e5f-4896-9810-74723340a7a0,Deus Ex Machina,112.6,31.2
+rejected,Q44980989,Forum Theatre,eaed8e2b-b4e0-41e6-b8fe-ecef121ad3aa,Monster Mac,71.8,41.7
+rejected,Q44981005,Fox Adams Theatre,5421c482-50ff-43ee-bf4a-f5097e31b915,D’Pizza Spot,66.8,34.5
+rejected,Q44981051,M Park 4 Theatre,28b13276-b1b9-4a6e-8ec2-5c00d63492b1,DGM Karaoke,107.0,44.4
+rejected,Q44981061,Maynard Theatre,684d049b-ff4e-4d24-a662-132255deef27,MVLA Talent,113.7,46.2
+rejected,Q44981071,Metro Theatre,cba4fcda-9593-4b75-b487-9d8932fa069a,Nate Holden Performing Arts Center,20.3,38.3
+rejected,Q44981088,Midway Theatre,42d69927-2b1a-47cd-9f26-db3c6978247c,Panaderia Santo Domingo,72.2,37.8
+rejected,Q44981023,Fox Parisian Theatre,a1b8d0f6-372a-4298-a2d5-34691eeabb3d,Thai Original BBQ & Restaurant,127.2,48.6
+rejected,Q44981039,Fox Uptown Theatre,dbff2823-44a4-4db3-bc49-878097c6c4ab,Marine Town Inc,114.2,54.5
+rejected,Q44981125,Victoria Theatre,3056d85c-1f7e-45f2-b5f5-9553b8b58bca,Restaurante Conchita,33.0,38.9
+rejected,Q44981141,4 Star Theatre,870f8fb8-40ce-4482-b488-244c4728ad75,The Coffee Bean & Tea Leaf,16.1,35.3
+rejected,Q44981158,Academy Theatre,d277c99d-670a-493f-bb1e-706190cf326b,Angel City Bakery,88.1,37.5
+rejected,Q44981098,Riviera Theatre,1f03ae01-03b2-4673-b5a5-f4b70198b18c,Holiday Liquor Market,87.1,38.9
+rejected,Q44981110,Variety Theatre,90b90844-a60d-46da-befc-8b7fa37f0b47,Tartine West Adams,146.4,42.4
+rejected,Q44981173,Ambassador Hotel Theatre,c10d942e-2052-4c70-8b4e-05828387debe,Bistro On The Blvd,144.6,42.9
+rejected,Q44981189,Campus Theatre,f06d57c2-2bbd-453f-847c-7bb37ab90692,China Way Chinese Fast Food,115.8,34.1
+rejected,Q44981201,CGV Cinemas LA,05623d4f-763a-41d6-99dd-54c07be82d0c,Cgv Cinemas Movie Theater,19.6,66.7
+rejected,Q44981211,Clinton Theatre,b47b26d4-2df2-40b6-ba2b-e9213fbb2866,Thai on Western,122.4,53.3
+rejected,Q44981226,Embassy Theatre,26603118-b3b3-4248-abc1-0cff0394fea5,T Equals Fish,87.7,42.9
+rejected,Q44981246,Encore Theatre,2987bfc9-880b-442d-9f42-98fc94c8a5e7,Paramount Theatre,109.0,58.1
+rejected,Q44981261,Fox Belmont Theatre,2ea9c2fa-ea34-4c19-b1c0-a9451a88130e,Sea Dragon,87.4,34.5
+rejected,Q44981275,Fox Ritz Theatre,33060662-a96e-4bc9-9d38-1a7dddf165cb,Sumac | Modern Street Food,87.3,40.0
+rejected,Q44981290,Larchmont Theatre,c1686b5f-507f-47af-aa9e-9ac1c2b564f4,Larchmont Bungalow,134.9,51.4
+rejected,Q44981319,Melrose Theatre,ce7cf5da-3519-4355-bc08-f6090e41cc51,Harmony Theater,1.0,60.0
+rejected,Q44981334,Ravenna Theater,ed435200-d92d-4402-89a5-db392008cbe8,Peaky Sticks,47.0,29.6
+rejected,Q44981366,Nadeau Theatre,ba8a1169-7041-452d-ad8c-e84e41c76fe2,Nadeau Cafe,85.4,60.0
+rejected,Q44981380,Fox Criterion Theatre,cedb92fd-252e-4f09-a456-10bdd8ee37a6,Please Do Not Enter,137.9,45.0
+rejected,Q44981396,Grand Theater,a35e08c8-948c-4670-b32d-8366b2e01ebb,Le Grand Restaurant,39.1,66.7
+rejected,Q44981410,Grande 4-Plex,b163c798-7fb4-4641-b489-b8b487e764a2,Ziran,74.6,33.3
+rejected,Q44981306,Leo S. Bing Theater,950ee952-c3cc-44fc-a7d7-30f599e0185c,La Brea Tar Pits And Museum,125.4,44.4
+rejected,Q61968783,Crossroads Kitchen,fa6822e0-c305-41cc-8ad3-6c102762eb6e,Carrera Cafe,94.5,47.1
+rejected,Q44980308,Idyl Hour Theatre,703f6d62-f3af-4b53-adeb-49060268731c,Hollywood Pantages Theatre,76.8,51.2
+rejected,Q44980586,Vogue Theatre,b2adcd04-6d1b-4735-b6ae-c5c2f309063e,Vogue Multicultural Museum,25.4,51.3
+rejected,Q44980600,"World Theatre, Hollywood",0b04a373-2499-43a5-86eb-b097138a7fd1,Museum of Death,41.4,36.8
+rejected,Q44980621,X 1 & 2 Theaters,d8925c36-80c4-4664-87c5-ffd3651d6f1a,Vaqueros Night Club,38.8,36.4
+rejected,Q44980639,Mesa Theatre,ec53a392-0b44-46d0-9676-6022c81a197c,American Deli,94.0,40.0
+rejected,Q44980649,Arlin Theatre,e2e84776-acad-4645-ba59-f2a6cee39a1e,Hidden History Museum,72.9,41.2
+rejected,Q44980662,Jurdan Theater,f8099e58-9ce6-49f8-bd6b-679d79aa8ffb,Monarch Market,80.1,28.6
+rejected,Q44980674,Kinema Theatre,5d4c4621-4af2-49a9-9494-f4aa96ea711f,Ying Hana Teppanyaki,62.9,35.3
+rejected,Q44980711,Daly Theatre,f7f1060e-fa09-4997-a140-8ad8068452a6,Trattoria Daly,96.4,69.2
+rejected,Q44980723,San Carlos Theatre,73ada87e-00fc-44a0-8c6b-a3cb61ea12ba,Dino's Main St.,130.6,37.5
+rejected,Q44980740,Starland Theatre,6f376f9a-1b9f-4ad9-be1c-b298605efdbe,The Airliner,146.6,50.0
+rejected,Q44980753,Century Theatre,1074d0ff-d2e8-4f78-b404-8ce0ec014152,CoCo's Kanom Thai,123.8,37.5
+rejected,Q44980770,Los Feliz 3 Cinemas,079f6d4b-e714-481c-a022-fbf1e158743d,Vintage Los Feliz 3 Cinemas,7.6,82.6
+rejected,Q44981423,Lux Theatre,317c6295-c893-4efa-bed3-ad7f8f9e9e38,The Park DTLA,135.3,40.0
+rejected,Q44981437,Tunnel Theater,e2c3f133-33f4-451b-8b2c-157fd2eb38ef,Etchea Café Bakery & Catering,88.6,39.0
+rejected,Q44981453,Cinemark North Hollywood,7e49882a-86c7-49c2-91b3-7a834b1f8b72,Cinemark Century North Hollywood and XD,8.0,76.2
+rejected,Q44981486,Lankershim Theatre,e4b760c6-184f-4b50-a595-518fe2bc2cec,Casa 7 Mares Restaurant,24.5,40.0
+rejected,Q44981514,Valley Theatre,ef78609f-7f98-4006-8679-b6bef3d8520f,Salsa & Beer #4,92.1,38.5
+rejected,Q44981527,Venture Theatre,392189f0-4cfc-4da9-9090-544dc9c3757d,La Moneda Bakery,38.1,32.3
+rejected,Q44981538,Del Mar Theatre,d4fc5631-2357-4bf2-8899-c9cefde69169,Tea Garden Emporium,69.5,47.1
+rejected,Q44981542,Lido Theatre,6a708009-96d2-4601-a0e2-d0178713aafc,Taj Mahal of India,132.4,40.0
+rejected,Q44981553,Picfair Theatre,483fa2e9-fa68-46ff-baa1-94eb2b35bf58,New India Sweets & Spicy,65.9,32.4
+rejected,Q44981567,Richard's #2 Adult Theatre,5174ee33-0487-4b44-9c85-32e670e441d8,Hot Catering,134.0,37.8
+rejected,Q44981579,Rio Theatre,89f57b22-cc86-4d92-b718-0694776dc8e6,New Hope Drug And Alcohol Treatment Program,125.5,29.6
+rejected,Q44981609,Georgia Theater,437b64c7-2c91-4738-94d4-9d9261ebd8ef,Taqueria el quetzal,95.1,41.2
+rejected,Q44981623,Brentwood Theatre,f8a00bfd-7379-498e-a0a1-f588afb541df,Maradentro Brentwood,99.8,70.3
+rejected,Q44981638,Bundy Theatre,38845182-50fb-4a4c-9ea6-cdcdcb743c64,Teddy's Cafe,82.3,30.0
+rejected,Q44981653,Royal Theatre,41d03ca0-30e3-4678-8644-fe849e62c589,Royal Theater Santa Monica,43.2,61.5
+rejected,Q44981669,Studio 1 Theatre,3070b52e-9ce5-4960-b3a0-5459faa39cdf,Levant Bistro + Bake Shop,83.1,41.0
+rejected,Q44981685,Alto Theatre,0c0f0c1f-980f-458a-93d7-d17615998443,Loyalty Social Club,133.1,32.3
+rejected,Q44981703,Astor Theatre,a3936834-a22d-4ea7-9067-f4d7421b044e,Cappuccino Catering Services,116.2,34.1
+rejected,Q44981744,Crescent Theater,3b241bc3-e747-4515-8402-a1fb5d11036d,Miguel Alfonso Herrera,130.2,31.6
+rejected,Q44981777,Dixie Theatre,2c726338-1c7f-4ff2-8188-7ad24e19bd9e,Tienda Chabina,65.8,37.0
+rejected,Q44981715,Carlton Theatre,7881dfc8-b6ef-43c8-9227-4fdc35d8ea6b,El Arca Bakery & Restaurant,71.6,41.4
+rejected,Q44981731,Congress Theatre,289fdb17-3360-4bef-8265-e8582328bf42,"El Shaddai Restaurante, Inc.",140.4,38.1
+rejected,Q44981791,Fairyland Theater,4c67fd8a-8efb-49e9-9738-13cfee7098f2,Cafe Amandine,73.9,46.7
+rejected,Q44981809,Fox Figueroa Theatre,a199e487-a92d-4eb0-837a-b0f3dd32eedf,La Business Venture Inc,91.9,37.2
+rejected,Q44981824,Home Theater,1c976a74-6f63-4ae7-9667-398a76e4b212,Martin Luther King Jr. Park,96.0,36.8
+rejected,Q44981838,Knoll Theatre,14e00ac3-1983-4b1c-aeb0-850928bbd16b,Jackson Brothers Bar,136.0,34.5
+rejected,Q44981853,La Tosca Theatre,d0a46e25-1e57-41bf-b309-10d625b49fc0,Mi Pueblo Chapin,149.7,25.0
+rejected,Q44981869,Madrid Theatre,b01c06b3-818d-4a43-8f14-2481cc3b7f17,Adu Burger,56.2,41.7
+rejected,Q44981879,Normandie Theatre,287e486b-a39b-460b-a96e-e86e6e814c87,Restaurante Jaguar Metapan,57.9,41.9
+rejected,Q44981910,"Regent Theatre, South Los Angeles",7c61e18d-5553-4e1d-bd8f-e1ff6ee77597,Rpv Business Venture Inc,115.5,42.9
+rejected,Q44981927,Rivoli Theatre,faa7f7cd-92b5-4619-8f23-0a951822930c,Master Burger,105.5,37.0
+rejected,Q44981939,Round Up Theatre,2fe044af-0122-47f0-a7b6-f813d2b6903b,Winchell's Donut House,94.3,31.6
+rejected,Q44981974,Temple Theatre,efa67fc9-20fe-4d0f-af1e-424e76541e01,Harry Jr Bakery,85.9,34.5
+rejected,Q44981987,Trojan Theatre,fdd1a796-2c4f-49be-b78a-429ce823313f,University Village 3 Theatres,110.1,46.5
+rejected,Q44981999,University Village 3,8110ea0a-a609-4b2d-86a2-8e0ecea055fb,Village Gate Theatre and Gallery,148.7,46.2
+rejected,Q44982011,Vermont Theatre,7af34419-7517-471a-afac-f377a01bf9ae,Hong Kong Express,34.1,37.5
+rejected,Q44982027,Western Theatre,3a7a9eda-ccdf-45f6-ac2a-bb7176327224,MLK Park&Recation,124.1,37.5
+rejected,Q44982035,Kiva Theatre,3848fcfe-8d13-4625-b5ed-ab50a5748bcd,Taqueria Don Lupe,73.6,27.6
+rejected,Q44982046,Pico Theatre,eff065a5-9f0a-4dac-914e-eb256646634f,Mother of Pearl,82.4,44.4
+rejected,Q44982105,American Theatre,5df55f57-3c7f-4bc5-a1d5-b0e3464847f2,Tam's Burgers,79.8,34.5
+rejected,Q44982121,Avalon Theatre,b90f1854-69a3-4806-8451-78be783e15d1,Tacos De Birria El Meño,149.3,32.4
+rejected,Q44982136,Bill Robinson Theatre,14873f78-c385-44d7-91f1-08a99aa7d965,Botanica Santa Anita,86.5,39.0
+rejected,Q44982152,Cairo Theatre,3130744d-ee3c-4cfa-a39c-35a581b1848a,Mariscos El Pariente,105.1,42.4
+rejected,Q44982168,Castle Theatre,3ae8706d-26bf-4041-beb6-9e2dc93b65ed,Daily Donuts Croissants,7.2,32.4
+rejected,Q44982182,Century Theatre,b46d6a39-3c18-41e2-83cb-360b0bd6d66a,Don Lencho,69.0,24.0
+rejected,Q44982201,Green Meadows Theatre,2f0c12d9-9720-4e78-bfa6-f15d36129a74,The World Famous Barnyard,53.2,38.1
+rejected,Q44982214,Manchester Theater,5946669b-3f48-4b83-b29c-b8216e26b408,Tacos El Veneno,143.0,36.4
+rejected,Q44982237,Mecca Theatre,5ace4e20-caa2-4198-b7da-d3da816e601b,Little Caesars Pizza,110.1,36.4
+rejected,Q44982250,Mission Theatre,f0c049e2-93ce-4ad7-9d43-c451b5596452,Tortilleria Coatzingo,108.6,33.3
+rejected,Q44982263,Movie Show Theater,735cdf18-62cf-4fc5-887b-f32f808d1562,Arte de Ollin Tattoo Studio,83.7,40.0
+rejected,Q44982059,Regal Cinemas LA Live Stadium 14,59955130-21a6-4b87-94b0-35b6d4c49fb4,Lucky Strike at L.A. Live,64.4,53.6
+rejected,Q44982089,Aloha Theatre,bbc09a5d-a901-47bd-8cbb-a689731c318a,Tacos “La Guera”,149.5,44.4
+rejected,Q44982279,Princess Theatre,de4179ba-0de8-4e57-9f22-9ac6252252ea,Restaurante Salvadoreno,123.2,41.0
+rejected,Q44982308,Strand Theatre,5e65a07d-34c7-4fc4-ae9b-1627a7be496c,Tacos Gavilan,71.3,37.0
+rejected,Q44982323,Wesley Little Theatre,db59301e-cf47-41d7-af67-b06cb6268195,Vernon Y Central,39.2,37.8
+rejected,Q44982341,World Theatre,14ed95f2-c7b5-421e-b5ae-135d0e83cac7,Arts at Blue Roof,111.6,40.0
+rejected,Q44982355,Southside Theatre,9e528f9f-4c5b-471e-82d5-b08d9280bcc2,Vermont Donuts,124.9,45.2
+rejected,Q44982370,Sunbeam Theater,a2b7da00-24cc-4a0c-ae5d-688d57322052,Birreria Gonzalez,123.8,37.5
+rejected,Q44982385,Tujunga Theatre,b388638c-1a35-4380-843a-e5c8c1108b50,Queens Burgers,51.2,34.5
+rejected,Q44982417,Guild Theatre,7316b853-9507-40ab-b91d-3c57a82df576,The MARK Theatre,87.0,64.0
+rejected,Q44982436,Sand Box Theatre,3fee04d4-dc2f-444e-a1dd-d62e57115c31,Zombie Joe's Underground Theatre,93.3,45.8
+rejected,Q44982450,Largo Theatre,9a504dee-4c25-48a7-9660-a8bdffcd0a08,Watts Coffee House,56.4,38.7
+rejected,Q44982465,Linda Theatre,e1bc6734-ad3f-42e2-85ba-12a8647a2227,Chinese Express,34.5,42.9
+rejected,Q44982481,Kokusai Theatre,cd39d766-3119-4191-840d-46ee131182eb,Kobbler King,145.2,37.0
+rejected,Q44982820,Mann Westwood 4,7503a6fb-8567-409e-98ae-501f734010a0,The Landmark Westwood,55.7,68.8
+rejected,Q44982833,National Theatre,07205c02-927e-43fe-88a0-6bb2e1eb1986,Discount Shoe Warehouse,55.9,46.2
+rejected,Q49473420,Bailey Canyon Park,e6e65161-f6f4-42bf-b6be-2359553b9f82,Bailey Canyon Trail,54.3,81.1
+rejected,Q49473509,Baldwin Hills Playground,cd455e76-9e34-45f8-a59b-87a9a11d813b,Baldwin Hills Recreation Center,85.2,61.8
+rejected,Q49473514,Baldwin Hills Village,11aacddb-185d-4956-9049-21b8dca2a635,Village Green Los Angeles,107.0,60.9
+rejected,Q49473572,Bandini Park,b9694777-0401-49f0-80b7-9a8728885d9f,City of Commerce Bandini Park,143.1,58.5
+rejected,Q49473660,Barnes Memorial Park,f13a9c88-037b-428f-b236-0ac09040f8e0,Barnes Park,24.4,71.0
+rejected,Q49474219,Bell Gardens Park,fd43989f-d6ff-485b-965c-ce1fc459139e,Bell Gardens Veterans Park,36.0,79.1
+rejected,Q49474217,Bell Field,acfacf68-7148-4a10-97d4-1c2b540634da,The Green Bean Coffee & Tea,127.5,32.3
+rejected,Q49474269,Bellevue Park,3e7ed0ea-21e5-4060-8dc3-9c7379df9b49,Bellevue Recreation Center,117.0,51.3
+rejected,Q49474313,Belvedere Park,7b2c520c-8112-4c52-88a1-9885424c23b3,Belvedere Park Playground,132.3,71.8
+rejected,Q49474538,Besse Park,099e9aad-8e13-4591-85c9-18c8944b61d4,Starbucks,132.6,42.1
+rejected,Q49474573,Bethune Park,dffcb22d-edea-4e47-9ea2-9fb7b3a1b9fc,Mary M. Bethune Park,59.4,77.4
+rejected,Q49475501,Boyle Heights Sports Center Park,daed5294-0473-41be-9e87-cf31567486bf,Los Dorados La,149.0,34.8
+rejected,Q49475821,Broadway Park,0c8f6be4-e336-40ec-ba2d-b2872ceac92e,Park Drive Park,28.9,50.0
+rejected,Q49476210,Burke Park,9e62c8bf-5813-4696-a7c8-28368864e960,Alhambra Historical Society Museum,31.2,18.2
+rejected,Q49476285,Burrel McDonald Park,bb0971e5-2022-4232-ae68-685aa1368090,Burrell Mac Donald Park,90.5,83.7
+rejected,Q49478931,Coldwater Canyon Park,3075da38-febe-4d94-a0c0-47ef5a5efb56,S. Mark Taper Foundation Amphitheatre,106.8,35.1
+rejected,Q49479216,Colonel Leo H Washington Park,d7a54ef8-17e3-41ba-a597-b5273ebab468,Leon H Washington Park,51.5,82.4
+rejected,Q49479531,Community Center Park,a40206f0-4495-4dd4-83d8-49fb626d6500,Garvey Center,123.2,52.9
+rejected,Q44982864,UA Westwood 4,dc7a4925-da62-40b9-aeab-46f339b11055,Crest Westwood,74.5,66.7
+rejected,Q44982879,Dorkel Theatre,afdcc797-5739-4ba3-9563-d1a0bc588bab,Harbor Marine Product,62.5,34.3
+rejected,Q48817410,Bhagavad-gita Museum,9721f853-9f50-4dbf-ba19-e1caa3634f72,Diorama-Museum of Bhagavad-gita,19.8,78.4
+rejected,Q48965965,Dearly Departed Tours & Artifact Museum,68b9bdbc-5d5f-42d2-9787-0fd244a3fa2b,Taste Of The Caribbean LA,57.7,38.7
+rejected,Q44982599,Loyola Theater,82b08b19-47ff-4f94-bfad-6c206f3683b2,Shokudo Westchester,142.1,54.5
+rejected,Q44982612,Paradise Theatre,4ab3dca6-7d11-493a-ba51-ad474f4f60ad,FLORES ARANDAS TACOS,83.2,50.0
+rejected,Q44982644,De Luxe Theater,9b91ce4c-b5f9-4bf7-b9d6-e06d2ff4a8a1,Langer's Delicatessen Restaurant,38.5,44.4
+rejected,Q44982657,Empire Theatre,8766ef2a-de76-49e7-a2b1-6575a7f1b700,Paquetería Flores Express,112.6,46.2
+rejected,Q44982669,Granada Theatre,2e085517-3534-4dce-aa99-93382f2d3a4e,The Charlie Echo Park,129.4,31.2
+rejected,Q44982684,Lake Theatre,4d4eb89b-d173-4b01-b4bb-9372faff0b9c,Jimenez Arcade,40.2,38.5
+rejected,Q44982701,Park Theatre,4d4eb89b-d173-4b01-b4bb-9372faff0b9c,Jimenez Arcade,121.4,38.5
+rejected,Q44982716,Rampart Theatre,36046b48-45d9-41a3-92ee-d24db9351f5e,Xela Panadería & Restaurante,128.7,39.0
+rejected,Q44982733,Sun Theatre,0ded878a-4f3d-430c-8d08-dc53eea38f25,El Parian Restaurant,135.8,30.0
+rejected,Q44982760,Billy Wilder Theater,cd1baa80-63e0-4d12-9ded-2f541e583c1d,Billy Wilder Theater at the Hammer Museum,75.2,65.6
+rejected,Q44982791,Mann Festival Theater,b9a1d57c-c815-493a-9a08-530b58b0824f,Tocaya Modern Mexican,138.8,42.9
+rejected,Q44982803,Mann Plaza Theater,065ddac6-05e2-4eb4-b261-aa3e0fb33a94,Violet L.A.,144.7,42.9
+rejected,Q49480217,Corona Park,d7569f47-dbd6-4cfd-b1ef-e02560934737,Freedom Park,143.8,60.9
+rejected,Q49480955,Crescenta Valley Park,80a0b6d0-dc93-4f01-8e1a-8a3ecc568fe5,Lacrescenta Dog Park,116.6,68.3
+rejected,Q49481055,Crocker Plaza,53d354fb-537c-48db-a047-58a8809e2371,Hancock Memorial Museum,104.4,38.9
+rejected,Q49481563,Cypress Park,c94edc4f-728c-4473-87be-dafa310fc6b1,Cypress Recreation Center,79.5,48.6
+rejected,Q49481916,Darby Memorial Park,674fdf28-af16-4046-aef5-98204b560a6f,Darby Park,130.7,69.0
+rejected,Q49472300,Alondra Park,882f3c34-2f2f-4836-b162-4db6df974bbd,"Alondra Water, Bike and Skate Park",19.4,53.3
+rejected,Q49472305,Alpine Park,2e3d8318-0b1b-4688-9bd6-22a11ab9fda6,Alpine Recreation Center,50.8,45.7
+rejected,Q49472555,Anderson Park,eafd9fc2-4691-4ad7-bae2-45b6c3a99687,James Anderson Park,110.1,81.2
+rejected,Q49472790,Arcadia High School Recreation Park,5df8929b-351f-4e8b-b6f1-29b179648b0a,Tan-Cha 嘆茶,67.0,31.1
+rejected,Q49472798,Arcadia Wilderness Park,f97fd913-2ed2-4cfb-8c34-5306c6da6c94,Wilderness Park,14.7,78.9
+rejected,Q49472807,Arceo Park,ed0bdeab-a1cf-4b59-90b9-08026f070902,Tony Arceo Memorial Park,10.1,58.8
+rejected,Q49473163,Atlantic Avenue Park,dbabc4e2-e88f-49e4-a3cc-49a3f69fb1b1,Atlantic Ave Park Pool,7.0,81.0
+ambiguous,Q49482245,De Longpre Park,bee5804b-d4ab-4434-b39c-5a28eb1e8fac,De Longpre Park,11.3,100.0
+ambiguous,Q49482245,De Longpre Park,7867050c-095b-4502-85ef-51a9846f5da2,De Longpre Park,124.3,100.0
+rejected,Q49482587,Del Rey Lagoon Park,49d78df7-1403-4160-b392-dd0d6ff220b9,Del Rey Lagoon,51.8,84.8
+rejected,Q49482610,Delano Park,77e7c0d0-8ca6-4478-9f8c-60113d6f0e27,Delano Recreation Center,60.6,45.7
+rejected,Q49483234,Dickson Plaza,bdb0dd67-ab2d-4d87-9fa9-b44de01b9734,Lani Hall,119.7,27.3
+rejected,Q49483476,Doctor Paul Carlson Memorial Park,af60fa30-049b-4194-8d32-ee1b30f852b5,Carlson Park,18.8,53.3
+rejected,Q49483525,Doctor Thomas G Mills Park,f299f5b3-60d5-4c81-bfe6-b6be85b6c985,Mills Memorial Park,27.8,57.8
+rejected,Q49483532,Doctor Walter R Tucker Park,d49eae1c-82c7-43dd-8003-3e7a86edb670,Victory Park School,63.3,39.1
+rejected,Q49483653,Dominguez Park,c76150a7-db20-4e67-a0ee-67ac5830f9a7,Redondo Beach Dog Park,102.8,44.4
+rejected,Q49484111,Downey Playground,93a96234-c194-433c-944a-e092778051df,Albion Riverside Park,131.5,36.8
+rejected,Q49484113,Downey Recreation Center,8a55a46c-0237-44a9-adb4-939e3edeb9b9,El Cielito Lindo - Lincoln Heights,145.6,39.3
+rejected,Q49484135,Downs Playground,bdf9d02e-9e9b-4562-b541-fdbe02fdc9e1,Botanas el chinto,115.1,30.3
+rejected,Q49484891,Eagle Rock Recreation Center,fb5d37b4-56e8-4305-aace-1b22dc384aa2,Eagle Rock Dog Park,47.7,55.3
+rejected,Q49477001,Carmelita Gardens,7b98abc9-53b4-44de-b768-2308be814b78,Garden Cafe At Norton Simon Museum,95.0,43.1
+rejected,Q49477037,Carousel Park,bf3b1ceb-7e24-4588-aee6-b35cd4a078dc,Carousel Cafe,18.9,76.2
+rejected,Q49478391,Clara Park,d0f7cd31-384b-4479-b5a3-d5dca3a8721f,Clara Street Park,60.4,74.1
+rejected,Q49485568,Echo Park,26adf0d2-f25a-48b4-aced-541e30f619e5,Echo Park Lake,47.7,78.3
+rejected,Q49485630,Eddie Park,3db8e2dc-0145-4c14-a0a1-8837e739e197,Eddie Park and House,47.6,66.7
+rejected,Q100984577,California Theatre,c43c259d-dbd0-4bdd-bc1b-831df630c47a,Rialto Theatre,129.1,68.8
+rejected,Q88009970,Exposition Park IMAX Theater,cbfd8874-39b8-4915-8369-6ddaf165569f,Exposition Park,98.2,69.8
+rejected,Q96205518,Lynda and Stewart Resnick Exhibition Pavilion,950ee952-c3cc-44fc-a7d7-30f599e0185c,La Brea Tar Pits And Museum,69.0,44.4
+rejected,Q78348788,Alamo Drafthouse Downtown,edffcbec-3c96-4eed-b7da-f8fcc96e9cd7,Alamo Drafthouse Los Angeles,77.4,67.9
+rejected,Q84582145,Modern Visual Communications,5c1ad3be-6426-44cd-87ab-dc09cb1e537d,Chickpeas Vegetarian,67.6,41.7
+rejected,Q85758835,El Tepeyac Café,e228146f-9c92-415c-980b-b7e640730626,El Tepeyac Cafe,5.7,80.0
+rejected,Q85791229,Original Cannabis Cafe,f4a74118-88e1-499a-a89a-b769f192b7c9,Formosa Park,103.8,20.7
+rejected,Q49486254,El Sereno North Park,1f7fabcb-64f8-4923-ae67-263aa33882da,Guardia Park,21.5,37.5
+rejected,Q49486258,El Sereno Recreation Center,bc2f0f87-64d7-4489-99e5-094c8627ca6e,El Sereno Park Playground,102.2,53.8
+rejected,Q49486326,Eleanor Green Roberts Aquatic Center,693b3e5f-4be6-4def-a32a-219420e9a9ec,Golden Era Tattoo Studio,106.8,33.3
+rejected,Q49487771,Evergreen Playground,5837bcfb-27ee-469b-b455-10084afa25e5,Mariscos El Jato Jr.,143.7,30.8
+rejected,Q65063472,Campanile,39a1ae87-6833-455a-9c8e-e22e71ad2cb7,Stewart Antiques,118.7,32.0
+rejected,Q65065879,Jeff's Gourmet Sausage Factory,3a839f37-04af-4c5c-8b49-e2366f45997c,Meshuga 4 Sushi,36.8,35.6
+rejected,Q65118904,Automobile Driving Museum,7c37fb72-1e24-4398-bb2e-bd8da46080f7,The Zimmerman Automobile Driving Museum,12.2,83.3
+rejected,Q65193170,Biddy Mason Park,c57f1da7-348b-468a-8fa4-a0db0db3381f,Biddy Mason Memorial Park,22.3,78.0
+rejected,Q65802336,Margo Leavin Gallery,5dab94a9-9e66-4476-b93c-ad4d1c8e1d7f,Champagne French Bakery Cafe,118.1,41.9
+rejected,Q65941079,MAK Center,f34edb8f-dd09-4a37-a78a-2046e7a6625f,Schindler House,23.3,32.0
+rejected,Q104866809,Miceli's,a013474e-1017-4b40-9403-b1cb38d7e69c,Miceli's Italian Restaurant,6.8,66.7
+rejected,Q104868520,Moore's Delicatessen,64eef0f9-73cd-4e6d-b431-98c06a55363e,Octopus Japanese Restaurant,134.7,44.4
+rejected,Q104868911,Taix,c748b479-4569-4dd1-81a2-52722b5e6d7e,Taix French Restaurant,10.0,53.3
+rejected,Q105414656,UCLA Kerckhoff Hall,ceeea554-cc32-414c-9e64-25761b6fe2a0,Ucla Kerckhoff Art Gallery,43.4,80.0
+rejected,Q105594132,El Cholo Spanish Cafe,2fee3e7b-576a-4922-be3d-77ea369f6133,El Cholo Inc,63.5,71.4
+rejected,Q105695190,UCLA Meyer & Renee Luskin Conference Center,3912cf45-f2b8-4680-8387-d83fcd219ba3,Plateia,45.6,16.7
+rejected,Q105725129,UCLA Ackerman Union,73fd2a76-78df-4efd-85dc-a3c2c9f615af,UCLA Ackerman Union A Level Food Court,27.2,66.7
+rejected,Q105771067,UCLA Broad Art Center,82a1f2e2-994b-4c71-8521-12efea6a0cae,UCLA - James Bridges Theater,91.5,55.3
+rejected,Q105934776,UCLA Northwest Campus Auditorium,04d195eb-0fe5-48c3-a7d2-dec9d73350ef,Covel Grand Horizon Room,135.2,25.0
+rejected,Q106631068,Spoon & Pork,0c0504f1-c35b-4312-82bc-947c63f8d612,Piano Stairs on Sunset,113.6,37.5
+rejected,Q107082351,Paramount Ballroom,bf1d6d66-3b9b-4676-8f25-d54e7d4e0f22,The Paramount,5.9,66.7
+rejected,Q107220818,Rickey's Restaurant,d63d0c17-7537-4db9-b48e-4067de9546b2,Tasty Garden,49.8,40.0
+rejected,Q109968205,Beverly Park,51380859-97e5-4786-8182-e09569a25834,Tocaya - Beverly Center,108.7,54.5
+rejected,Q111690058,Casa de Castelar,bd0f535e-2327-492a-8201-47fd9a96563c,East Garden,76.7,51.9
+rejected,Q112757409,Mochinut,f91a6c6a-a374-4731-8ec1-4753848bd9da,Balrog Coffee Inc,57.0,32.0
+rejected,Q44982494,Fox Stadium Theatre,c49ebaf3-7db8-4752-956e-a9e25e3d5615,Tuk Tuk Thai Restaurant,73.6,38.7
+rejected,Q113006284,Carousel Restaurant Hollywood,84a30080-358b-4e4e-a761-de5f4ff0a034,Carousel Restaurant,4.6,43.2
+rejected,Q113096929,Pine and Crane DTLA,38a62273-8e9f-44cb-9cc9-a4bb3cad6631,J Restaurant and Lounge,53.4,51.4
+rejected,Q113303581,The Nexus Association,af7d9fce-22ef-48f3-b043-9ff133ece521,Eco Park Los Angeles CA,81.0,35.0
+rejected,Q113318845,Coffee Dan's Restaurant,d9edf489-d947-4280-b943-20236cf3075d,Redondo Beach Pier,39.5,33.3
+rejected,Q113318849,Coffee Dan's Restaurant,3d6146e9-f4a6-4b7b-a36e-5802578f4c0e,The Coffee Bean & Tea Leaf,134.1,56.2
+rejected,Q113641752,North Valleyheart Riverwalk,e4939df2-e386-42b1-bc89-ac30f18d8904,Pressed Juicery,149.7,28.6
+ambiguous,Q113976454,Britannia Pub,fc6db8ee-573d-47c0-8908-a7badf1fe03b,Britannia Pub,7.8,100.0
+ambiguous,Q113976454,Britannia Pub,06a2532c-10e4-41f4-803f-eb2c0c924360,Britannia Pub,17.3,100.0
+rejected,Q114297398,Stella Adler Theatre,554f6bdf-7439-4b75-a6ed-519d37f7a184,El Capitan Theatre,145.4,63.2
+rejected,Q124466144,Belasco Theater,7a52164e-c8f9-44a0-b422-b9b5e18f14d6,The Belasco,16.7,63.6
+rejected,Q123702380,Upright Citizens Brigade Theatre Los Angeles,9369f747-6f50-46e9-8d1c-fd4967acd96a,Upright Citizens Brigade Theatre,7.6,84.2
+rejected,Q124111596,Allan Hancock Foundation,aa0fd8d3-848b-4c2d-9787-10331f0c2067,Alumni Park,83.9,45.7
+rejected,Q115803173,Q Sushi,e8457d0b-3a65-42ec-a0c4-34b313994367,Soi 7,12.9,50.0
+rejected,Q115978978,Armenian American Museum,d5aede1d-9285-4f6e-bdd6-63a2756e82f1,La Americana at Brand,133.3,62.2
+rejected,Q116826426,Selig Zoo,6d75465a-bbff-4372-90d2-162b277d39f5,Yosemery National Park,49.0,19.4
+rejected,Q118352433,Honor Fraser,20797dac-bc08-470a-a0a7-83bcf4248a79,Honor Fraser Gallery,13.0,75.0
+rejected,Q119842926,Q119842926,702a351f-9db4-4fd1-96cd-782595868649,House Of 99,26.5,19.0
+rejected,Q120142489,Anajak Thai,f6f4986e-0f28-4e2c-9d3b-5f9ff5664353,Anajak Thai Cuisine,5.1,73.3
+rejected,Q121143624,Citrin,c9645d25-07ca-4717-9322-def84c4909bd,Ukraina Deli,137.6,44.4
+rejected,Q121143791,Manzke,f4e5b873-4384-468c-87f3-da32a3eef95c,Melanee Thai,56.9,44.4
+rejected,Q121189647,Patina,02ba0158-240c-47b4-93b5-88564b13ea13,Massilia,106.2,42.9
+rejected,Q121189920,Shunji,8b761256-5e07-4fb5-a652-aaa4165dc6ba,Shunji Japanese Cuisine,5.6,41.4
+rejected,Q122451942,Gucci Osteria da Massimo Bottura,7546932b-6d58-4502-8606-94ce1056d8f8,Jag Restaurant Group Llc,117.7,39.3
+rejected,Q122941973,Yess,b6f1fc74-8d95-4c4a-b265-9c091e36bba9,Lokels Cafe,55.9,40.0
+rejected,Q123510096,Super Nintendo World,79a9e5f1-d7d3-4516-bfd2-68fc2aa65f25,"Disneyland Resort, Anaheim Ca",57.5,41.7
+rejected,Q124851396,Doctors House,97fe66d1-4edf-43ca-bf95-15e9245430b9,"Doctors House Museum Glendale, California",111.5,49.1
+rejected,Q125146202,Venice Heritage Museum,85248adf-b0a6-4b9d-85a2-90dc70d3b9cd,Chaya Venice,118.2,52.9
+rejected,Q125216758,The Abbey,83fbbb92-8931-4b1a-af8c-f527b03e9827,The Abbey Food & Bar,7.5,66.7
+rejected,Q125372042,Gil Cates Theater,06ad8fe3-a488-43ce-8f8a-eb488b02cd98,Tatiana's Catering Truck,42.8,48.8
+rejected,Q128304318,Vogue Theatre,73d5c6a5-3ca8-445b-91ac-26d76a7cb1bf,Geisha House,64.2,48.0
+rejected,Q129322099,Ritz Theatre,9e21061c-ad11-4b89-8519-5b5f3c1933a0,The Egyptian Theatre Hollywood,147.4,47.4
+rejected,Q44982518,Picwood Theatre,d86953dd-0089-498c-9365-42e438a05e4a,Cold Stone Creamery,69.2,47.1
+rejected,Q44982530,Westland Twins,79de3138-2234-44e0-9487-e21d9357b855,Frida Tacos - Westside Pavilion,124.7,41.9
+rejected,Q44982543,Carolina West,cfc4d8a8-95cc-4405-a895-85982ab3ccef,Carl's Jr.,52.0,54.5
+rejected,Q44982556,Cinemark 18 and XD Los Angeles,dbfa0e8b-08eb-403c-bb90-015bab17d1ad,Cinemark 18 and XD,26.9,75.0
+rejected,Q44982571,Disney's Fantasia 2000 IMAX Theatre,c1d44ae5-1ab5-4c98-a190-9b32d81be255,Howard Hughes Rave Cinemas,75.6,39.3
+rejected,Q44982586,La Tijera Theatre,b820f568-535e-477d-924e-c83c24abf05c,Red River Enterprises Llc,94.5,38.1
+rejected,Q135192862,Four Star Theater,33060662-a96e-4bc9-9d38-1a7dddf165cb,Sumac | Modern Street Food,128.3,43.9
+rejected,Q135193799,Lou The French On The Block,78c5eea7-6de1-4266-b7a4-ca1fdbb5b560,The Girl & The Chicken,61.3,46.5
+rejected,Q135668761,Bovard Administration Building,aa0fd8d3-848b-4c2d-9787-10331f0c2067,Alumni Park,69.6,34.1
+rejected,Q135668777,Alice and Eleonore Schoenfeld Symphonic Hall,0a71326a-121f-4852-8f5b-0666ab7a0069,USC - Theatre in Los Angeles,85.8,42.9
+rejected,Q135669373,McClintock Building and Theatre,4d2f5a39-cba9-4f39-9a20-983e1b6c9782,McClintock Theatre,4.6,73.5
+rejected,Q135669395,Eileen Norris Cinema Theatre,60f998d9-0fd0-4727-bec5-ba06ea201292,USC Norris Theatre,37.2,60.9
+rejected,Q131745293,Alto Beta,0608f1e7-01bf-49df-b314-7a3eb1549ea0,Tacos 210,124.6,33.3
+rejected,Q132477495,Bulgarini Vino Cucina,c654a966-7c05-4c3d-8b63-1b21fe3baecd,Bulgarini Gelato,9.0,64.9
+rejected,Q133091711,Elf Cafe,38ccc2b4-0c9a-43d3-9ff1-40127d0af494,El Flamin Taco,119.6,35.3
+rejected,Q133280582,Women's Twentieth Century Club of Eagle Rock,f274e61d-c634-436d-a250-2079a993b119,Colombo's Italian Steakhouse & Jazz Club,53.3,43.9
+rejected,Q133285651,Woman's Club of Hollywood,41c2d56a-6144-4e3c-a570-1abdd70ff3fc,Lesly Kahn and Co,88.6,28.6
+rejected,Q133285875,Montebello Woman's Club,cff3364e-4a74-4626-a14b-60a44d9c6535,Montebello Park,109.3,63.2
+rejected,Q134981291,Follies Theater,4086d0ea-e258-40d4-ba66-4a47fc865020,Five Star Bar,128.8,58.3
+rejected,Q135669427,Ramo Hall,e45a9ec0-6a2c-4bbb-8a7e-ca5bff8f29ea,The John Williams Scoring Stage,72.4,33.3
+rejected,Q135669436,Scene Dock (Theatre),4d8f1470-d490-4be8-a526-ba42c5e2d9aa,Technical Theatre Laboratory (TTL),6.7,48.0
+rejected,Q135672279,Town and Gown,c3a088e2-13ff-4a00-9f88-889a5de04e60,Newman Recital Hall (AHF),83.1,33.3
+rejected,Q135672314,USC Dick Wolf Drama Center,1e846a71-0bd5-495a-b618-f69e6d551473,Rock and Reilly's USC,111.6,42.6
+ambiguous,Q135900021,SUR Restaurant and Lounge,aa12c0fa-1d35-4285-be20-645be480d784,SUR Restaurant and Lounge,5.1,100.0
+ambiguous,Q135900021,SUR Restaurant and Lounge,2c5d71b3-f20e-48ca-a8ef-604181b233c5,Sur Restaurant and Bar,9.5,100.0
+rejected,Q136386955,Avenue of the Athletes,a900af40-ff6b-4577-a8c9-cabc3dbf707d,All Over Los Angeles,136.5,47.6
+rejected,Q136463639,Alta Adams,8021cd1b-d83f-4fdf-984a-ec1afb69a345,Alta West Adams,20.0,80.0
+rejected,Q136534216,Century Park,755c7f6c-96f9-41bf-82dd-bf0f6325d12b,The Club at Century Park,94.8,75.0
+rejected,Q140460161,Brand Park Friendship Garden,86301ebb-8ac8-4147-921b-2e3de64187f6,Brand Park,142.3,52.6
+rejected,Q140460300,San Vicente Boulevard coral trees,a418e22e-499c-4221-83b1-51989ee39b58,Coral Tree Cafe,73.0,46.5
+rejected,Q140460567,Dahlia Motors Building,2403537c-2c95-4af9-a41a-81113faa945f,Colorado Donuts,109.5,37.8
+rejected,Q140478274,Miura,e5cc745f-790a-4c60-bde6-0090a093e3f8,Urasawa,16.6,50.0
+rejected,Q140514637,Sculpture Garden at the Norton Simon Museum,7b98abc9-53b4-44de-b768-2308be814b78,Garden Cafe At Norton Simon Museum,103.4,75.3
+rejected,Q140544832,Sona,5866e9f6-6a1a-4ab2-a748-c8000d5a47b5,Ponsonby Road Cafe,97.2,47.1
+rejected,Q140591113,Beaux Arts Building,a501db90-1413-4ee0-abcb-069c8e78ccf3,Juanita's,131.7,28.6
+rejected,Q136547154,Pump Restaurant,b920570c-2afe-42a7-812e-dd479b6f24dd,Pizza Rustica,128.5,23.5
+rejected,Q136592280,Fran and Ray Stark Sculpture Garden,a01f8076-3edf-464f-9bf0-56c2b7530eda,Restaurant at the Getty Center,14.3,43.1
+rejected,Q136652885,Kouraku,0711215c-7939-434d-8a82-df7a7aaa399a,Four Leaf,20.1,50.0
+rejected,Q138589222,Cafe Knotted,3ca36b87-f620-4e95-93d4-82018a1eb5ce,Zinc Café & Bar,104.4,47.6
+rejected,Q139494660,Mentzer House,8c90d687-f0e7-4bc1-8cb3-eb2e778ac5eb,Grove Theater Center,85.9,42.4
+rejected,Q139504343,Burbank’s Centennial Park,c7208c3d-1b65-478c-bc7a-51d23dd8cb07,City of Burbank Parks and Recreation,122.4,52.5
+rejected,Q29247,Getty Center,fd45f2ee-a3ab-425c-8f57-6a7d525f2440,Central Garden,132.6,61.5
+rejected,Q49488470,Farnsworth Park,a2344e0c-dd81-44f5-9944-00f16e78a095,Farnsworth Park Amphitheater,110.3,69.8
+rejected,Q49488912,Ferraro Soccer Field,d681be4d-f333-4730-b4d1-badeacedb168,Griffith Park Ferraro Fields,66.6,62.5
+rejected,Q49489938,Flora Vista Park,70e13257-733b-4150-b6dc-e30d27bd0022,Bellflower Skate Park,84.9,64.9
+rejected,Q49491712,Frederick D Fagg Junior Park,c3199d24-5764-48cf-ba3f-f1dbd69391f2,USC Eileen Norris Cinema Theatre,146.2,36.7
+rejected,Q49492072,Friends Park,009b7ad1-0d13-4efa-9d36-16aaa2bfbf99,Joe Miller Field,131.4,42.9
+rejected,Q49492098,Friendship Park,a2ce2860-bbd1-4d89-ba41-58f4ae608a92,Heritage Park,141.5,57.1
+rejected,Q49492546,G W Carver Park,91875185-4bd7-4bb5-acc5-85ce44c1ef03,George Washington Carver Park,73.3,68.2
+rejected,Q49492881,Garfield Park,c659c8ea-a2f0-4b62-8c05-3c4b0facec5b,Garfield Park Playground,51.4,70.3
+rejected,Q49492981,Garvanza Park,be9dae23-c524-48f4-a2f0-0803f2910b9b,Garvanza Skatepark,74.7,83.9
+rejected,Q140373951,Highland Park Ebell Club Building,ae3c1e4b-fd4a-4473-9ecd-9addfe3ffaf9,Highland Park Bowl,149.9,62.7
+rejected,Q140669874,"Amoeba Music, Los Angeles",6fc2f467-367f-4fa9-aa94-19ee2b2bdea4,Amoeba Music,5.2,66.7
+rejected,Q141410158,Q141410158,c4aa54b7-7858-4b0b-ac4f-1916e2bde9d5,Berlin - Wall Project,110.4,0.0
+rejected,Q49493381,George E Elder Park,ad6969a9-6aef-4c59-9975-50ca45aa7d06,Elder Park,83.9,69.0
+ambiguous,Q49493401,George Izay Park,7908c565-bb20-4d6a-9696-ede44d3991de,George Izay Park,22.4,100.0
+ambiguous,Q49493401,George Izay Park,bfdfe073-7ce7-44e1-9c36-95cba7bbe0e0,George Izay Park,99.7,100.0
+rejected,Q49493983,Glen Alla Park,1d461b57-4009-4e0c-90c2-79bc6fdb9d4a,Glen Alla Park & Recreation,14.2,71.8
+rejected,Q49495177,Grandview Park,ad6969a9-6aef-4c59-9975-50ca45aa7d06,Elder Park,133.5,58.3
+rejected,Q49495354,Grant Rea Park,e425d7f7-d8a6-41ca-96b3-7e3e20f8a12d,Grant Rea Park Recreation Building,53.0,58.3
+rejected,Q49495659,Greaver Oak Park,b834e8d9-5559-4e7c-88bb-d4f4dfc56249,Greayers Oak Mini Park,14.9,78.9
+rejected,Q115802786,Kali,b04db711-3c80-4438-ad5d-061f172df5eb,Kali Steak,5.8,57.1
+rejected,Q115803027,Phenakite,6812e45f-acc8-4375-9e35-7bb4fb6e4de9,King Buffet,111.6,30.0
+rejected,Q130349159,Idle Hour Café,82fd4f46-d88d-4d73-bd4f-79d84e26de63,Idle Hour,20.6,78.3
+rejected,Q130611345,715,d8723866-76e5-4384-8c10-d5c03b32017a,715 Sushi,10.2,50.0
+rejected,Q49496436,Griffith-Vermont Canyon Tennis Courts,ac013bfe-07bf-4295-aa95-9f4ffd21fb4b,Old LA Zoo Picnic Area,104.9,30.5
+rejected,Q49496805,Gunn Avenue Park,1e9b9c16-f3c4-4fd3-9a5e-f160d2170404,Adventure Park,136.7,73.3
+rejected,Q49497107,Hahn Plaza,aa0fd8d3-848b-4c2d-9787-10331f0c2067,Alumni Park,62.5,47.6
+rejected,Q49497686,Hannon Field,d9c9e4d8-f57d-4b91-aca5-5cb9483fd8fd,Laband Art Gallery,91.6,26.7
+rejected,Q49498543,Hartland Mini Park,22240679-1efd-41ae-84cc-61b2980d9279,Milena's Bakery,131.6,42.4
+rejected,Q49498587,Harvard Playground,307cd01e-f62a-4f64-af43-338f0ee08eee,Harvard Park,77.6,73.3
+rejected,Q49498977,Hawthorne Memorial Park,da73e5a2-39cc-452f-9694-2b58cd2369ab,Burger King,122.1,29.4
+rejected,Q49501018,Highland Park,57480d79-ca99-41bc-bf65-5e31f327d909,Super Panda China Buffet,144.0,43.2
+rejected,Q49502393,Holly Glen Park,ad3de2b5-f988-465f-bb74-a623ed09b972,Hollyglen Park,71.6,69.0
+rejected,Q49508370,John S Simms Park,e74bbb7e-f5e1-427c-bf82-f5edca348470,Simms Park,117.8,74.1
+rejected,Q49508453,John Zimmerman Park,c98abc1f-1e32-445d-97ec-89c021e5423d,Zimmerman Park,13.3,84.8
+rejected,Q49508887,Joslyn Adult Recreation Center,37135e74-1e3e-425e-9059-d330b045086b,Story Park,90.6,30.0
+rejected,Q49511116,Kinney Plaza,20cefee0-1400-4434-9dc7-98c16342564e,De La Flames,69.4,41.7
+rejected,Q49514152,Lakeview Recreation Area,e12938c5-8550-4148-9d9d-f0e2d483ca1d,Lakeview Park,11.9,54.1
+rejected,Q49514509,Langley Park,1d2000f4-c31c-49f4-a7b2-eebd0798c833,Beth Ryan Park,36.7,46.2
+rejected,Q49514776,Las Palmas Playground,be868711-4c42-4c42-8147-0e083326e795,B. Santi Inc,147.2,25.0
+rejected,Q49502443,Hollydale Park,cd2be610-83dc-412f-a229-93313d7c9a1d,Holydale Handball Courts,97.1,42.1
+rejected,Q49502447,Hollywood Franklin Park,50ae4f2a-4dd1-4022-8a8a-2084693d2c0f,Dorothy & Benjamin Smith Park,16.0,44.0
+rejected,Q49502478,Hollywood Playground,aedf5b40-7b41-4c40-aae7-c559af1cdf6a,Hollywood Park,37.0,76.5
+rejected,Q49503515,Howard Jones Field,9525dd59-a8a4-48db-99c0-9662e7cc729a,Drama Center & Massman Theatre (DRC),128.9,28.0
+rejected,Q49503529,Howard Park,e8eb6925-cef1-424d-ad54-da8141a68ab2,Robinson Park Recreation Center,54.0,28.6
+rejected,Q49506179,Jackson Park,81767a1c-5332-4204-82f2-f7fa2af69ebd,Whittier Art Gallery,138.3,25.0
+rejected,Q49507326,Jefferson Recreation Center,fc9dfe60-edab-4448-bd36-b2550cf5e9bb,Jefferson Park,13.6,53.7
+rejected,Q49507608,Jesse Owens County Park,815613ec-534e-4cca-b2fa-d01a4eafc1a5,Jesse Owens Park,55.3,82.1
+rejected,Q49515396,Leavey Field,64d93948-3525-4dc0-9f1f-fc0c5802cd80,Iggy's Diner,80.2,33.3
+rejected,Q49516902,Lincoln Park,c11334e5-bfd8-4798-ac7e-7d53fe495dc4,Christine Emerson Reed Park,65.0,46.2
+rejected,Q49516907,Lincoln Park,042ec3d0-4c35-4a72-933a-89fe5a436c66,Lincoln Park Pool,139.8,82.8
+rejected,Q49517153,Lincoln Park Recreation Center,042ec3d0-4c35-4a72-933a-89fe5a436c66,Lincoln Park Pool,38.9,59.6
+rejected,Q49517944,Little Bear Park,726ab366-f81b-4101-bd76-eabd965d8a06,Camp Little Bear Park and Lodge,48.3,68.1
+rejected,Q49519278,Loren Miller Park,26f7d9a5-6ea6-4ebe-82e2-b52ad83a3a71,Loren Miller Recreation Center,43.1,59.6
+rejected,Q49519347,Los Angeles State and County Arboretum,573c955c-6906-42f2-8f9a-e8d881301ff1,Baldwin Lake,27.6,28.0
+rejected,Q49519349,Los Angeles Equestrian Center,1e6be47e-ef3f-4148-907c-1d824c247b14,Rein Cafe,62.5,24.2
+rejected,Q49519352,Los Angeles High Memorial Park,24b12a0f-a9bb-463d-bacb-3150c94b57b7,LA High Memorial Park,48.1,78.4
+rejected,Q49519419,Los Robles County Park,48cf354f-fd78-4df5-bcb5-87bff894a0b7,Los Robles Park,55.7,81.1
+rejected,Q49520159,Lummis Park,b3fb3324-c934-40b3-8df8-98b9d1f41b2b,Idcs Highland Park,143.5,55.2
+rejected,Q49521207,Manhattan Beach,ed003d10-70ab-4ffe-ae05-f1b2fc0c5294,Manhattan Beach Boardwalk,120.7,75.0
+rejected,Q49521528,Mar Vista Recreation Center,b8ee400d-25e8-4eae-b7ab-a0a2bb6a5161,Mar Vista Park East Field,148.4,57.7
+rejected,Q49522973,Mayfair Park,931d48b1-4f64-4830-ab54-0095b014d252,Lisa Fernandez Field,111.7,31.2
+ambiguous,Q49523230,McCambridge Park,df3fc522-4f6c-4913-b364-c177fc71e45e,McCambridge Park,25.6,100.0
+ambiguous,Q49523230,McCambridge Park,cab8d69b-535a-4d69-8d48-7bc51a2ef262,McCambridge Park Pool,116.1,86.5
+rejected,Q49524015,McNees Park,3c78fcb2-f5be-40e5-a908-f2c4db8ac13c,Pizza Hut,83.8,30.0
+rejected,Q49524736,Memorial Open Air Theatre,2886b6fc-2d17-48cd-bcfb-b1c5be2d298d,Historic Belmar Park,58.5,44.4
+rejected,Q49526063,Middleton Street Recreation Center,b470eafb-e458-49ff-86c0-0ec6e6fdbd3d,Nana's Antojitos,128.0,40.0
+rejected,Q49526234,Robert H. Keller Memorial Park,be7040f3-e04c-4a65-9f17-6ac57d19f857,Robert Keller Park,84.1,76.6
+rejected,Q49527778,Montecito Park,d67e1a1b-19fe-4358-b794-4f90c286c7af,Montecito Park Union Church,18.6,68.3
+rejected,Q49532056,Normandie Playground,f7fd748b-2e21-49dd-aba4-1425659d8340,Mizuki Akiyama Playground,76.7,62.2
+rejected,Q49532160,North Atwater Park,8ff6ab87-0e22-4cf8-a3da-8c1ef9685953,Los Angeles Recreation & Parks,140.7,39.1
+rejected,Q49532502,North Hollywood Park,7573485a-cebd-42ca-a928-05839e8bdfad,The Food Truck Collective - West Coast,49.5,38.5
+rejected,Q49533934,Oak Grove Park,e6d15428-155d-4886-b3b1-1587f9d0583c,Hahamongna Watershed Park,102.2,35.9
+rejected,Q49534319,Oakhurst Park,1c999d9d-cb8a-4d1e-89f7-026824527d42,Oakhurst Mini Park,29.4,83.9
+rejected,Q49534514,Oakwood Playground,1badcb33-61ba-4d1e-a996-30eb73fd479f,United Artists Theatre,123.8,35.0
+rejected,Q49534517,Oakwood Recreation Center,d2c13dff-6753-458a-8a93-fc3d642722a3,Bishop E.L. Holmes Square,137.6,24.5
+rejected,Q49535467,Olive Avenue Recreation Center,77977caf-c0d8-4341-8a8e-b41dfb8383bd,Burbank City Park & Recreation,103.1,58.6
+rejected,Q49536154,Orr Park,207c799d-746b-4d7b-85e3-557cdad6749b,Sarah Mendez Park,66.3,40.0
+rejected,Q49536890,Pacific Park,3177606b-c9e5-4ee3-b7c2-47eb5550533a,Pacific Community Center & Park,72.0,58.5
+rejected,Q49537156,Palm Park,9fe650ff-6cb0-43c7-995f-aa37f4554a29,Palm Park Aquatic Center,83.3,54.5
+rejected,Q49537273,Palms Park,546b0183-832b-455e-bccf-e87abe43f2e9,Overland Park,56.9,52.2
+rejected,Q49539611,Parkview Playground,14baac66-24a3-465a-9990-46f3856ab41d,Teatro Frida Kahlo Theater,21.4,31.1
+rejected,Q49540016,Pasadena Memorial Park,1cb7000d-c990-46a1-a02d-c3dd0fd1dfc4,Pasadena Armenian Genocide Memorial,105.3,59.6
+rejected,Q49540229,Patterson Field,94064f54-916f-42a5-b434-2de9a7bf79b1,Feast,113.9,40.0
+rejected,Q49540803,Pecan Playground,ef2c6850-b2f2-493d-8909-4e33393bfe8d,Pecan Park,31.1,46.2
+rejected,Q49540843,Peck Road Park,f43e37d1-a46a-40a1-9087-763ae01e705d,Peck Road Water Conservation Park,8.7,59.6
+rejected,Q49541345,Pequino Park,d189923c-8fd4-4aa9-926b-8b4fcb442dfe,Donut Capital,131.1,32.0
+rejected,Q49542376,Piedmont Park,7a4efd38-9b55-41e6-9e20-938ee8e32271,Piedmont Park Villas Rec Room,19.7,61.9
+ambiguous,Q49544371,Plummer Park,e45c47be-8275-49c2-b6ac-9d39e4381a0c,Plamer Park,50.8,87.0
+ambiguous,Q49544371,Plummer Park,ace1479d-8aa0-40f0-94ec-b54b55db2d7e,Plummer Park,131.5,100.0
+rejected,Q49544536,Poinsettia Playground,352cc4cb-3d0e-4be3-94cb-b2684e1b00ef,Poinsettia OGs,93.7,68.6
+rejected,Q49544733,Polliwog Park,5f9ba2a4-728c-449c-ad83-6a417bb84d33,Polliwog Lake,53.2,84.6
+rejected,Q49545008,Poplar Recreation Center,c94edc4f-728c-4473-87be-dafa310fc6b1,Cypress Recreation Center,48.8,81.6
+rejected,Q49546236,Pritchard Field,d6e1e21d-e3e4-462e-9cc0-834a9b9bac5c,Raspado Xpress,141.0,27.6
+rejected,Q49547204,Queen Anne Recreation Center,3e27a345-93c7-453b-997b-9fef5691f69b,Queen Anne Park,37.2,55.8
+ambiguous,Q49547880,Ramon Garcia Recreation Center,07528b09-cb09-43e1-b416-581ea52c1f87,Ramón Garcia Recreation Center,121.1,96.7
+ambiguous,Q49547880,Ramon Garcia Recreation Center,6e156002-7fee-4aea-8c16-ad050241f301,Msgr Ramon Garcia Recreation Center,68.6,92.3
+rejected,Q49547891,Ramona Gardens Park,b9febfd3-d005-4434-95e4-4098587d15dd,Crusado Park,116.0,45.2
+rejected,Q49548583,Recreation Park,92df5ccc-ad75-42db-8f20-5070a6a88673,Mas Fukai Park,57.0,27.6
+rejected,Q49550693,River Garden Park,f4a83716-c74f-49f2-8f39-77a26df203bd,La Esquinita - River Garden Park,85.4,72.3
+rejected,Q49559501,Selma Park,c005e0be-18ed-4f84-89db-30a8c4cf28c8,Selma park estacionamiento,64.3,55.6
+rejected,Q49573771,Valencia Triangle,8e0747ac-eb94-49af-9fb8-be96406e92c9,UMNES  TV En Vivo,145.6,36.4
+rejected,Q49575731,Vista Hermosa Park,9a2c7a75-b5d9-4bb5-b619-a87167aa7050,Vista Hermosa Natural Park,73.8,81.8
+rejected,Q54092382,Guinness World Records Museum,5528c66a-a815-4597-84d0-dbabfa444a20,World of Illusions Los Angeles,71.2,50.8
+rejected,Q55106502,Crystal Theatre,c90c78bc-d397-4f7f-af09-9141393af931,La Costeña Bar,59.6,48.0
+rejected,Q64223568,Lucky Strike Live,7ad5e4b2-1562-4c84-a6a0-f01a9a803a19,Lucky Strike Hollywood,52.9,71.8
+rejected,Q7312396,Renaissance,33594ce6-5cec-4cd3-aa3d-04f1cf6b274d,Garden Pavillion,63.6,44.4
+rejected,Q16580816,Q16580816,34ca1a91-268f-4400-9ad1-6eb1093d6d57,1919,125.8,30.8
+rejected,Q17033855,Shrine Expo Hall,aea6fd9d-1267-4f28-b89a-e7731cb93616,Shrine Auditorium & Expo Hall,23.3,74.4
+rejected,Q49471731,6th & Gladys Park,c9e54c33-2117-4e36-9213-783de0a8cb76,Gladys Park,19.5,84.6
+rejected,Q49474608,Beverly Park,4fb76202-971a-4eb2-bec1-9a427fe95a7d,Marengo Grill & Coffee House,114.3,36.8
+rejected,Q49549206,Reggie Rodriguez Park,80b5b68d-09e2-47cb-9a29-76b2158da8ee,Rodriguez Park,23.5,80.0
+rejected,Q49550438,Rio Hondo Park,777acf7e-df84-4f46-a6c2-b97d8fb9e70e,Pico Rivera Rio Hondo Park,23.7,70.0
+rejected,Q49552031,Robert M McCurdy Nature Center,6abba5b5-c257-402e-8fb4-b6f80689a12d,Henninger Flats Campground,79.4,35.7
+rejected,Q49552199,Robertson Recreation Center,e342fd98-acbc-4fdd-b0be-6a1c6c2038b9,Asian Fusion,125.7,35.9
+rejected,Q49552197,Robertson Playground,e342fd98-acbc-4fdd-b0be-6a1c6c2038b9,Asian Fusion,101.6,37.5
+rejected,Q49553094,Rogers Park,7d06ff2d-5372-4c50-8c05-29ffba632213,Brown Cherry Bakery Cafe,105.1,46.7
+rejected,Q49553427,Roosevelt Park,3c20d312-8fee-4cfe-8dc1-db8c4b1f5238,Franklin D. Roosevelt Park,77.8,71.8
+rejected,Q49553605,Rose Bowl Aquatic Center,78eb458f-6e3b-49d4-9dc1-e56848618dee,The Pirate Park,93.0,28.6
+rejected,Q49553633,Rose Hill Park,53066c01-da40-4a35-9ee6-63c0062eec7a,Rose Hill Park Playground,5.3,71.8
+rejected,Q49553637,Rose Hill Playground,a5d2b524-14fa-4f07-beee-8e63e26e2f97,Rose Hill Recreation Center,72.6,55.3
+rejected,Q49553890,Rosewood Park,4c5106d4-8984-4c90-bce0-7cd26dd74eff,Rosewood Tavern,90.9,57.1
+rejected,Q49554740,Rudolph Valentino Memorial,b5f8fc24-bb82-4cde-9c92-f8ebd384ede9,Damnitland Virtual Pub,144.6,37.5
+rejected,Q49555777,Saint James Park,29afc1dd-3b06-4c5f-bbcb-2b4f40114e47,Saint James Park Rhf Housing,77.9,72.7
+rejected,Q49557634,Santa Anita Park,6a9b7e6e-7961-4a62-9d06-c400d014aaa9,Street Food Cinema,47.4,35.3
+rejected,Q49557632,Santa Anita Park,c6599e16-278d-4389-bc06-7625d88f0884,新生命靈糧堂arcadia,106.4,27.6
+rejected,Q49558228,Saybrook Park,f3b542bd-991d-45bb-a1cf-2a50de04507a,Folklorico Saybrook Park,78.9,70.3
+rejected,Q49558313,Schader Park,0c8f6be4-e336-40ec-ba2d-b2872ceac92e,Park Drive Park,121.7,51.9
+rejected,Q49560152,Shady Grove Park,a2ce2860-bbd1-4d89-ba41-58f4ae608a92,Heritage Park,59.9,48.3
+rejected,Q49561638,Sierra Vista Park,64fc7dc8-abb6-44b5-89fd-27f7d67c4f02,Sierra Vista Park Community Center,62.7,66.7
+rejected,Q49561752,Silver Lake Recreation Center,56f75e71-bb53-4f4e-9609-97a9a35b35d6,Si Paletas,96.1,30.8
+rejected,Q49561858,Simon Bolivar Park,a3db3d75-db32-48a1-b106-7af360a45fef,Bolivar Park,60.4,80.0
+rejected,Q49562375,Slavin Park,a6af0a69-27b3-4879-9e78-7421f87c007e,Jaime Beth Slavin Park,30.4,66.7
+rejected,Q49562619,Smith Recreation Center,ad1684a6-2d96-4430-a736-fcc6d13b1c20,Carlin G Smith Recreation Center,141.0,83.6
+rejected,Q49563323,South Gardena Park,5551eecd-32cc-40ff-a3bc-3cc236f76fff,Gardena Willows Wetland Preserve,53.5,48.0
+rejected,Q49563397,South Lawn,2eee8ec9-a73f-4110-a93b-45c9676f6da5,The Da Camera Society,118.9,37.0
+rejected,Q49564278,Spaulding Field,3912cf45-f2b8-4680-8387-d83fcd219ba3,Plateia,130.0,27.3
+rejected,Q49565994,State Street Recreation Center,d84499c0-a4c1-4079-a5a4-535b661c8d7c,Mariscos El Rey Del Mar,128.3,41.5
+rejected,Q49565992,State Street Playground,1f8909e6-479f-41d6-b462-35f0165e0bf7,California Museum of Sciences & Industry,45.2,36.1
+rejected,Q49566657,Stoner Recreation Center,9af8a396-8755-40e4-8f1a-4a469ae0d57a,Stoner Breakfast Club,128.4,48.9
+rejected,Q49566812,Strathern Playground,8cceb4b5-6b33-4b6b-8dc3-d3e332233675,Playground,124.8,66.7
+rejected,Q49566987,Studio City Park,5b526f1b-05d3-4f74-a897-ebe676f69310,Beeman Park,21.6,37.0
+rejected,Q49566989,Studio City Recreation Center,5b526f1b-05d3-4f74-a897-ebe676f69310,Beeman Park,54.5,25.0
+rejected,Q49567504,Sunland Park,128448c7-7e5f-4084-a11e-9166fbd3d7cc,Sunland Recreation Center,88.0,48.6
+rejected,Q99979573,Santa Monica Visitor Center,2bd85de7-89e3-4812-8671-3adad202930d,West Roller Coaster- Santa Monica Pier,139.1,62.5
+rejected,Q104470495,The Carole & Barry Kaye Museum of Miniatures,9cf1e8a4-efbe-43c3-b7f1-e7751d729215,Los Angeles County Museum of Art,147.7,54.3
+rejected,Q134498214,California Aerospace Museum,0aada625-888b-4ad7-92d3-45d4c75fa818,California African American Museum,90.4,72.1
+rejected,Q141143624,Burbank YMCA,1298c6d6-8731-432d-a716-ad91ef9017b9,Casino Bossier Inc,137.6,40.0
+rejected,Q44880458,Azteca Theatre,6d07562b-662c-4fe6-8384-ad95619acc36,Cafe De La Abuela,60.0,45.2
+rejected,Q44880476,Centre Theater,ef535bdd-3df0-43ee-864e-753a12506f2d,Club de Nutricion Protein Stop,108.1,40.9
+rejected,Q44880494,San Fernando Theater,0c6bdc8f-bcad-4c58-86c5-4a49792c27e5,Dog Haus Biergarten,132.8,46.2
+rejected,Q44839468,Van Nuys Drive-In,bc784509-627a-4c0e-9571-0f80dad03b85,Winchell's Donut House,87.2,35.9
+rejected,Q44839486,Sepulveda Drive-In,85ec34ed-7cb8-455f-bc08-a530a460aedc,Firehouse Subs,40.9,31.2
+rejected,Q44886007,Regency Plant 16 Theatres,d295820e-119e-478d-8a4e-053ca7a88bd0,Universal Bakery,148.6,34.1
+rejected,Q768376,The Japanese Garden,f62af851-4371-4524-a89f-244817cdadf1,The Japanese Garden - Suiho-En,84.5,76.9
+rejected,Q44864332,Encino Theatre,93578a48-ff92-4ebd-8aa1-c204a6bb6a53,Delmonicos Steak,67.3,53.3
+rejected,Q19877120,Nethercutt Collection,a2ebfe29-a095-4c99-875a-2dd185c64020,Nethercutt Museum,93.5,63.2
+rejected,Q47704503,Sepulveda Basin Recreation Area,9a566d1e-c237-47cd-8afc-0f15c1a9363b,Balboa Sports Center,5.8,39.2
+rejected,Q49495008,Granada Hills Park,b35d20af-f935-44c0-b111-e59c0efbf963,Granada Hills Pool,69.3,83.3
+rejected,Q44871815,Crest Theatre,96905ad9-e7c7-44ac-8804-7c4d584c6e06,Dvine Mediterranean Experience,47.5,32.6
+rejected,Q44875969,Panorama Theatre,9ebbe801-3da1-430a-afc9-2b14443f8464,Yogurtland Panorama City,136.2,55.0
+rejected,Q44875982,Americana 5,3e1f8f1a-e7c5-4546-bc23-490e24498d5a,El Tamarindo,100.3,52.2
+rejected,Q49497729,Hansen Dam Park,52b386f6-89ee-46f1-a379-d0f0ae19088e,Hansen Dam Service Yard,74.6,68.4
+rejected,Q49503725,Hubert H Humphrey Memorial Park,5c746c07-2a72-412e-8f71-574b1c419177,Hubert H Humphrey Memorial Recreation Center,66.6,74.7
+rejected,Q49527664,Monrovia Mountain Park,29a93a1e-adc5-4549-96a7-c05d1bd9ff61,Monrovia Canyon Park,105.9,61.9
+rejected,Q49531976,Nordhoff Recreation Center,45ce265b-29ff-4096-a1f9-40b20a005191,Starbucks,111.0,17.1
+rejected,Q49534069,Oak Park,1937ec81-50bf-4f0f-a27f-f068ee29bae1,Monrovia Parks & Recreation,62.7,42.4
+rejected,Q135651288,94th Aero Squadron (restaurant),c84c7be5-e9d6-4367-903b-7ec417aba462,94th Aero Squadron Restaurant & Events,15.1,66.7
+rejected,Q28714010,Q28714010,12d26b12-c9ad-45e6-8953-5ad8f3ed891a,"Granville Restaurant Partners 2, Llc",62.4,4.5
+rejected,Q49574538,Veterans Memorial Park,edd14ea6-5446-4410-bf26-4d74ee5145b5,Veterans Memorial Community Regional Park,80.7,69.8
+rejected,Q49536932,Pacoima Park,288a33ac-c208-4bde-b298-adf6ade9dd6b,David M. Gonzalez Rec. Park,69.7,43.2
+rejected,Q49537418,Panorama Recreation Center,93e3886d-6250-4b4b-a8d2-e19a63f08918,Panorama Park,95.5,51.3
+rejected,Q1207585,Knott's Berry Farm,52a136ad-becb-4c72-8bc2-58ff8d49e875,Ghost Town Knotts Berry Farm,90.9,73.9
+rejected,Q3198045,Knott's Soak City,878ac317-e315-421a-a121-0fe87cd88567,Tidal Wave Bay,79.3,32.3
+rejected,Q1717528,Lighthouse Café,724c61c6-c0d4-4037-a55f-84c3a98e6d11,The Lighthouse Cafe,5.6,80.0
+rejected,Q1757660,Long Beach Convention and Entertainment Center,a107cfac-e6f6-49b9-9a1f-40218ad90679,Long Beach Center Theatre,133.7,56.3
+rejected,Q562161,USS Iowa,d76da58e-3c60-47e4-977b-c5e485b18bdc,Battleship USS Iowa Museum,107.0,47.1
+rejected,Q44867389,Bijou Theatre,4814ec4b-940a-4eaa-8910-f64396d3f953,Baja Sharkeez,53.1,53.8
+rejected,Q44836183,Buena Park Drive-In,641a3bc5-f2f2-4427-b5ad-1fa07a3360ec,Maria's Kusina,131.0,42.4
+rejected,Q44868577,AMC La Mirada 7,28ef2942-5b50-4421-a549-9349b7dcf1d9,Panera Bread,65.7,37.0
+rejected,Q44868599,Edwards Gateway 5,8ef7eb2d-add6-4088-aba3-1ac968c0de74,Clearmans Steak N Stein,73.6,40.0
+rejected,Q44883912,Stanton Theatre,59d55acc-dc65-42ae-8c77-ce7740f5c904,Mi Casita Restaurant,66.5,33.3
+rejected,Q44884847,Pussycat Theatre,39e70ec2-428d-4e4f-9183-d315d5002eac,APC Fine Arts Gallery,60.6,43.2
+rejected,Q44884974,United Artists Torrance,1b0bc08e-2c5f-476f-b809-cf6ca418433a,Italys Italian Restaurant,66.8,37.8
+rejected,Q44884946,Rolling Hills Theatre,451fffd8-af28-4945-9a61-1c0d94de66dc,Amc Rolling Hills 20,134.4,63.4
+rejected,Q44884957,UA Del Amo 6,fb89e51f-09fe-496b-ba2d-a5fb86814ed7,Gloria Jeans,72.2,33.3
+rejected,Q44884907,AMC Rolling Hills 20,37b80fdf-27a6-4480-a61f-3b5e4341c8f2,"Torrance, CA - Rolling Hills",116.2,66.7
+rejected,Q44884922,Mann 9 Theatres,f9acbc7b-0a22-40f2-bf4a-86c7a5749b6c,ZENSHI Handcrafted Sushi,123.3,30.8
+rejected,Q44884883,Torrance Theater,1f7380f0-0617-44db-a892-7f457be16510,Torrance Theatre Company,135.3,75.0
+rejected,Q44884895,AMC Del Amo 18,fe4eb2b9-bfdb-4011-8737-6a3deaeaac5e,Del Amo Bp Llc,124.5,50.0
+rejected,Q43489003,Avalon Theatre,bd6fb6fe-470f-4b59-ae6a-ad496ca0587e,Commonwealth Capital Inc,113.9,42.1
+rejected,Q20714245,Granada Theatre,d7d6bc88-87a9-4293-b761-c71a01c7ead1,Slanguage,15.2,33.3
+rejected,Q44881621,Victoria Theatre,1bf2e540-b0c8-45d1-a8e3-1dcf42aedcf9,Green Onion Inc,23.1,45.2
+rejected,Q44883182,Mann Rossmoor Theatre,3b8bed48-610a-47f4-8eac-0549043d0fff,Romano's Macaroni Grill,112.0,47.4
+rejected,Q44881583,Globe Theatre,93e57b91-78b2-40aa-9f30-e60e1889b8a1,Altasea At The Port,88.2,43.8
+rejected,Q44881601,Strand Theatre,862ed82d-2f79-46ce-bc66-14c160ae77b3,The Sardine,106.0,38.1
+rejected,Q44886987,Edwards Cinema West,1292fcef-6fed-4553-8e05-c7416204d1f5,Carl's Jr.,83.0,42.9
+rejected,Q44868632,Pacific Theatres La Mirada 6,640db7c0-bdce-4fee-9c83-0d3cbd7482ea,Cassidy's Corner Cafe,103.1,36.4
+rejected,Q44869519,Lomita Theatre,56cfbddc-12b9-434a-956a-e182b69996de,The Haystack Theatre,129.8,66.7
+rejected,Q44869638,Fox Belmont Theatre,3d1c315b-6cb6-48ea-8cff-918973a7e706,Yogurtland Belmont Shore,69.8,55.8
+rejected,Q44869693,Dale Theatre,16a9c0a6-ee31-4e1e-bad9-34d168d40dad,Heritage Farm,95.5,48.0
+rejected,Q44869725,Cinemark at the Pike Outlets and XD,1c621785-72c1-4ffb-974e-5ce5f75456b4,American President Lines,94.8,40.7
+rejected,Q44869744,Ebell Theatre,ca096455-996a-4565-b8fb-945b404a0493,Lord Windsor Coffee,64.4,31.2
+rejected,Q44869763,Egyptian Theatre,5813a532-5921-4ef9-9d98-38982a7f9c77,Red Brick Pizza,37.6,38.7
+rejected,Q44869779,Fox West Coast Theatre,c112e7f4-eac4-4d5a-8852-c0ca7df717cf,Plant Power Fast Food,110.7,55.8
+rejected,Q44869796,Imperial Theatre,bcf90dff-5764-4a49-ac3d-70c1feda539a,Aquarium of the Pacifi,62.1,42.1
+rejected,Q44869854,Palace Theatre,d7025f3d-fea5-4b79-9d1d-99f8f66d8a81,L'opera Italian Restaurant,87.9,41.4
+rejected,Q44869876,Rialto Theatre,b836910b-daba-4fc4-b4fb-43ed67d26c54,Tacos El Roto,87.9,44.4
+rejected,Q44869894,Rivoli Theatre,a51d8d16-f018-4b42-8ff5-db004e82996a,Gourmet Churros,74.1,34.5
+rejected,Q44869911,Roxy Theatre,6f83da80-08c4-448c-8999-c174ba0e18a7,Brew Haus Coffee & Tea,145.6,43.8
+rejected,Q44869817,Laughlin Theater,988e783c-feba-487a-ba8e-64d4d9df7368,Omelette Inn,66.7,42.9
+rejected,Q44869835,Long Beach Theatre,b4af01fb-1c90-42eb-a5db-9b12b0702058,Visit Long Beach,39.5,70.6
+rejected,Q44869930,Strand Theatre,74be2282-3058-4d7c-82b9-01c83553562b,Terrace Theatre,105.1,75.9
+rejected,Q44869947,Tracy Theatre,9d17b71f-2f94-4d5f-b0bf-c458d7281387,Terrace Plaza,133.5,46.2
+rejected,Q44869968,United Artists Long Beach Theatre,5bdbd05f-9cbf-4aca-8b7b-39309911654c,Long Beach Transit Aqualink,149.1,63.3
+rejected,Q44869988,Victor Theatre,fa8aafe4-7119-42ec-b9a6-308b0d0d5234,Alter Ego,76.1,43.5
+rejected,Q44870005,Art Theatre,4697356f-8689-4f72-872e-9435b16943b8,Art Theatre of Long Beach,1.4,61.1
+rejected,Q44870025,Cabart Theatre,9a29707c-d67f-4344-b3b1-346ce4007778,Long Beach Unified Bar & Lounge,120.5,38.9
+rejected,Q44870039,Ritz Theatre,7cbd208b-ecf1-40d7-b6cd-8760edf21e16,Little Vice,79.8,43.5
+rejected,Q44870096,Paradise Theatre,7885166b-e181-4a6a-9170-17133e1d7d39,Afternoon Tea At The Village,111.1,45.5
+rejected,Q44870134,UA Long Beach Marketplace 6,140652d8-bd54-4c5b-9b11-6c4197463c57,Seal Beach Long Beach Califor,99.7,50.0
+rejected,Q44870220,Plaza Theatre,b921c624-1127-4834-9112-1187a1507555,El Dorado Nature Center - Visitor Center,109.9,27.5
+rejected,Q44870237,Santa Fe Theatre,cb63138c-ae93-425a-8874-9dc20a30465b,Pepes Tacos,41.1,37.0
+rejected,Q44870257,Queen Mary 4D Theater,328bc3d3-ee78-416b-b037-603efc74f2e0,Starbucks at Queen Mary,77.5,68.2
+rejected,Q44870277,Queen's Salon,328bc3d3-ee78-416b-b037-603efc74f2e0,Starbucks at Queen Mary,77.5,44.4
+rejected,Q44870203,Brayton Theatre,523c2972-92d8-4856-b77f-7a7e01fe1f87,Pan African Art Gallery Studio,145.9,35.6
+rejected,Q7287195,Ralph B. Clark Regional Park,f7bea40c-0fc6-4cfb-8deb-0fcd1bbd0dd2,Ralph B Clark Park,99.2,80.0
+rejected,Q44870296,State Theatre,370c53f0-10e2-447c-a81c-0758b3a07c2d,Ruth's Chris Steak House,106.3,37.8
+rejected,Q18325653,Carolyn Campagna Kleefeld Contemporary Art Museum,77174b83-f4cf-4a2c-a8eb-4c812c176ecf,Caffeine Lab at the University Library,59.7,41.4
+rejected,Q6764319,Marineland of the Pacific,97b9a308-9fe8-44a9-8211-c8eab57cc3d5,Terranea Private Vacation Rentals,100.0,34.5
+rejected,Q6783738,Masonic Temple,a918366b-4392-4f16-b093-4a6d40b309bb,Chopstick Express,89.3,45.2
+rejected,Q44837434,Circle Drive-In,af8e0ca7-b66e-41e2-b4e5-e63e40faac5f,"Carroll Park, Long Beach, Ca",60.3,29.3
+rejected,Q44838897,San Pedro Drive-In,aab5c4c9-2d63-4c23-a2c9-fe1d06700be2,Puesta Del Sol,142.5,43.8
+rejected,Q44839000,Sante Fe Springs Swap Meet & Drive-In,ecccdb30-583a-4c68-86ce-5ce40a35fb02,Santa Fe Swampmeat,57.3,45.3
+rejected,Q44839340,Harbor Drive-In,7a7d3a6e-8fa0-4cb1-a184-607106913513,The Hairy Spider home Pub & Grub,105.5,39.0
+rejected,Q44887039,Westminster 10,4f5a8b77-eb33-4c39-944e-25ce67b74e1a,Regency Westminster,69.2,72.7
+rejected,Q44887181,Whittwood Theatre,19dba74c-854a-4ceb-8155-c9857f8b0ea9,Buffalo Wild Wings,130.9,28.6
+rejected,Q6926890,Movieland Wax Museum,88d62d33-3f60-4557-8a7f-11c0b00256df,Po Folks Restaurant,96.8,28.6
+rejected,Q7516624,"Silverado Park, Long Beach, California",8f38d8ec-ed4d-405a-82bb-2a20e404b649,Silverado Park Gymnasium,141.3,56.7
+rejected,Q7703192,Terrace Theater,fa8aafe4-7119-42ec-b9a6-308b0d0d5234,Alter Ego,135.1,41.7
+rejected,Q7437946,Scottish Rite Cathedral,997d7e09-20c9-45e0-b199-73e723cb13b6,Ernest Borgnine Theatre,17.0,34.8
+rejected,Q7757103,The Pike,64d7be09-4490-4206-bf5f-7d65420080db,The Pike Restaurant & Bar,98.0,42.1
+rejected,Q44861008,United Artists Galaxy Stadium 11,a81f1f66-156e-45ec-b1e1-d9adc12461f2,Harkins Theatres Cerritos,142.1,38.6
+rejected,Q44861485,AMC Plaza 10,a75cdaae-e343-4e9f-8549-c46e5228d7c6,Cold Stone Creamery,4.3,25.8
+rejected,Q44861498,AMC Puente 4,a75cdaae-e343-4e9f-8549-c46e5228d7c6,Cold Stone Creamery,4.3,38.7
+rejected,Q44861512,AMC Puente 6,a75cdaae-e343-4e9f-8549-c46e5228d7c6,Cold Stone Creamery,4.3,38.7
+rejected,Q44878041,Fox Redondo Theatre,08cee97e-5e40-4508-856e-ed543e95b973,The Standing Room,5.5,37.5
+rejected,Q44877756,Fox Palos Verdes Theatre,ce0a9966-736c-40bf-a692-04bba6084fad,"Plates Restaurant Group, Inc.",67.6,43.1
+rejected,Q44877774,Terrace Cinemas,3a92b56b-ddda-48d2-943a-ae2eb8e7f581,Taxco Fine Mexican Restaurant,115.5,54.5
+rejected,Q44878947,Krikorian Peninsula Cinema 9,4747f4fe-da7c-48c6-8688-96f02dc248e7,Regal Cinemas,18.2,48.8
+rejected,Q44878960,Promenade Stadium 13,8a65f62a-7bde-4410-898e-e73f08d58af2,Regal Promenade,39.9,62.9
+rejected,Q44881534,Alhambra Theater,f7ad4e64-639f-4cb4-84d0-27400f230d17,Harbor View Event Center,136.3,30.0
+rejected,Q44881551,Barton Theater,9601de9a-499b-439d-bcae-683461d3bd16,San Antonio Restaurant,38.5,48.0
+rejected,Q44881568,Fox Cabrillo Theatre,d466a6f9-6ef3-4485-a23a-604c5301e476,Acapulco Mexican Restaurant Y Cantina,111.1,35.1
+rejected,Q44878102,Strand Theater,92b4c65d-6e38-4a00-a264-135c3ccb6332,Pura Vita,106.8,43.5
+rejected,Q44859847,CGV Cinemas Buena Park,74678326-003d-4d16-8d8f-5232d941ccc6,Ding Tea Buena Park,124.9,63.4
+rejected,Q44859865,Grand Theater,2a796673-2cec-4ba8-bd79-403d70a92897,Watermill Rice Cake,66.1,43.8
+rejected,Q44859899,Studio Theatre,ea86d6a4-ba46-4349-af8f-66bd362052af,Subway,27.9,30.0
+rejected,Q44859916,UA 8 Movies,26ddcd80-165e-4241-aeaa-89da06dc3bed,Olive Garden,117.6,34.8
+rejected,Q44860936,Cerritos Stadium 10,1f5e4568-2c21-45ce-8138-5d4d07cb0cbd,Law Office Of Katherine V. Lizardo,120.6,26.9
+rejected,Q44860956,Harkins Cerritos 16,a81f1f66-156e-45ec-b1e1-d9adc12461f2,Harkins Theatres Cerritos,132.9,72.7
+rejected,Q44860971,UA Mall Cinemas 1-2-3-4,a3bbad6e-1c24-41dc-8403-edee170d87b2,Mrs Fields Cookies,104.0,34.1
+rejected,Q49472039,Alamitos Bay State Park,16c13e04-6e28-44af-be87-e4c185c49a4e,Seaside Walk,76.6,28.6
+rejected,Q5309045,Drum Barracks,a22702d6-b4f1-447f-b4bb-aff007251b02,Drum Barracks Civil War Museum,80.3,60.5
+rejected,Q6940919,Museum of Latin American Art,a61854c1-ada9-4ed0-a40b-aba81ff1d00c,Pacific Island Ethnic Art Museum,98.5,56.7
+rejected,Q7158723,Peck Park,6542f56c-ba9c-4f34-bf8d-5af9bcca2b01,Peck Park's Azteca Baseball League (AABL) Diamond #1,103.7,31.0
+rejected,Q7969723,Warner Grand Theater,001b96f6-4ccc-4715-8fe4-cebaa178cafb,Little Caesars Pizza,105.6,35.0
+rejected,Q8030634,Woman's Club of Redondo Beach,d9773e9f-69ce-432c-bbe7-4b1629e8315e,Redondo Beach volleyball courts,87.5,63.3
+rejected,Q15071923,USS Iowa Museum,d76da58e-3c60-47e4-977b-c5e485b18bdc,Battleship USS Iowa Museum,117.8,73.2
+rejected,Q49472554,Anderson Memorial Playground,66bf73a0-7e21-4640-9656-1524fcd18c26,Marabella Vineyard Company,94.4,44.4
+rejected,Q49472608,Angels Gate Park,98be0744-4195-4fd2-90f6-55b7b7600975,illuminoidal arts,91.1,24.2
+rejected,Q49471759,Abalone Cove Ecological Reserve,6119b02c-a15b-43f6-9ac5-b6f1a760c752,Abalone Cove Beach,94.9,57.1
+rejected,Q49473909,Bayshore Aquatic Playground Park,c3827a67-c9f7-49e4-856c-4176a65ce59d,Bayshore Playground,34.1,74.5
+rejected,Q49474059,Beat Park,8ad82c01-7be7-4239-b9ad-720f0cc436ce,John Beat Park,66.9,78.3
+rejected,Q49474278,Bellis Park,a83d5367-a06b-4dc8-a72a-79b4723fc92d,George Bellis Park,86.2,75.9
+rejected,Q44862832,Cypress Twin Cinema,7b9c988c-24bc-4826-a92e-7d301a8e04fe,Pho So 9,146.7,22.2
+rejected,Q49478087,Chittick Field Park,2ea5cadd-efa1-46cf-808b-68c5e0e85ca9,Chittick Field,22.6,84.8
+rejected,Q49479062,College Park,cb78291c-0e9b-41b8-bf9a-eeaa7f0015b7,College Estates Park,18.4,75.0
+rejected,Q49481562,Cypress Park,99653588-5190-4689-8be1-c7c0ba37efa2,Clark Field,85.4,34.8
+rejected,Q49475038,Bloomfield Park,ee1f9059-ee0a-4f0b-a83a-5d32dd89036b,City of Lakewood Bloomfield Park,61.7,63.8
+rejected,Q49475129,Bluff Park,cfcbe7bc-0c9e-4bd6-9c52-6fe71375a3e1,Long Beach East Ocean Blvd,140.2,22.2
+rejected,Q49475482,Boyar Park,eaff0ac1-182b-449e-bbb9-07621623322a,Mae Boyar Park,115.6,83.3
+rejected,Q49475664,Brea Park,d8ab7342-9815-4198-afaa-b4e764c82941,Sur La Brea Park,24.1,72.0
+rejected,Q49475696,Brenner Park,b45a3e71-5b91-4fcc-9033-20acb164ff62,Carl Brenner Park,85.7,82.8
+rejected,Q49476466,Cabrillo Beach Park,792ddde6-c297-435c-84f3-21916556dfd2,Cabrillo Beach,116.6,84.8
+rejected,Q49476579,California Recreation Center,6abe59a3-54df-4b2f-9889-0270e85ddf87,The Vault Warehouse,147.0,32.6
+rejected,Q44866023,Four Star Cinema,cf463029-c7e7-4664-8573-f667897b85ed,Starlight West Grove Cinemas,8.2,59.1
+rejected,Q49485490,Eastview Park,db1b5564-0a2d-426f-a24e-db3c21f54d3e,Starbucks,85.6,45.5
+rejected,Q49486161,El Dorado Park,c5291b70-c323-4d4e-97e3-b10623d2417e,El Dorado Regional Park East,83.9,66.7
+rejected,Q49487333,Ernie J Howlett Park,155642e8-0fe9-42a4-a59e-0b5db5b82355,Ernie Howlett Park - Rolling Hills Tennis,104.0,61.0
+rejected,Q49491972,French Park,ed257412-a91e-4899-898a-817cfe197e82,Conrad Park,44.0,54.5
+rejected,Q49492094,Friendship Park,9f3b8540-2604-4f45-878f-24b66346e845,Deane Dana Friendship Park and Nature Center,139.6,50.8
+rejected,Q49494431,Golden Park,e00ca662-b179-4ec3-a57d-f40feb58406e,Long Beach Park Jam,72.4,46.7
+rejected,Q49494453,Golden West Park,12d3e648-2fb8-4ef2-adf3-2fa2b479a696,Goldenwest Park,57.9,71.0
+rejected,Q49496789,Gummere Park,3f450b5c-6b22-4e45-ba70-7c35549e0813,Bluebell Park,41.1,64.0
+rejected,Q49500226,Heritage Park,faa3e344-3efc-4456-89b0-942a5f048217,Cerritos Heritage Park,65.3,74.3
+rejected,Q49500450,Hermosa City Beach,07626dab-a851-4404-8a04-ea205fe6f9df,Verona Beach,144.3,66.7
+rejected,Q49500529,Hesse Park,4c7e81db-bccd-40ce-90f4-cd803ab7c8f5,Fred Hesse Jr Community Park,145.5,52.6
+rejected,Q49500931,High Ridge Park,55348a2d-0343-4534-83ff-f1423958352c,Highridge Park,59.3,62.1
+rejected,Q49506369,Jacob Street Park,14721590-8e8e-4799-a0dd-b5c3a20b9110,Jacob Park,128.7,74.1
+rejected,Q49508359,"John S. Gibson, Jr. Park",f8d0924c-cdc4-4a79-86c3-38d54d6b066b,Gibson Park,42.6,68.8
+rejected,Q49508817,Jose del Valle Park,eade9d1d-795c-442b-a2c3-b7720b6df933,Del Valle Park,65.7,84.8
+rejected,Q49512456,La Mirada Creek Park,4825c74e-1924-4f7c-bb1c-ae476eeb21d4,Creek Park,41.4,66.7
+rejected,Q49512460,La Mirada Park,7986b376-3c7a-4157-bd5e-1b791bf68955,La Mirada Regional Park,92.6,75.7
+rejected,Q49514169,Lakewood Equestrian Center,5257cc06-980d-4543-8fd0-4bda91563a74,Nayada Thai Cuisine,148.2,35.6
+rejected,Q49514741,Larwin Park,ddb4e740-9de8-475c-92ba-0e4d4428959c,Coach’s Corner-Pizza & Brews,135.3,32.4
+rejected,Q49521749,Marine Park,6a61ad63-3480-4500-b58c-adffa0d40bb4,Mothers Beach Marina del Rey,81.3,41.0
+ambiguous,Q49522903,Maxwell Park,969d5514-5a17-455b-a5bf-813e401da2e5,Maxwell Park,90.8,100.0
+ambiguous,Q49522903,Maxwell Park,9bd17ca2-071b-4209-8cdd-5ec22339013d,Maxwell Dog Park,112.4,85.7
+rejected,Q49516392,Leylandi Park,97b7a1d0-e9af-4c66-8a1b-3c66d31d3098,Evergreen Park,34.0,51.9
+rejected,Q49516455,Liberty Park,e14a16b2-6c27-4616-b05c-118061142016,Liberty Park and Fitness Center,48.8,55.8
+rejected,Q49518879,Long Beach City Beach,d83a04fa-a5d2-45b6-848b-0851091943a2,Long Beach Yacht Club,142.3,57.1
+rejected,Q49527805,Monteverde Park,80655422-1918-4741-9114-c07407abe3fe,City of Lakewood Monte Verde Park,46.3,41.7
+rejected,Q49529681,Municipal Park,966267fe-d951-4108-bee2-7ba29bc9b881,William Peak Park,47.3,38.7
+rejected,Q49530778,Neff Park,0ffc9bdd-d080-46bb-8358-94094981b2db,Neff Historical Park,16.6,62.1
+rejected,Q49532053,Normandale Playground,e191f563-eaff-4ad2-8d0e-33b4792a5675,Las Gorditas Chingonas ,134.4,37.2
+rejected,Q49534013,Oak Knoll Park,d7e1228e-84df-42f3-a290-d404090c795b,Playground | Oak Knoll,71.4,76.5
+rejected,Q49537128,Palm Beach Park,d24b4204-c414-489a-9b1a-52e75e90a794,Catalina Lounge,90.7,34.8
+rejected,Q49537335,Palos Verdes Peninsular Park,4ab561e4-f83b-4f29-8f1b-928aeb755ff9,Shoreline Park,72.4,42.9
+rejected,Q49544631,Point Vicente County Park,abc916f7-ab39-443e-be2b-bacc61260f3b,Point Vicente Fishing Access Point,90.1,61.0
+rejected,Q49548953,Redondo Beach,f68c03c0-6779-44b4-ae0f-92f4a31f4841,Redondo Beach - Knob Hill,40.9,72.2
+rejected,Q49552947,Rodaway Park,35d27494-dddd-4d49-bce9-4ceaae9eb7fa,Edith Rodaway Friendship Park,23.7,58.5
+rejected,Q49553907,Rosie the Riveter Park,3001edac-2ff8-4d7f-b826-1a6938e3c116,"Long Beach City College, O Building",129.9,28.6
+rejected,Q49555200,Rynerson Park,16a3875f-c462-498b-a094-a6def65a975e,Lakewood Nature Trail,147.3,35.3
+rejected,Q49556689,Sam Levi Park,b6590ac9-b8a2-4f5e-a245-96cb3ab37e07,Reele Corp Dba Cherish Hospice,110.0,32.6
+rejected,Q49557082,San Pedro Plaza Park,d58f4112-b741-4972-a50f-60aa10799c1e,Alhambra Cocktail Lounge,132.5,32.4
+rejected,Q49557084,San Pedro Recreation Center,1a0c3ef0-ab12-4350-8165-53e69fe2d721,Salsa 966,84.5,22.2
+rejected,Q49558803,Schweitzer Park,6c703602-b783-48e4-a782-966453807c59,Schweitzer Skatepark,32.9,57.1
+rejected,Q49559083,Sea Bridge Park,686cd281-14ce-46bc-b60c-1dad06e7c9a0,Seabridge Park,57.1,55.2
+rejected,Q49560397,Shapell Park,3788fd71-2f9b-4a9a-8122-abfdedee92f3,Almond Park,35.2,34.8
+rejected,Q49477075,Carroll Parks,3368ac0d-28b9-460c-a74a-1e9ea1cb8bdb,2300 Carroll Park N,58.7,75.0
+rejected,Q49515024,Laurel Park,af7a909e-9e18-43a5-ab87-5deae4654e01,Laurel Park Manor Apts,25.4,66.7
+rejected,Q49519361,Los Arboles Park,0e04183f-f1ed-4da0-87b7-0b1d952a8569,Los Arboles Rocketship Park,43.2,74.4
+rejected,Q49566042,Stearns Park,e875beda-d689-48b5-bacf-c9840dcf5dea,Long Beach Little League Sterns Park,130.2,45.8
+rejected,Q49561389,Shoreline Aquatic Park,70ca9e95-a1d4-4307-b2db-bcc3e2f4fcb7,Outback Steakhouse,102.4,45.0
+rejected,Q49561799,Silverado Park,ae68cde8-e34d-449a-8b22-c5b479db0e7a,Silverado Skate Park,51.3,82.4
+rejected,Q49565255,Stanton Park,e015b252-3277-4254-bebf-dea1282fea24,La Barca Night Club,103.5,38.7
+rejected,Q49581636,Wilmington Recreation Center,258b02f5-4549-401e-9fcc-6ec19f05f435,Neptune Service Yard,144.5,33.3
+rejected,Q59396934,Seal Beach Historical and Cultural Society Red Car Museum,f4ce839f-1c3d-4a47-9117-124b799665f6,Seal Beach Inn & Gardens,119.3,38.0
+rejected,Q118480073,Don Knabe Regional Park,4c739ea8-7b5c-440d-9182-052e105f6319,Don Knabe Community Regional Park,2.8,82.1
+rejected,Q126164238,Carolyn Campanga Kleefeld Contemporary Art Museum,77174b83-f4cf-4a2c-a8eb-4c812c176ecf,Caffeine Lab at the University Library,61.2,41.4
+rejected,Q69175050,Long Beach Civic Auditorium,acc3b8cf-ad8a-4250-b96b-67e369823ee6,"Long Beach, California",149.8,58.3
+rejected,Q135301115,Sushi Inaba,aaf4a9cf-c334-45f3-9a36-64d53d7024b0,Sushi I-NABA Manhattan Beach,6.4,56.4
+rejected,Q140421859,Muller House,b800f87a-e7c4-40cd-bd11-7f97f76b6fab,Muller House Museum,19.5,77.4
+rejected,Q141272329,Morgan House,919f4c67-9ba5-4b00-93fd-b516c115028a,Machista,126.7,30.0
+rejected,Q4549055,1321 Downtown Taproom Bistro,3b1c075b-ec5a-4413-b661-53477f20d317,Cafe Roma Mediterranean Cuisine & Bar,125.3,37.3
+rejected,Q6430480,Koo's Art Center,7eb0f7c7-db8d-4e12-ab42-3c93e6470eb3,Utopia Good Food & Fine Art,117.3,48.8
+rejected,Q49478319,Civic Center Park,54daa39a-4a45-4211-a8bd-bd9bfea983b9,The Malaga Cove Cafe Inc,148.4,48.6
+rejected,Q49535546,Olmsted Place Park,6e14ce96-1af5-4e56-b3c4-172e797b111c,Castle Rock Winery,35.6,44.4
+rejected,Q49575032,Victory Park,b01f888c-83cf-492c-805c-68c2a01f0748,"Phatreeya, Llc",149.0,40.0
+rejected,Q49576601,Walteria Park,ac5fdf6a-c2f2-44dc-9365-08f31e607ae4,Walteria Park Senior Citizens,58.2,61.9
+rejected,Q49578675,West Gate Park,7484f379-ffff-46bb-82b8-a5ddfa3b6f36,Westgate Park,49.7,66.7
+rejected,Q49580566,Wilder Annex Point Fermin Park,a059b3b8-1524-46b4-bb70-87d2493eafe0,Wilders Addition Park,46.5,58.8
+rejected,Q44857624,Century 21 Theater,f540055a-87f1-455c-9be0-d40021c4165c,One Star Pizza & Chicken,88.7,40.0
+rejected,Q44858215,Liberty Theatre,21f60fe1-329f-4fe3-a053-6e0dafa20321,Pollo Brazero,112.2,28.6
+rejected,Q44858544,Baldwin Theater,f7b6bcaf-3f8e-41d6-a48f-edb748baca21,Baldwin Park Historical Museum,111.8,53.3
+rejected,Q44858179,Edwards Village Theatre,6842b103-99c0-4e16-984a-f42bfd0ba99f,Edwards Park,8.5,57.1
+rejected,Q44858196,Foothill Cinema Stadium 10,86584b6a-be45-4c73-98ac-af8b49e6c4ab,Ari's Thai Eatery,135.2,41.9
+rejected,Q7283092,Raging Waters,ff60c40d-60da-421c-bbc2-4708521b20a9,Frank G. Bonelli Regional Park,128.6,33.3
+rejected,Q44862596,Empress Theatre,9b74c321-aabb-4e36-ac38-a2658170e8bb,Miss Tea,33.1,60.9
+rejected,Q44862610,Fox Covina Theater,2dbe810b-bdf9-456a-861e-1f221688f666,Fuego Cravings - Covina,125.0,46.2
+rejected,Q44862630,Star Theatre,9b74c321-aabb-4e36-ac38-a2658170e8bb,Miss Tea,35.1,50.0
+rejected,Q44863202,Cinema 8,2a410ab2-cc36-46a5-a809-9e7cb4532b0a,Curry India Bistro,95.0,38.5
+rejected,Q44859704,Brea Plaza 5,2cfee383-c2b1-4ae0-992c-1cbcd2a178eb,Brea Plaza Cinemas 5,13.9,75.0
+rejected,Q44859723,Brea Stadium 22,bb1ff9bf-85cd-46ab-abed-0403ba264e6d,MAIN EVENT BREA,5.5,53.3
+rejected,Q44859737,Red Lantern Theatre,f0ae504a-9610-42c6-ab97-c5e972604640,Daphne's California Greek,24.5,40.9
+rejected,Q44859755,UA Marketplace 8,2974593b-e8cd-49aa-a818-1f0a8025ec70,Jersey Mike's,130.2,34.5
+rejected,Q14683007,La Puente Valley Woman's Club,8995d297-e4e3-4eb9-9e3a-84686fb81eda,SoCal Birria Tacos Catering,137.5,39.3
+rejected,Q44865863,AMC Fullerton 20,703681ed-2fc1-44ef-b9a8-cf3af91566d5,AMC DINE-IN Fullerton 20,115.2,80.0
+rejected,Q44865885,Plummer Auditorium,7f9158f7-6412-4463-b5d2-588c3c76ea3d,Fullerton Auditorium,61.2,73.7
+rejected,Q44865937,Wilshire Theatre,80e93802-c63a-4ae2-b80a-9586123cf6d7,Chapter 4 At Les Amis,127.1,43.2
+rejected,Q44865954,Yorba Linda Cinema,2c7e540d-717e-4d54-ae98-d40f2b06a51d,Wood Cafe Thai Cuisine,56.9,40.0
+rejected,Q44865902,Rialto Theater,620bd04a-2cf3-4e57-b326-1e2f9a9a6e54,Rialto Cafe,47.0,60.0
+rejected,Q44868339,AMC Fashion Square 4,d2e2a754-fb51-48eb-9bfc-31ed8feaa99c,J & D Seafood Marketing Inc,35.4,40.0
+rejected,Q44868358,La Habra Stadium 16,52071f0f-2c48-4b81-acaf-e5bef1bcae83,Starbucks,101.4,28.6
+rejected,Q44868372,La Habra Theater,996dfc09-57cb-496b-8630-c8459dfb66b1,La Habra Historical Museum,136.5,47.6
+rejected,Q44868387,La Habra Theatre,26cc6c48-05b7-4371-8094-851155800e1e,La Barca Restaurant Y Cantina,47.0,44.4
+rejected,Q44868648,Star Theatre,40e9e219-4a2d-4584-8bb8-d341f7456114,Casa Jimenez Mexican Restaurant,85.5,31.2
+rejected,Q44866500,AMC Glendora 12,dcfd9efa-0f63-4ade-816d-c6734aa0cf20,Amc Glendora 12 @ 210/57,60.1,81.1
+rejected,Q44866516,Glendora Theatre,862c885d-17cf-4f6f-b395-74e0f0b662da,Home Taste Chinese Restaurant,99.5,41.2
+rejected,Q44866535,Mann Glendora 6,decaa972-fb14-497a-ae2e-8a7b881a1e7b,Flavor Season,41.6,42.9
+rejected,Q44866556,Plaza Theater,939815be-669e-4674-9319-d653e2957b45,Two a Tea,24.4,54.5
+rejected,Q44836663,Big Sky Drive-In,424ad7d1-ca2a-4c2e-96c0-4a8d72241822,Gene's Grinders,86.0,45.2
+rejected,Q44837221,La Habra Drive-In,3afc7676-6582-4df9-95d4-2c1127e8b76a,Pinkberry La Habra,127.5,45.7
+rejected,Q44876902,Placentia Theatre,15bfeb63-7fd3-4c7e-9012-a91d7e53be4e,Mi Casita Restaurante,137.9,42.1
+rejected,Q44876917,Valencia Theatre,e372d302-9d3a-4204-8de4-91927a360e99,Placita Santa Fe,101.5,43.8
+rejected,Q44879125,Mann Puente Hills East,ec6980d8-9774-401c-b0ef-3180b9630f27,Olive Garden Italian Restaurant,46.5,38.1
+rejected,Q44879140,Rowland Heights Theatre,08a149e3-4dfd-432c-8707-824fb7307026,Rowland height 嘉頓茶餐廳,123.6,69.8
+rejected,Q44886694,Capri Theatre,5f48be9c-201a-438e-81be-be6f3dd09a7d,Cha Da Thai Restaurant,132.2,50.0
+rejected,Q44886707,Eastland 5 Theatres,2fc47f4a-88de-4f46-b518-6bf83d29c352,Canasta Services Inc,88.2,51.3
+rejected,Q44886722,Edwards West Covina 18,1be741ba-f0dc-48fd-a57e-c949be5b6714,Regal Edwards West Covina,146.1,80.9
+ambiguous,Q49471903,Adlena Park,9f0f26cd-7503-43e0-bfdc-cb1149d95a3e,Adlena Park,100.1,100.0
+ambiguous,Q49471903,Adlena Park,ba684a72-bd2d-4820-82f9-c02ad188e753,Adlena Park,81.3,100.0
+rejected,Q49500458,Hermosa School Park,42f8467c-183f-4a2a-afbb-0db05566b873,Hermosa Drive Park,89.9,64.9
+rejected,Q49501791,Hiltscher Park,7c6b9a94-773d-4126-aafe-ce413d9d6c57,"Hitscher Park Trail,",100.1,78.8
+rejected,Q49504686,Independence Park of Fullerton,521d720e-e41c-4283-9085-cae266106e94,Independence Park,22.0,72.3
+rejected,Q49505079,Industry Hills Recreation Center,3230e829-c41e-413b-9f31-49257b49e108,Feria Del Caballo Español,147.0,35.1
+rejected,Q49505533,Irwindale Park,1e986f9e-418e-4517-874b-511cd2cb973b,Irwindale Swimming Pool,129.3,59.5
+rejected,Q49486142,El Centro Park,c29af38f-4a78-4d55-a11b-39320a86dc33,El Centro--Lions Park,29.6,82.4
+rejected,Q49520333,Lyons Field,d1becab8-bda1-4a15-aa39-993c387f87e8,Hillcrest Park Trail,105.0,25.8
+rejected,Q44833973,Covina Theater,168f187e-be29-4bcb-95de-eb2c3b6528e4,Laugh Factory Covina,26.4,58.8
+rejected,Q49537176,Palm View Park,7084fc56-9801-4eee-b093-62cc435e0228,Palmview Park,59.2,66.7
+ambiguous,Q49477729,Chapman Park,a01468ec-55f5-4661-a253-560887263075,Chapman Park,24.4,100.0
+ambiguous,Q49477729,Chapman Park,7c60c381-e206-497e-bc5d-df28fdf87507,Chapman Park,126.0,100.0
+rejected,Q49478249,City Hall Park,cf32e9e2-338e-401c-aefb-04b5124fc57a,Brea Museum & Historical Society,122.9,22.7
+rejected,Q49478283,City Park,2412a945-2607-4c95-81cc-f58a4e825832,Civic Center Park,88.3,53.8
+rejected,Q49480458,Cougar Mall,1371050e-34fb-4703-9c04-79aea74aaab7,Warren Music Center,133.3,33.3
+rejected,Q49480535,Country Wood Park,c9e73988-3e25-428c-8f97-7843e544f33d,Countrywood Park,24.8,72.7
+rejected,Q49482176,Dawson Park,11788cab-50c2-4cb8-88bf-317d3967c902,Dawson Avenue Park,19.8,75.9
+rejected,Q49482399,Dee Field,a3db84b5-5763-4744-8076-b6d5e426bcbc,La Palma Dog Park,121.9,23.1
+rejected,Q49484328,Duarte Sports Park,43136230-bf2d-400c-988a-68b6ae5d81b6,Duarte Skatepark,148.8,64.7
+rejected,Q49477035,Carolyn Rosas Park,7836716b-9251-472c-96b7-821e23f00a78,Carolyn Rosas County Park,65.5,83.7
+rejected,Q49475667,Brea Reservoir Park,ea4331a0-1cb8-45ea-aead-a1ce2479f6a9,Brea Dam Park,10.7,56.2
+rejected,Q5508289,Fullerton Arboretum,c3b28fcb-72b7-4539-9e8b-4e9ffe7201e8,Nikkei Heritage Museum,94.9,29.3
+rejected,Q5508296,Fullerton Odd Fellows Temple,3c2d11b7-3e48-409b-b61f-1d64bbd3412d,Slide Bar In Down Town Fullerton,41.6,53.3
+rejected,Q49550346,Rimgrove Drive Park,eb5f2c74-3fe5-403f-a764-7d2383823599,Rimgrove Park,24.9,81.2
+rejected,Q49497744,Hansen Park,f6166b36-dee8-45df-a0ef-9107ea7c7ae0,Anaheim West Skatepark,148.9,48.5
+rejected,Q49558309,Schabarum Regional Park,2fc3899c-ffae-4bb1-9da4-390a96a7e74b,Schabarum Equestrian Center,79.9,60.0
+rejected,Q49566447,Stimson Park,ebbd9067-bc46-4506-a49e-57bd74f478ad,William Steinmetz Park,11.5,52.9
+rejected,Q49566749,Story Park,e2f99233-8665-4dec-ba06-34ccdca13c28,Terraza Playground,10.6,42.9
+rejected,Q49570124,Third Street Park,9b88eb80-d7eb-4bd3-bed0-fe32638bd5ac,Village Restaurant,109.4,16.7
+rejected,Q6783723,Spring Field Banquet Center,9b44c441-991e-4d32-bada-82051b4b517d,Spring Tea Garden,95.0,45.5
+rejected,Q49582077,Wingate Park,09a91044-0fbd-46ed-9990-bb1b25edb92e,Kahler Russell Park,20.4,38.7
+rejected,Q24693297,STAGEStheatre,febcd27b-a0fa-45da-b4bb-8870b87e8336,Pizza Hut,4.6,18.2
+rejected,Q49573964,Valley View Park,604f0359-439e-44aa-8169-6335a6eb69b2,Glenn Miller Park,61.4,30.3
+rejected,Q44884570,Corbin Theatre,b341e1df-a781-44c5-8a7b-2ee228b3ec09,Corbin Bowl,37.4,48.0
+rejected,Q44884584,Mann Tarzana West Valley 9,f761904a-601c-4784-b00d-95ad583f01fa,Tarzana Armenian Deli,124.0,46.8
+rejected,Q44886755,Holiday Theatre,7902ca54-afbe-4ba0-aae4-db8c6c405221,The Rabbit Hole,146.9,46.2
+rejected,Q44886770,Mann Fallbrook Twin Theatre,317a8f60-84f4-47fb-bdd0-0dfea42ef2f4,Crave Cafe,92.1,18.8
+rejected,Q44875661,Bay Theatre,22e4f8a3-3ba9-4951-92f1-93a9f093271b,Pearl Dragon,129.3,43.5
+rejected,Q44866662,UA Granada Hills 7,aa8da54a-6a2c-4665-8a55-6cd002d30861,Gatten Sushi,128.8,40.0
+rejected,Q44873106,Fox Northridge Theatre,e923fe25-810b-4458-b448-b126d1e2e939,Spudnuts Donuts,111.3,27.0
+rejected,Q44873123,Northridge Fashion Center 10,40a5573b-df75-45a4-83f1-0af1a07a0cae,Pacific Theatres At Northridge Fashion Center,8.3,71.2
+rejected,Q44873141,Peppertree Cinemas,e751c52f-93e5-456a-a764-4dbe9a98d879,TOUS les JOURS Bakery Café - Northridge,149.8,32.7
+rejected,Q44887292,former AMC Promenade 16,c6a3388b-6f13-4ed8-9fcc-2b790ad62696,AMC Promenade 16,0.0,82.1
+rejected,Q44887311,Topanga Theatre,10c303f2-13df-4137-8690-55429337a105,Topanga Oil Inc,84.5,53.3
+rejected,Q44887329,UA Warner Center,8b42479d-bc6d-40d5-b274-95607e50e7bd,"Harunami, Inc",94.8,35.7
+rejected,Q44887346,Woodland Hills Cinema I-III,0bda56e5-3b4f-4a5b-bc70-c32da976eb37,"Santa Victoria Investments, Inc",138.8,38.6
+rejected,Q44887364,Art Theatre,ef04a67b-d103-4bb3-b5b1-dec823683b5e,Mazar Mediterranean Restaurant,88.0,46.7
+rejected,Q49473082,Asilomar Park,1ee41f80-4dbd-4a23-9031-60962681a85f,Asilomar View Park,94.2,83.9
+rejected,Q44860238,Edwards Grand Palace Stadium 6,7545baff-6002-4975-b395-11fab4b69d2a,"Ocean View Foods, Inc",108.6,36.0
+rejected,Q44860519,Baronet Theatre,cdfef571-0c8a-435d-9e60-7b6637176057,Taco Bell,58.4,41.7
+rejected,Q44860540,Canoga Theater,5ce83e91-1a7d-456c-b058-84adff0659f7,Madrid Theatre,23.8,57.1
+rejected,Q44861036,Pacific Winnetka 12 & XD,3785449c-0183-47c0-83f5-8971164aaf4f,Pacific Theatres Winnetka 21,3.4,72.0
+rejected,Q49477838,Sean Brown Park,0cc762bf-924b-422f-9279-8956b28144dc,Chase Park,78.6,40.0
+rejected,Q5566363,Gladstones Malibu,61cd9177-564c-40f9-8367-8fa57d01289d,Gladstones Restaurant,4.5,74.1
+rejected,Q7777576,Theatricum Botanicum,cd453565-33c2-48b7-8de8-6f29f1ca8ffc,Will Geer Theatricum Botanicum,63.2,80.0
+rejected,Q5021110,California State University Northridge Botanic Garden,ad4cce68-9dab-4cc9-a9b3-6e31c70bdb36,Donald E. Bianchi Planetarium,134.2,42.0
+rejected,Q44836265,Canoga Park Drive-In,3bf2efa5-78c3-491e-914b-a0987ffe9781,Brewz Sports Cafe and Grill,55.6,43.9
+rejected,Q44836360,Winnetka 6 Drive-In,3785449c-0183-47c0-83f5-8971164aaf4f,Pacific Theatres Winnetka 21,65.1,51.1
+rejected,Q29641581,Cohasset Melba Park,64721f66-646d-411f-a4b7-33b55e071ab8,Four Oaks Park,58.5,48.5
+rejected,Q17027746,Reseda Country Club,d4af22a1-4afe-4026-bf83-a93d90408874,"Reseda, Los Angeles, Kalifornien",104.4,44.9
+rejected,Q49520685,Mae Boyar Recreation Center,46538242-e6ef-4094-9e1d-958b06d629cb,Mae Boyar Park,25.2,53.7
+rejected,Q49508325,John Quimby Park,d1a3067e-8dad-4008-b7c1-07406750396a,Quimby Park,36.3,81.5
+rejected,Q8003058,Will Rogers State Beach,25df7e46-48e1-43f2-a1d7-b24751f849e1,Will Rogers State Beach - Lot 5 (Castle Rock),115.0,71.9
+rejected,Q44838312,Reseda Drive-In,c6b2125d-f8d3-4ae8-acfc-b7416ddc7d2a,Domino's,133.2,43.5
+rejected,Q49554853,Runnymede Recreation Center,f73ff423-892b-442a-b2a4-5a87566e6703,Runnymede Park,52.5,53.7
+rejected,Q49555049,Rustic Canyon Park,2139bf30-4b99-438b-96bf-94a74bb89705,Rustic Canyon Recreation Center,36.4,61.2
+rejected,Q49579138,L.A.P.D. S.W.A.T. Officer Randal D. Simmons Park,ca7d81dd-f73c-447d-82a3-bb14225a8f7f,Randal D. Simmons Park,89.5,63.6
+rejected,Q49582138,Winnetka Recreation Center,2d489bae-16a1-47e8-b65b-358b4a543251,El Ranchero Chido Tacos,97.6,40.8
+rejected,Q49569152,Tapia Park,64d4d71c-50a8-4140-9812-a353a96036e7,Tapia Park Public Use Area,115.6,55.6
+rejected,Q55603747,"Alumni Park, Pepperdine",e81cb57c-02a2-46f4-8039-2d9fdae9efb4,Lisa Smith Wengler Center for the Arts at Pepperdine,84.7,40.5
+rejected,Q78835091,Cinepolis Luxury Cinemas Pacific Palisades,9db73265-e6f0-475d-975a-121e19c58dc5,Cinépolis Luxury Cinemas,20.2,69.7
+rejected,Q116229097,Palisades Recreation Center,b63d16da-ea99-4a35-88d0-1ab5aa00664f,Pacific Palisades Park,37.0,53.1
+rejected,Q131926929,Topanga State Beach,81b1627d-2852-4726-ab97-c32044c6d9e4,Topanga Beach,68.8,81.2
+rejected,Q132093138,Cholada Thai,5a027240-cefe-4ed0-963c-452a487eda74,Cholada Thai Beach Cuisine,2.2,63.2
+rejected,Q132200518,Reel Inn,f254ded4-ad93-4147-8a7b-cdea7fb000fb,Reel Inn Malibu,9.4,69.6
+rejected,Q132477483,Vittorio's,5cd7814a-d970-4d56-93a7-570d7347ba47,Domino's,57.1,33.3

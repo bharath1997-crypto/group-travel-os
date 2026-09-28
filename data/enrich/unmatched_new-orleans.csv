@@ -1,0 +1,213 @@
+reason,wikidata_qid,wikidata_name,overture_gers_id,overture_name,distance_m,score
+rejected,Q42669166,Folly Theatre,c56c0cf8-a502-4468-849e-671a44958a3e,The Little House,90.4,40.0
+rejected,Q42669176,Carrollton Theater,2113acae-c926-4280-8492-fc69a5409f1c,"4024 Canal Street, Llc",54.3,41.0
+rejected,Q42669187,Cortez Theatre,818c6f78-3568-4008-9bed-e4ae8352c7c0,Fullblast Brunch,25.9,26.7
+rejected,Q42669198,Escorial Theater,7d44243c-b20f-4be1-ada5-706e6c28cc47,Pizza Domenica,60.0,33.3
+rejected,Q42669204,Martin Cinerama,1844178f-1819-4eb5-b56d-7d4c11db475b,Boswell's Jamaican Grill,96.4,36.4
+rejected,Q42669147,Happy Hour Theatre,61050e20-e6a4-45d4-9bdb-8af208520428,Down the Hatch,109.3,43.8
+rejected,Q42669157,Paris Theatre,b1782447-28e4-47a6-af71-9bab7823a2fc,Artistic Heritage New Orlean,137.4,48.8
+rejected,Q42669048,Robert E. Lee Theatre,bd1e2597-6db3-481c-a0cb-1fc4242d553d,Charles Merrell Art Gallery,88.2,42.6
+rejected,Q42669060,Beacon Theatre,a0e5344d-ec4d-4107-ba74-f8dd9f847f04,Boil and Barrel,96.2,41.4
+rejected,Q42669070,Lakeview Theatre,9482e0aa-11dc-4acb-a669-1509c7c66965,Lakeview Burgers and Seafood,127.5,50.0
+rejected,Q42669093,Poplar Theatre,b39d13e3-5b17-498b-8151-9c49883b3fcb,Boucherie,118.9,43.5
+rejected,Q42669101,Roxy Theatre,c028c1ee-9823-45ce-9d0d-38f706f73f9f,The Bissap,124.6,11.1
+rejected,Q42669112,Eastlake Plaza 8,0ccea292-24b9-4a27-aa42-a698be098a82,Burritos Grill - New Orleans,100.3,28.6
+rejected,Q42669215,Queen Theatre,da160167-3840-43bd-ac98-66af88ba0c13,Namese,134.3,31.6
+rejected,Q42669226,Booker T Theatre,b2e58202-2a09-461c-988b-b1390084ac59,Fine Arts Theatre,32.5,60.6
+rejected,Q42669242,Pitt Theatre,4998d6b1-d356-453e-be8e-77049a44cb18,The Buttermilk Drop,104.0,29.6
+rejected,Q42665915,Do Twin Drive-In,4dca5ad0-0183-4769-be0e-e02fb784889c,King Cake Drive-Thru,142.7,61.1
+rejected,Q42665931,Jeff Drive-In,c53b3076-90bf-4936-bb09-6636579aeb20,Bud's Broiler,144.4,38.5
+rejected,Q42666502,Arabi Theatre,64bcfba4-7abe-444a-8f21-e19590da6c90,Zeitgeist Theatre and Lounge,37.9,52.9
+rejected,Q42667115,Chalmette Cinema,724e8cfc-29d9-4a31-80bd-764ad4dc7d9f,French Press Coffeehouse Of Chalmette,82.7,49.1
+rejected,Q42667461,Beverly Theatre,700a6791-a8ed-4859-b409-02a685685417,Toast Gretna,116.4,37.0
+rejected,Q42667470,Hollywood Theatre,bab08266-67a3-478e-85f7-7be7aff804ac,Thanh Thanh Restaurant,103.5,35.7
+rejected,Q42667479,Oakwood Cinema,7db31dc8-23ce-4682-8965-a8e4f5266916,Kim Son,67.6,38.1
+rejected,Q42667490,Oakwood Cinema IV,58e1cccf-ca5b-4866-84ab-a005878f8407,Great American Cookies,35.2,30.8
+rejected,Q42667512,Westside Theatre,16ce67c5-a7b2-4e5f-bb56-d27cfb6054b3,The Naughty Knight,86.1,26.7
+rejected,Q42667568,AMC Westbank Palace 16,81993fcb-2aa3-42ef-bdf2-96bbed407789,Ruiz Family Restaurant Group Llc.,70.9,44.4
+rejected,Q42667709,Cinema City 8,39fcddb1-2dfc-4001-a982-c545d8dbc41a,El Rinconcito Centroamericano,144.1,38.1
+rejected,Q42667718,Hollywood Cinemas 9,8b7daa9b-787a-4f6c-9625-aa9cdfa92e69,Copeland's of New Orleans,12.7,31.8
+rejected,Q42667727,Kenner Cinema,e392fcc2-3578-4b43-bea1-3db2c5bda940,Kenner's Music In The Park,148.3,46.2
+rejected,Q42668190,Royal Theatre,22555c84-b83c-4a88-bbe9-debc66779a61,Biere Bar,100.3,33.3
+rejected,Q42668258,Aereon Theatre,b33b08ec-7b23-40bf-88ee-0a8b61b20ba9,Cafe Royale,41.7,48.0
+rejected,Q42668265,AMC Palace 12,b3bb0285-645c-4105-a690-21485e588212,Players Pub,135.5,33.3
+rejected,Q42668277,Galleria 8,315a8095-05dd-4574-be90-3d1bdeebe758,Galleria Operating Company,107.9,50.0
+rejected,Q42668284,Grand Theater,53a645fa-00bf-44bb-840a-dc0c53e52669,Brasa Churrasqueria,51.5,43.8
+rejected,Q42668166,Belle Promenade 14,e5f6cbe8-2505-4518-b60a-7002e728e5fc,Sidney's Saloon,41.0,36.4
+rejected,Q42668183,Oak Ridge Cinema 5,a30627a0-1c0a-4a20-b92b-92fcc7e7fb00,Dragon Palace Buffet,125.6,26.3
+rejected,Q49481887,Danneel Playground,48ca536b-f40b-467d-a3fb-d5935177203a,Danneel Park,26.4,73.3
+rejected,Q49482648,Delgado Playground,8de5654f-ea7a-4499-9dc0-1e8801e47ed4,Lakeview Playground,25.5,70.3
+rejected,Q49482699,Delta Park,63aad79c-d831-4ee5-bba7-d1ea1806fed1,Delta Playground,119.6,69.2
+rejected,Q49483746,Donnelly Playground,5981e884-83fe-41c0-8a85-29480a3823af,Destrehan High School Auditorium,130.5,23.5
+rejected,Q49484805,Eads Plaza,53ce5eb9-9832-493b-aff4-beac18c2d071,ESCADA,117.0,50.0
+rejected,Q49490064,Foilage Park,ab30f239-5ec6-40b9-9f9d-27c970c0982d,Wemori,111.7,22.2
+rejected,Q49491979,French Quarter Visitor Center,ccc1d91f-5b43-4cac-bd58-51258c867719,Vieux Carre Gallery,101.0,45.8
+rejected,Q49493094,Gatto Park,5ddf898e-2d76-48f9-be5d-df157e0636b6,Gatto Playground,42.6,69.2
+rejected,Q42668021,LaPlace Cinema 5,0ff089c1-0512-413e-a225-f76263dde480,Dots Diner,115.2,30.8
+rejected,Q49498627,Harvey Park,a39c5f46-af6c-430c-8c6f-a70d435aa6b0,Harvey Playground,96.7,71.4
+rejected,Q49499601,Heinemann Park,a676b8fc-b37e-4c33-ba08-98d8d093a027,Ciao Tapas Bar & Lounge,112.1,35.7
+rejected,Q49504630,Imtt Field,0e383a6b-f8f8-46a5-b822-1e0af29e05e0,IMTT Field and Playground,49.1,57.1
+rejected,Q49505355,Irish Channel Area Architectural District,f4a56d43-a21f-4975-81ee-b7b4c4df820f,Uptown 11th Wd,147.4,18.2
+rejected,Q49507273,Jefferson Park,f352d89d-4590-4237-ae74-b866b80cdae4,River Levee Bike Path,113.3,34.3
+rejected,Q49507640,Jessie Owens Park,1a124271-2e69-49a2-b861-349842efbbe2,Jesse Owens Playground,25.5,76.9
+rejected,Q49508312,John P Lyons Memorial Center,a2e2519d-f7a9-4896-8bd0-831398170ce7,Ports America,105.2,34.1
+rejected,Q49509387,Kark Park,89e88457-2459-4deb-ac22-93321647c746,Kennedy Heights Playground,36.8,28.6
+rejected,Q49509763,Keller Square,2955568f-d00a-48b4-b964-ce83e3a669eb,Soul Food Kitchen,134.8,27.3
+rejected,Q49513787,Lake Vista Park,26baf1b7-3c87-4123-a47f-8c65ae37c4ea,Ponchartrain Beach & Lakefront,50.7,46.5
+rejected,Q49513908,Lakeshore Park,0a808d89-131d-41e5-a1a3-f2c13ea59ae1,Pontchartrain seawall. Lakeshore Park.,107.0,56.0
+rejected,Q42668304,Sena Mall Theater,86436162-dbc4-4ae3-90e7-6017a26f01f6,Sidelines Bar & Grill,57.4,40.0
+rejected,Q42669338,Clabon Theatre,49ab69de-d599-45c5-861d-36ad323268b0,Jackie's Touch Of Class,141.1,37.8
+rejected,Q42669349,Isis Theatre,eecf256f-0f8b-410a-bb7c-458dd1b6e339,Charlie's Steak House,11.7,42.4
+rejected,Q42669360,Napoleon Theatre,86c8023b-b9ad-4418-b061-85a3372bbfe8,Laurence Square,113.3,45.2
+rejected,Q42669381,Grand 12,ba147e45-43ad-4840-af29-8027550c59df,Optimus Entertainment,115.4,20.7
+rejected,Q42669390,National Theatre,c37b7b8e-7303-4fba-88a5-bc774903912e,Taqueria Corona,11.4,45.2
+rejected,Q42670064,Movies 8,3c934926-7de9-49ac-bff9-44bee220af26,Piccadilly Cafeteria,140.0,14.3
+rejected,Q42670297,Gem Theatre,4197af65-9fd0-45e3-baf7-5bc87eeb7d4d,Josh Wingerter Art Gallery,16.2,37.8
+rejected,Q42669594,St. John's Theatre & Civic Center,17d8dd89-0ca1-4f9e-8d1c-85cf624c920c,St John Theatre,21.1,66.7
+rejected,Q42670038,Arcade Theatre,a1cc0e9d-fb02-4aa5-b5cc-fc112cfdc746,The Wine Garden,123.2,48.0
+rejected,Q42670051,Grand 16,7630777c-5817-40fe-8a66-38121cf7a8aa,Grand Theatre 16 Slidell,23.5,50.0
+rejected,Q42668594,Uptown Square Cinema,74a7285d-0cbd-45ce-b387-d5499a405528,Tartine,131.2,29.6
+rejected,Q42668614,Gem Theater,061c1c94-bd65-4954-8cf8-93374175c363,Zony Mash Beer Project,32.4,30.3
+rejected,Q42668624,Bijou Theatre,a0014c1e-32ed-4bd3-ae68-fb25b031157b,Bjs Bywater,36.8,50.0
+rejected,Q42669253,Plaza Cinema 4,4133d20e-b27f-4c55-ab61-f6cb32e47298,Red apple Chinese cuisine,139.8,30.8
+rejected,Q42668567,Algy Theater,5c9fbdd9-3629-4663-81a3-1e37567e6c7d,Rosetree Blown Glass Studio and Gallery,3.6,31.4
+rejected,Q42668577,Arrow Theatre,ff8fa1fb-88be-4062-9ea3-290cb68c0a5b,Shoppers Value Foods,147.8,36.4
+rejected,Q42668585,Imperial Theatre,d8a24a05-74be-4423-bf10-51beb183930c,Nolita Bakery,139.0,34.5
+rejected,Q42669259,Crown Theater,9aaf92fd-d8e1-40c4-aa73-e898ae8d2e1b,Chicken and Watermelon,125.2,45.7
+rejected,Q42669269,Nola Theatre,679cf200-e6c2-49e7-8b03-ac48a7bd796d,The H’Atelier,98.5,38.1
+rejected,Q42669277,Piety Theatre,b86f63aa-0fd8-47fd-8273-3afa3351df52,Rosalie Alley,90.0,38.5
+rejected,Q42669286,Famous Theatre,a6980ca6-be67-46b8-a62b-8f4b4453659b,Smoothie King,92.4,37.0
+rejected,Q42669294,Tiger Theatre,d05a0866-bf74-48b8-956b-cd0190c19eb9,Culture Park NOLA,115.9,33.3
+rejected,Q42669304,Circle Theater,b5f20345-b5a7-4874-b2d1-f21ce9e9a896,Seal's Class Act,66.8,40.0
+rejected,Q42669316,Rivoli Theatre,85d397b4-08d9-4c01-a0db-306c043f9dc6,Redstar Galerie,111.5,41.4
+rejected,Q42669326,Capitol Theatre,c7f3df48-9106-472d-a6f0-fa4c7d1ef51c,24 Hour Auto & Tire Repair,8.6,51.3
+rejected,Q42664996,Iroquois Theater,8c183d85-75f9-4fbb-9851-f80635c5c4e9,Headquarters by Nice Guys Nola,71.2,39.1
+rejected,Q42665282,St. Charles Theatre,a587d4f4-1adb-486a-aed3-b3c7fc45e5c8,Streetcar Cafe New Orleans,98.4,54.5
+rejected,Q34909264,Buddy Deuterive Park,54c59f97-35ae-4419-b092-b54360587b71,Filmore Playground,4.0,31.6
+rejected,Q34926898,City Park,e31f9f85-2869-46d4-a266-a08e9cc07a06,SideBar NOLA,112.4,28.6
+rejected,Q34927297,Claiborne Circle,a8b7b022-afd7-4cf2-9a43-96da81de57a6,The Gallery Lounge-NOLA,125.5,40.0
+rejected,Q34928376,Cleary Park,00beab31-ac5c-4b89-b149-3a2b57b3f415,Old Jefferson Little Park,121.7,38.9
+rejected,Q42663992,Lakeside Cinemas,9f199020-da05-4e0b-93b2-f2f87be3e774,PUCCINO'S,94.4,40.0
+rejected,Q42665717,Gretna Green Drive-In,4995ca12-4cef-4ead-9eed-6bd53284d2c1,El Paso Mexican Restaurant,117.2,33.3
+rejected,Q623162,Aquarium of the Americas,87043dce-93bd-4ee5-ad45-818b89e5ee55,Audubon Aquarium,15.5,50.0
+rejected,Q756452,Caesars Superdome,f881da93-8440-4764-b45e-dd26cce312c6,New Orleans Superdome,16.8,68.4
+rejected,Q42668989,Gentilly Theatre,4ad170cc-4d93-482a-b4d1-677fa66d57ea,Poboys By Howzee 2022,61.8,27.0
+rejected,Q42668998,Peacock Theater,edff1683-f2b9-42f5-afc1-12ba4fec60e5,Skinny & Marie's Tavern,106.3,38.9
+rejected,Q42669009,Pix Theatre,8c0f6cb8-a5c5-49b5-9483-a670e3107397,Café Dauphine,45.1,25.0
+rejected,Q1477833,National World War II Museum,559e28f5-d481-48d9-92bd-3ab7363a1349,National D Day Museum,40.1,65.3
+rejected,Q3087476,French Market,7ff218e4-5d3f-436b-8b30-f604b07d89a6,French Toast,84.1,72.0
+rejected,Q3180923,St. Bernard State Park,2d1b8540-2531-436b-a250-52f1ce6dc39f,Parc d'État de Saint-Bernard,148.3,73.5
+rejected,Q42668783,Gallo Theater,3ade74c0-2036-4568-a8c3-bac093c805a3,Place To Be,11.0,25.0
+rejected,Q42668795,Granada Theater,313ff479-bba9-4daa-ae3f-9fc0857d0c9f,Good Dope Gallery,99.8,31.2
+rejected,Q42668804,Lincoln Theatre,7f83f775-a7ad-447f-ae22-0d908585f2c9,Shakespeare Park,145.4,38.7
+rejected,Q42668654,Avenue Theatre,569a90b3-d905-4116-9acf-014fde2fb8d3,Stella Jones Gallery,91.0,47.1
+rejected,Q42668666,Cosmopolitan Theatre,e96d3a02-3247-4793-9172-2e61f38d780a,City Park Storyland,149.2,35.9
+rejected,Q42668680,Globe Theatre,569a90b3-d905-4116-9acf-014fde2fb8d3,Stella Jones Gallery,140.0,48.5
+rejected,Q42668689,Liberty Theatre,dacd55a3-d507-4060-b15f-983a1720fd7c,Steve's Diner,94.8,50.0
+rejected,Q42668638,Ace Theatre,fcb4a3ff-13b8-4da5-897e-bfdd23075383,Holiday Street Car restaurant,76.9,48.3
+rejected,Q42668644,Alamo Theatre,c14d534d-34a3-40c9-8ac6-4c47250a8283,State Palace Theatre,115.0,66.7
+rejected,Q42668699,Lyceum Theatre,bc44f718-63f2-4372-8841-7b3cf91826a9,Cafe at the Square,124.5,43.8
+rejected,Q42668711,Panorama Theatre,6c93ddf8-62a3-43de-ab9b-dc568581f381,Bread and Butter Cafe,94.7,50.0
+rejected,Q42668722,Rio Theatre,e36f4bf5-16c2-4c04-9a3f-a1e2ec715ee3,Karyi Kitchens,78.7,48.0
+rejected,Q42668732,Theatres at Canal Place,8efd04d4-7783-4731-80cc-8e5fc97ea8d5,Pinkberry Canal Street,54.1,53.3
+rejected,Q42668744,Tudor Theatre,ce10cb43-bbf7-47bb-9d2f-b1ac81cdf415,Nola Studioz,100.1,48.0
+rejected,Q42668754,Vitascope Hall,f692d5d9-4be0-4850-8298-6c38444411cb,Mahogany Jazz Hall,86.7,43.8
+rejected,Q42668766,Coliseum Theatre,988e316a-0777-4ddf-9f32-d152c0f45b50,The Courtyard Brewery,148.3,36.4
+rejected,Q42668776,Dixie Theatre,aa3636ab-95d7-4e96-9b46-58d469fda83f,CANO's Creative Space at the Myrtle Banks Building,79.0,31.7
+rejected,Q42668829,Tivoli Theatre,c50587f7-e695-4c70-8cd7-cfc27b54c1f9,Laurel Street Bakery,139.3,35.3
+rejected,Q42668854,Mecca Theatre,e2dc4b24-edc1-47f3-87b4-181f3548c267,Maple Street Cafe,48.3,48.0
+rejected,Q42668866,Garden Theatre,695bdaf9-c75a-4447-80ae-a53124f99289,Amici Ristorante & Bar,124.7,40.0
+rejected,Q42668885,Elmwood Cinema IV,87f6919f-4863-4a32-bf99-d549677790fa,PJ's Coffee,140.9,28.6
+rejected,Q42668898,Bell Theatre,f855409b-af7f-4510-a592-9ed048fd4607,Stallings Gentilly Pool,130.9,34.3
+rejected,Q42668908,Aurora Cinema 6,c7f4e19f-0a69-4f51-b500-2c3b1ab0feda,Jay's Place,147.2,30.8
+rejected,Q42668918,Bank Theatre,bfcbdfbe-c7a2-4478-b8a6-441ce86ca6e9,The Market Cafe,34.6,44.4
+rejected,Q42668930,Cinema Theatre,0d9212ab-b8f5-45f8-a5bf-8f94e02a4566,Le Cabaret,109.3,41.7
+rejected,Q42668938,Diamond Theatre,9f95b0f0-0521-4c7f-b32b-9d31716ea2e3,Addiction Coffee,94.0,45.2
+rejected,Q42668946,Palace Theatre,f459e85f-74c0-411b-94c6-165b674a09b0,Galatoire's,102.4,48.0
+rejected,Q42668961,Trianon Theatre,399328c9-65eb-4903-81c8-610ff2e38a13,Lake Pontchartrain,40.3,48.5
+rejected,Q42668971,Washington Theatre,710f575e-6d8a-4a64-a4a1-42a68ed17cc3,Sake Cafe On Magazine,80.7,41.0
+rejected,Q42668979,Fox Theatre,01ae4f5e-85f2-4290-b982-17082bba1096,Baskin-Robbins,120.9,16.0
+rejected,Q49523272,McCarty Square,f2cee889-2dcb-4ef5-a1fc-bcf1a55b0b35,Sankofa Farmers Market,36.5,38.9
+rejected,Q49524545,Mel Ott Park,900e769c-c2ad-4ba1-8a2f-986f4a5e4db4,Danny & Bonnie Seafood,145.3,25.0
+rejected,Q49525637,Metairie Playground,4c2916cf-faef-4148-8030-08d3e96f321b,Jefferson Parish Parks & Rec,142.3,35.6
+rejected,Q49525965,Mickey Markey Playground,439f63e1-69c7-46f2-b699-0e8deff737a3,Mickey Markey Park,37.3,81.0
+rejected,Q49526182,Mike Miler Park,bfd0c29a-6898-4396-a683-e2d8fc2d7dfb,Little Chinese Kitchen,142.3,41.4
+rejected,Q49526250,Miley Park,9de1b079-8823-4515-8600-5ad0e6d4da4f,Reef Geeks,118.8,30.0
+rejected,Q49527043,Mirabeau Park,0ee47870-909f-45ab-9fb7-c678b2f6b9ab,Mirabeau Playspot,35.0,73.3
+rejected,Q49528312,Morgan Park,678ad7d7-3dbd-428a-ab85-de6991eed872,Buddy Lawson Playground,33.4,35.3
+rejected,Q49528524,Morris Park,9aed09b6-63d5-4119-913e-4042d0625a3b,A.L. Davis Park,29.4,56.0
+rejected,Q49530484,National Square,ec0e2b9f-fd14-4704-8a1b-e8322fbb662d,Rome Park,70.6,33.3
+rejected,Q49531502,Ney Rey Park,a1e0bca7-e737-4cb2-976d-e267344e3eac,Jefferson Parish,143.3,35.7
+rejected,Q49531596,Nicholson Park,04f5057b-5ebf-454e-a217-d15fe006fe35,Nicholson Place Playground,116.5,65.0
+rejected,Q49534273,Oakdale Park,6a276763-cdc1-43e2-b58f-6c450738f4e7,Oakdale Playground,128.8,73.3
+rejected,Q49534712,Odile Davis Playground,a4c5d092-beea-4e8c-8dd8-fc371c7177e8,Odile Davis Park,50.6,78.9
+rejected,Q115956004,Maylie's Restaurant,9216391a-34d8-4e6c-b06c-37fca11887fe,Allegro Bistro,137.9,45.5
+rejected,Q130362941,The Eiffel Tower of New Orleans,a71b61a9-5acc-4111-b4a4-a0c80c714969,Eiffel Society,61.9,48.8
+rejected,Q131676160,"Old Point Bar, New Orleans",bfd01fce-48c2-4768-87d1-0df60828de59,Old Point Bar,11.5,52.9
+rejected,Q49541411,Peridot Park,42db3861-fcb6-4a81-9003-87c4353a7d17,The Batterina,140.7,38.1
+rejected,Q49545908,Pratt Park,ff81281e-b4db-4c3b-9145-8d6e5e50092f,Pratt Park Playground,73.3,64.5
+rejected,Q49546067,Preston B Delcazel Memorial Playground,71100fe0-94fa-46a5-9daa-ce5901192d9f,Delcazal Playground,7.0,66.7
+rejected,Q49552064,Robert Playground,93cb2eab-e8f3-4d67-a306-b4f7a375ccc9,"Bonita Park, New Orleans",48.9,30.0
+rejected,Q3527714,Théâtre de la Rue Saint Pierre,c11fb2ba-dd1b-41ac-a727-fbe3b4b5eb1d,Empire State Delicatessen Llc,106.5,50.8
+rejected,Q3567767,White City,2ce4cd77-1f9f-49c2-ab8c-1c69426e0ce8,La Pointe 2 Llc,105.2,40.0
+rejected,Q4554796,1850 House,c241d24e-2ade-4030-bbb2-16bda952e7d5,CC's Coffee House,96.6,44.4
+rejected,Q4762842,Angelo Brocato Original Italian Ice Cream Parlor,bccf59d1-410c-4429-93cc-02c5c4c9854d,Angelo Brocato,37.6,45.2
+rejected,Q4794474,Arnaud's,b358be7c-25bb-491d-814a-e2fed05e4d44,Arnaud's New Orleans,12.0,57.1
+ambiguous,Q4820238,Audubon Insectarium,753ba0a5-35d4-4893-b03c-1d591e1ed48f,Audubon Insectarium,118.7,100.0
+ambiguous,Q4820238,Audubon Insectarium,ff9377c4-58f6-438b-aa2d-f212fdfb9209,Audubon Insectarium,112.6,100.0
+rejected,Q4839767,Backstreet Cultural Museum,8a2c7ef3-f146-4fb0-9333-667d21017d89,Sanctuary Bar & Grill,148.9,41.0
+rejected,Q4975867,Broussard's,54786d2d-f83b-4fec-acff-498472329cc8,Broussard's Restaurant & Courtyard,10.7,51.2
+rejected,Q5061142,Central Grocery,0804c752-7ce5-4753-8035-49b4e8a2c12e,Harry's Corner,115.4,48.3
+rejected,Q5152153,Commander's Palace,dfa32932-70c7-4c4b-8025-50a832f56853,Hana Japanese Restaurant,67.3,45.2
+rejected,Q5184204,Creole Kosher Kitchen,5520522e-db2b-47a5-a13c-759a1897b138,Mr. Ed's Southern Creole Kitchen,107.2,61.1
+rejected,Q5295759,Dong Phuong Oriental Bakery,67a24fbf-47a3-4327-ad4a-2c0ffc327922,Dong Phuong Bakery and Restaurant,31.6,73.5
+rejected,Q5501861,French Opera House,0a834965-6b90-4255-bc08-a23d93d8e3cf,Old Opera House Annex,12.6,66.7
+rejected,Q7720883,The Cabildo,3e671e3a-2f71-444b-8df6-9918234c07bd,The Cabildo Museum,51.5,66.7
+rejected,Q7759129,The Quorum,c4ed9988-3569-4b12-9c58-dd7d27113d8f,HouseBar,112.5,28.6
+rejected,Q7777476,Théâtre de la Renaissance,7b07c497-97e2-4d4d-9db1-616cb9e62192,New Orleans Aids Memorial,86.6,40.0
+rejected,Q6507443,Le Petit Theatre du Vieux Carre,75afc0d0-82a3-431b-9716-b29193f8237e,Le Petit Theatre,1.6,68.1
+rejected,Q6550495,Lincoln Beach amusement park,e763b06c-25ca-4e92-8cb1-a0fd92bab11a,Lincoln Beach,25.3,63.4
+rejected,Q6550920,Lincoln Park,25f5c88a-7453-4dd0-85eb-5f0e13a5238a,Cuccia-Byrnes Playground,80.4,33.3
+rejected,Q7103963,Orpheum Theater,a611b6de-a68f-47bd-aff8-bf62bb26fa03,Orpheum Theater New Orleans,31.2,71.4
+rejected,Q7143844,Pat O'Brien's Bar,f0a4a608-9dc1-4485-8198-e2f1e75bf5e2,Pat O'Brien's Courtyard Restaurant,65.0,72.2
+rejected,Q6841166,Middendorf's,40f97402-12e6-4541-b3f2-9d16456fef93,Middendorf's Manchac,59.4,75.0
+rejected,Q6915388,Mosca's,165d70a3-015d-4631-b4b7-4b886499fcfa,Mosca's Restaurant | Italian,142.6,42.4
+rejected,Q49564227,Spanish Plaza,4ad9dd20-cc57-4d40-8d55-715a5084b485,Spirits' Bar & Lounge,130.8,50.0
+rejected,Q49565137,Stallings Playground,f855409b-af7f-4510-a592-9ed048fd4607,Stallings Gentilly Pool,11.8,60.5
+rejected,Q49568157,Susan Park,5397220d-8518-44ba-973f-7c95b9536586,Susan Park Gym,94.5,83.3
+rejected,Q49569303,Taylor Park,1fc752ec-b42c-40a0-a31c-2671a3e90a1d,2 good 2 be true llc,129.6,19.4
+rejected,Q49570218,Thomas Jefferson Park,9d9046b1-6110-4482-adc9-e156c506200a,Thomas Jefferson Park Playground,132.1,79.2
+rejected,Q49574023,Valreiss Park,5825b0aa-d5e0-4a0c-88d8-501bad53be35,Val Riess Park,99.2,66.7
+rejected,Q49582871,Woodlawn West Park,e92c2864-e5b1-4283-8749-ba2ad2cf5c59,Monahan Playground,119.2,27.8
+rejected,Q65119724,Willie Mae’s Scotch House,c341bf6a-1a59-4214-a824-19252d4bf7d6,Gabrielle Restaurant,116.4,29.4
+rejected,Q95971993,NOLA,2c51969a-0a48-4c82-b401-731c6f5e541d,Napoleon House,36.1,33.3
+rejected,Q102397692,Tulane Theatre and Crescent Theatre,54281c46-f7fc-47c9-bb7a-fcb1cbb13631,FroYo Cafe and Sweets,126.8,42.9
+rejected,Q104157096,Al Hirt's Club,f9232e38-34dd-477a-86ee-d6166f6deb41,Fat Catz Music Club,32.4,60.6
+rejected,Q111507993,New Orleans Musical Legends Park,5fa2241b-ab7f-4ae9-870e-83b84bc58513,Musical Legends Park,35.0,76.9
+rejected,Q115802173,Dooky Chase’s Restaurant,8d89eebd-ea1f-4444-98d0-7ffe43639ad2,Da Soldier Spot Sports Cafe,143.0,40.0
+rejected,Q22059284,Carver Theater,4d6a3e4c-2410-41b6-af4a-9b13a7fbee3c,The Historic Carver Theater,4.0,75.7
+rejected,Q24435935,Lafitte Greenway,ef258e16-049d-4bea-be09-89740bb7ea54,Bayou Wine Garden,146.1,42.4
+rejected,Q25212557,Dew Drop Inn,6ef9a5a1-0dcc-4084-b57e-32b5ad7eb117,Second Line,85.8,34.8
+rejected,Q34805264,A J Muss Bertolino Park,29f8e06b-c39e-40ba-a76e-d19e73d3c105,Bertillino Park,50.6,68.4
+rejected,Q34814493,Annunciation Square,dbaf0f0e-b6e4-41d1-aeb0-7737d7ad4df8,Pho Tran Authentic Vietnamese Restaurant,77.0,41.7
+rejected,Q34817403,Armstrong Park,362f3e95-06bd-4c27-81f3-051827bc2c69,Louis Armstrong Park,44.2,82.4
+rejected,Q34826366,Avondale Park,89f26c21-cf0b-4b8c-b1d3-bdff4dec73f4,- Avondale Playground,68.9,75.0
+rejected,Q34836797,Beauregard Square,7f681f59-c09f-4fe0-ba76-07009c5fda6f,Congo Square,14.8,55.2
+rejected,Q34854873,Bodenger Park,5dd927c9-aa16-494f-a483-ceb20d7aaad1,Bodenger Playground,45.9,75.0
+rejected,Q42669034,Jeff Theatre,239f4747-002e-45f2-80fd-7b055a6e03ca,Blue Tomato,53.3,43.5
+rejected,Q49513921,Lakeshore Playground,ce3b45e1-d997-41a7-af97-0e9e96de1b74,Applebee's Grill + Bar,111.7,26.7
+rejected,Q49516997,Lincoln Park,25f5c88a-7453-4dd0-85eb-5f0e13a5238a,Cuccia-Byrnes Playground,79.1,33.3
+rejected,Q5651022,Hansen's Sno-Bliz,011739a8-0a85-42d6-b3ab-2f03c8f1fe71,Rosy's Jazz Hall,115.3,42.4
+rejected,Q34864958,Bunny Friend Playground,6c869b91-f45b-4da0-8560-6b3f574d088c,Bunny Friend Park,55.2,80.0
+rejected,Q34895824,Bella Terra Park,f05fffcf-db40-4027-b25b-bfd1b0d6af3a,Belle Terre Playground,112.0,68.4
+rejected,Q34902595,Bolivar Place,3bde1363-80ea-48e0-a311-b37f5fddf33d,El Poblano,105.0,43.5
+rejected,Q7548847,Snug Harbor,eafe9e6a-7c7d-405b-b0fd-0cabb50f852c,Snug Harbor Jazz Bistro,8.4,64.7
+rejected,Q3001753,Old Ursuline Convent,2c5e6e49-b9a1-465e-9229-ef85907885ac,Le Bouchon Wine,121.9,51.4
+rejected,Q16255341,Boyd Satellite Gallery,fd55cd53-4ff5-4658-aa3d-0fcc81dc7f14,Boyd Satellite,8.2,77.8
+rejected,Q49527935,Montz Park,82e3b2d9-6598-45f7-b0d1-9f92b96a2d65,St. Charles Parish Montz Park,48.8,52.6
+rejected,Q49563058,Soniat Playground,ab430d7e-8866-41d1-84f1-ad2c70685596,Park of Heroes & Harahan Playground,59.5,40.0
+rejected,Q64703462,Dooky Chase's Restaurant,8d89eebd-ea1f-4444-98d0-7ffe43639ad2,Da Soldier Spot Sports Cafe,131.6,40.0
+rejected,Q8037460,Wow Cafe and Wingery,8efb5db7-ff29-455b-8456-b265a266be3f,WOW Café,25.1,50.0
+rejected,Q16974514,Domilise's Restaurant,f0507332-3261-4183-a41d-5b1038030e01,Domilise's Po-Boy and Bar,12.9,64.5
+rejected,Q16974720,Newcomb Art Gallery,10ae8fdb-5123-4ed7-91d3-eba20e5fb79f,Newcomb Art Museum of Tulane,15.4,55.3
+rejected,Q16984211,Rosa F. Keller Library and Community Center,e5b93ed1-6ae5-4e8d-b14c-146c27135be6,Broadmoor Art & Wellness Market,65.6,36.6

@@ -1,0 +1,56 @@
+/* Weather Animations */
+@keyframes rain-fall {
+  0% { transform: translateY(-20px); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(60px); opacity: 0; }
+}
+
+.rain-drop {
+  position: absolute;
+  width: 2px;
+  height: 10px;
+  background: #3b82f6;
+  border-radius: 5px;
+  animation: rain-fall 1s linear infinite;
+}
+
+@keyframes snow-fall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(100px) rotate(360deg); opacity: 0; }
+}
+
+.snowflake {
+  position: absolute;
+  color: #e2e8f0;
+  animation: snow-fall 3s linear infinite;
+}
+
+@keyframes sun-glow {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
+}
+
+.sun-cycle-glow {
+  animation: sun-glow 4s ease-in-out infinite;
+}
+
+@keyframes moon-float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
+.moon-float {
+  animation: moon-float 6s ease-in-out infinite;
+}
+
+@keyframes orbit {
+  from { transform: rotate(-90deg) translateX(100px) rotate(90deg); }
+  to { transform: rotate(90deg) translateX(100px) rotate(-90deg); }
+}
+
+.celestial-orbit {
+  transform-origin: bottom center;
+}

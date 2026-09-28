@@ -17,6 +17,8 @@ from app.jobs.osm_fetch import run_osm_fetch
 from app.jobs.experience_purge import run_experience_purge
 from app.jobs.stubhub_sync import run_stubhub_sync_sync
 from app.jobs.seatgeek_sync import run_seatgeek_sync_sync
+from app.jobs.release_stale_holds import run_release_stale_holds
+from app.jobs.complete_rides import run_complete_rides
 
 logger = logging.getLogger(__name__)
 
@@ -102,8 +104,22 @@ def start_scheduler() -> None:
         id="seatgeek_sync",
         replace_existing=True,
     )
+    scheduler.add_job(
+        run_release_stale_holds,
+        "interval",
+        minutes=1,
+        id="seats_release_stale_holds",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        run_complete_rides,
+        "interval",
+        minutes=15,
+        id="seats_complete_rides",
+        replace_existing=True,
+    )
     scheduler.start()
-    logger.info("Scheduler started — 10 jobs registered")
+    logger.info("Scheduler started — 12 jobs registered")
 
 
 
