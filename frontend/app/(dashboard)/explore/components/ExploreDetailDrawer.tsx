@@ -9,6 +9,10 @@ import {
 } from "../explore-listing-field-state";
 import { openExploreListingUrl } from "../explore-open-listing";
 import styles from "../explore.module.css";
+import { ExploreDrawerMap } from "./ExploreDrawerMap";
+import { ExploreDrawerPhotoUpload } from "./ExploreDrawerPhotoUpload";
+import { photoCreditText } from "../explore-photo-credit";
+import { exploreDirectionsUrl, explorePhoneHref } from "../explore-place-actions";
 
 type ExploreDetailDrawerProps = {
   detail: ExploreSlotDetail | null;
@@ -36,6 +40,15 @@ export function ExploreDetailDrawer({
     priceLabel: detail.price,
   });
   const canBook = bookLabel !== "No booking link";
+  const hasPin = typeof detail.lat === "number" && typeof detail.lng === "number";
+  const fullAddress = detail.address?.trim() || null;
+  const directionsUrl = exploreDirectionsUrl({
+    lat: detail.lat,
+    lng: detail.lng,
+    name: detail.title,
+    address: fullAddress,
+  });
+  const phoneHref = explorePhoneHref(detail.phone);
   const ratingLine = exploreVerifiedRatingLine(detail.rating, undefined);
   const heroStyle = detail.imageUrl
     ? { backgroundImage: `url(${detail.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
@@ -58,6 +71,20 @@ export function ExploreDetailDrawer({
             ×
           </button>
           <span className={styles.drawerSource}>{detail.source}</span>
+          {detail.imageUrl && detail.imageCredit ? (
+            detail.imageCredit.sourceUrl ? (
+              <a
+                href={detail.imageCredit.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.drawerPhotoCredit}
+              >
+                {photoCreditText(detail.imageCredit)}
+              </a>
+            ) : (
+              <span className={styles.drawerPhotoCredit}>{photoCreditText(detail.imageCredit)}</span>
+            )
+          ) : null}
           <div className={styles.drawerHeroCopy}>
             <span className={styles.slotMeta}>{detail.meta}</span>
             <h2 className={styles.drawerTitle}>{detail.title}</h2>
@@ -75,12 +102,38 @@ export function ExploreDetailDrawer({
               <span key={tag}>{tag}</span>
             ))}
           </div>
-          {detail.area?.trim() ? (
+          {hasPin ? (
+            <ExploreDrawerMap lat={detail.lat as number} lng={detail.lng as number} label={detail.title} />
+          ) : detail.area?.trim() ? (
             <div className={styles.drawerMap}>
               <span>{detail.area}</span>
               <span className={styles.drawerMapDot} aria-hidden />
             </div>
           ) : null}
+          {fullAddress || phoneHref || directionsUrl ? (
+            <div className={styles.drawerPlaceInfo}>
+              {fullAddress ? <p className={styles.drawerAddress}>{fullAddress}</p> : null}
+              {detail.phone && phoneHref ? <p className={styles.drawerPhone}>{detail.phone}</p> : null}
+              <div className={styles.drawerPlaceActions}>
+                {directionsUrl ? (
+                  <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className={styles.drawerChip}>
+                    Directions
+                  </a>
+                ) : null}
+                {phoneHref ? (
+                  <a href={phoneHref} className={styles.drawerChip}>
+                    Call
+                  </a>
+                ) : null}
+                {detail.sourceUrl ? (
+                  <a href={detail.sourceUrl} target="_blank" rel="noopener noreferrer" className={styles.drawerChip}>
+                    Website
+                  </a>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+          {detail.listingKind === "place" ? <ExploreDrawerPhotoUpload placeId={detail.id} /> : null}
           <div className={styles.drawerSectionLabel}>
             {detail.openingHours
               ? `Hours · ${drawerHoursSourceLabel(detail.hoursSource)}`

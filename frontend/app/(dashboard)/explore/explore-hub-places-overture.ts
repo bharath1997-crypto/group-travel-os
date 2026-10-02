@@ -9,9 +9,14 @@ export type ExplorePlaceRow = {
   lat?: number | null;
   lng?: number | null;
   image_url?: string | null;
+  /** Credit for open-license photos (Wikimedia Commons): author, license, file page. */
+  image_attribution?: string | null;
+  image_license?: string | null;
+  image_source_url?: string | null;
   source?: string | null;
   source_label?: string | null;
   url?: string | null;
+  phone?: string | null;
   opening_hours?: string | null;
   hours_source?: string | null;
   confidence?: number | null;

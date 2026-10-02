@@ -97,3 +97,10 @@ Otherwise the events are distinct. With Orlando data: Joey Cash → "joey cash p
   - Visible 140 → 139: only `Joey Cash in Orlando` is hidden.
   - Created places 13 → 10: Conduit and The Abbey via `geo_name_wide`; The Abbey-Orlando via `geo_address`.
   - 0 orphan places.
+
+## 8. Timed-entry series — option 1 (approved 2026-10-02)
+
+- Rule: an identical normalized title at the same place on the same **local day** is one group (a timed-entry series). Every group, duplicate or series, is capped at one local day, so nothing chains across midnight.
+- Readers (`app/services/scaper_event_visibility.py`, shared by `/api/v2/explorer/events` and the v1 hub) show one row per `COALESCE(duplicate_of, id)`. That row is the **next not-yet-started slot**, or the most recently started one, chosen at read time, so a group never disappears when its canonical slot expires between Scaper runs.
+- Live result: Balloon Museum dropped from ~376 slot rows to **10 cards (one per day)**. Visible events went from 382 to 347 in Chicago and from 96 to 88 in Orlando. The only cross-title groups are still Joey Cash and Punchis. Accepted consequence: two same-titled shows at one venue on one day share a card that shows the next one.
+- Verification: dedup unit tests 15/15 (series, local-midnight cap, distance and window); rolled-back Supabase suite 10/10 (new: the reader picks the next upcoming slot, then the latest started one); v1 and v2 readers both return 347 Chicago events.

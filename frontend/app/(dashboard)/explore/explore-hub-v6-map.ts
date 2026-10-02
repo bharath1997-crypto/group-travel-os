@@ -44,6 +44,7 @@ export function hubSlotToCard(slot: ExploreSlot, index: number): ExploreSlotCard
     imageHeight: CARD_HEIGHTS[index % CARD_HEIGHTS.length],
     imageLabel: slot.imageUrl ? "" : EXPLORE_PHOTO_UNAVAILABLE,
     imageUrl: slot.imageUrl,
+    imageCredit: slot.imageCredit ?? null,
     badge: hubListingBadge(slot),
     badgeVariant: badgeVariantFor(slot),
     summary: normalizeCardSummary(slot.title, slot.summary),
@@ -71,6 +72,12 @@ export function hubSlotToDetail(slot: ExploreSlot | undefined): ExploreSlotDetai
     imageUrl: slot.imageUrl,
     openingHours: slot.openingHours ?? null,
     hoursSource: slot.hoursSource ?? null,
+    address: slot.placeAddress ?? null,
+    phone: slot.phone ?? null,
+    lat: slot.lat ?? null,
+    lng: slot.lng ?? null,
+    imageCredit: slot.imageCredit ?? null,
+    listingKind: slot.exploreListingKind,
   };
 }
 

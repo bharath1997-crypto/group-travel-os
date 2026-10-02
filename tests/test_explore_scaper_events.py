@@ -75,3 +75,36 @@ def test_scaper_detail_has_no_invented_rating_or_distance():
     assert detail["rating"] is None
     assert detail["distance_miles"] is None
     assert detail["price_min"] == 0.0
+
+
+def test_city_slug_matches_ingest_sources_format():
+    from app.services.explore_scaper_events import city_slug
+
+    assert city_slug("Chicago, IL") == "chicago"
+    assert city_slug("  New York ") == "new-york"
+
+
+def test_hub_routes_any_scaper_city_to_scaper_feed(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    calls = []
+    monkeypatch.setattr("app.services.explore_scaper_events.scaper_city_enabled", lambda db, city: city == "Chicago")
+    monkeypatch.setattr(
+        "app.services.explore_scaper_events.scaper_events_for_city",
+        lambda db, **kw: calls.append(kw["city"]) or {"city": kw["city"], "events": [], "total": 0, "fetch_mode": "scaper_city"},
+    )
+    response = TestClient(app).get("/api/v1/explore/events", params={"city": "Chicago, IL"})
+    assert response.status_code == 200
+    assert response.json()["fetch_mode"] == "scaper_city"
+    assert calls == ["Chicago"]
+
+
+def test_scaper_city_enabled_is_false_off_postgres():
+    from types import SimpleNamespace
+
+    from app.services.explore_scaper_events import scaper_city_enabled
+
+    db = SimpleNamespace(bind=SimpleNamespace(dialect=SimpleNamespace(name="sqlite")))
+    assert scaper_city_enabled(db, "Chicago") is False

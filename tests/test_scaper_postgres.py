@@ -280,3 +280,26 @@ def test_address_tier_matches_beyond_wide_radius_only_on_same_street(pg) -> None
     assert store.relink_created_places("scaper-it") == 1
     link = conn.execute(text("SELECT place_id, method FROM ingest.place_links WHERE external_id = 'scaper-it-venue'")).one()
     assert (link.place_id, link.method) == (target, "geo_address")
+
+
+def test_reader_shows_next_upcoming_slot_per_group(pg) -> None:
+    from app.services.scaper_event_visibility import visible_events_cte
+
+    _, conn = pg
+    insert = text(
+        "INSERT INTO events (id, provider, external_id, title, start_time, expires_at, status, duplicate_of) "
+        "VALUES (:id, 'scaper-it', :ext, 'Slot', now() + make_interval(mins => :mins), "
+        "now() + make_interval(mins => :mins + 360), 'scheduled', :dup)"
+    )
+    canonical = uuid.uuid4()
+    conn.execute(insert, {"id": canonical, "ext": "slot-0", "mins": -60, "dup": None})  # started an hour ago
+    upcoming = [uuid.uuid4(), uuid.uuid4()]
+    conn.execute(insert, {"id": upcoming[0], "ext": "slot-1", "mins": 60, "dup": canonical})
+    conn.execute(insert, {"id": upcoming[1], "ext": "slot-2", "mins": 120, "dup": canonical})
+
+    query = text(visible_events_cte("AND provider = 'scaper-it'") + " SELECT id FROM visible")
+    assert [r.id for r in conn.execute(query, {"now": conn.execute(text("SELECT now()")).scalar_one()})] == [upcoming[0]]
+
+    # Once every slot has started, the most recently started one is shown.
+    later = conn.execute(text("SELECT now() + interval '3 hours'")).scalar_one()
+    assert [r.id for r in conn.execute(query, {"now": later})] == [upcoming[1]]

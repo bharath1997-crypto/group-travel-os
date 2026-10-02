@@ -10,6 +10,13 @@ from app.services.place_ingest_run_service import (
 )
 
 
+def _postgres_db() -> MagicMock:
+    """The service skips non-PostgreSQL binds (no ingest tables), so mock a Postgres bind."""
+    db = MagicMock()
+    db.get_bind.return_value.dialect.name = "postgresql"
+    return db
+
+
 def test_freshness_sql_joins_city_coverage() -> None:
     assert "place_ingest_run_cities" in FRESHNESS_BY_CITY_SQL
     assert "city_slug = :city_slug" in FRESHNESS_BY_CITY_SQL
@@ -17,7 +24,7 @@ def test_freshness_sql_joins_city_coverage() -> None:
 
 
 def test_freshness_uses_city_slug_param() -> None:
-    db = MagicMock()
+    db = _postgres_db()
     db.execute.return_value.mappings.return_value.first.return_value = None
     latest_successful_ingest_for_city(db, city_slug="chicago")
     params = db.execute.call_args[0][1]
@@ -25,7 +32,7 @@ def test_freshness_uses_city_slug_param() -> None:
 
 
 def test_chicago_not_fresh_from_unrelated_region_run() -> None:
-    db = MagicMock()
+    db = _postgres_db()
     db.execute.return_value.mappings.return_value.first.return_value = None
     meta = explore_places_freshness_meta(db, city="Chicago", hot_index_empty=False)
     assert meta["cache_status"] == "unavailable"
@@ -34,7 +41,7 @@ def test_chicago_not_fresh_from_unrelated_region_run() -> None:
 
 
 def test_freshness_when_city_covered() -> None:
-    db = MagicMock()
+    db = _postgres_db()
     completed = datetime(2026, 6, 1, tzinfo=timezone.utc)
     db.execute.return_value.mappings.return_value.first.return_value = {
         "completed_at": completed,

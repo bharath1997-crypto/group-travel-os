@@ -10,6 +10,31 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.services.explore_cache_freshness import explore_freshness_meta
+from app.services.scaper_event_visibility import visible_events_cte
+
+# State names for the detail view; extend when a new Scaper city is added.
+_CITY_STATE = {"orlando": "Florida", "chicago": "Illinois"}
+
+
+def city_slug(city: str) -> str:
+    """'Chicago, IL' -> 'chicago'; 'New York' -> 'new-york' (matches ingest.sources.city_slug)."""
+    return "-".join(city.split(",")[0].strip().lower().split())
+
+
+def scaper_city_enabled(db: Session, city: str) -> bool:
+    """True when at least one enabled Scaper source is stamped with this city."""
+    if db.bind is None or db.bind.dialect.name != "postgresql" or not city.strip():
+        return False
+    try:
+        with db.begin_nested():
+            return bool(
+                db.execute(
+                    text("SELECT 1 FROM ingest.sources WHERE enabled AND city_slug = :city LIMIT 1"),
+                    {"city": city_slug(city)},
+                ).scalar()
+            )
+    except Exception:
+        return False
 
 
 def _event_row(row: dict[str, Any], city: str) -> dict[str, Any]:
@@ -60,13 +85,13 @@ def scaper_events_for_city(
     """Use the source's city stamp, never a radius or browser GPS coordinate."""
     if db.bind is None or db.bind.dialect.name != "postgresql":
         raise RuntimeError("Scaper events require PostgreSQL")
-    city_slug = city.split(",")[0].strip().lower()
+    slug = city_slug(city)
     from_day = date.fromisoformat(date_from) if date_from else None
     to_day = date.fromisoformat(date_to) if date_to else None
     per_page = max(1, min(per_page, 500))
     page = max(1, page)
     params = {
-        "city": city_slug,
+        "city": slug,
         "now": datetime.now(timezone.utc),
         "category": category.lower() if category else None,
         "from_day": from_day,
@@ -74,22 +99,23 @@ def scaper_events_for_city(
         "limit": per_page,
         "offset": (page - 1) * per_page,
     }
-    where = """
-        source_id IS NOT NULL AND city_slug = :city AND duplicate_of IS NULL
-        AND status IN ('scheduled', 'sold_out', 'postponed')
-        AND COALESCE(expires_at, end_time, start_time) > :now
-        AND (:category IS NULL OR lower(category) = :category)
-        AND (:from_day IS NULL OR (start_time AT TIME ZONE COALESCE(NULLIF(timezone, ''), 'UTC'))::date >= :from_day)
-        AND (:to_day IS NULL OR (start_time AT TIME ZONE COALESCE(NULLIF(timezone, ''), 'UTC'))::date <= :to_day)
-    """
+    cte = visible_events_cte("""
+        AND source_id IS NOT NULL AND city_slug = :city
+        AND (CAST(:category AS text) IS NULL OR lower(category) = :category)
+        AND (CAST(:from_day AS date) IS NULL
+             OR (start_time AT TIME ZONE COALESCE(NULLIF(timezone, ''), 'UTC'))::date >= :from_day)
+        AND (CAST(:to_day AS date) IS NULL
+             OR (start_time AT TIME ZONE COALESCE(NULLIF(timezone, ''), 'UTC'))::date <= :to_day)
+    """)
     with db.begin_nested():
-        total = db.execute(text(f"SELECT count(*) FROM public.events WHERE {where}"), params).scalar_one()
+        total = db.execute(text(f"{cte} SELECT count(*) FROM visible"), params).scalar_one()
         rows = db.execute(
             text(f"""
+                {cte}
                 SELECT id, title, category, start_time, venue_name, image_url,
                        ticket_url, price_min, price_max, is_free, status, provider,
                        lat, lng, timezone, fetched_at
-                FROM public.events WHERE {where}
+                FROM visible
                 ORDER BY start_time ASC, id ASC
                 LIMIT :limit OFFSET :offset
             """), params,
@@ -128,7 +154,7 @@ def scaper_event_detail(db: Session, event_id: str) -> dict[str, Any] | None:
                    ticket_url, price_min, price_max, is_free, status, provider,
                    lat, lng, city_slug, timezone
             FROM public.events
-            WHERE id = :id AND source_id IS NOT NULL AND duplicate_of IS NULL
+            WHERE id = :id AND source_id IS NOT NULL
               AND status IN ('scheduled', 'sold_out', 'postponed')
               AND COALESCE(expires_at, end_time, start_time) > :now
         """),
@@ -144,7 +170,7 @@ def scaper_event_detail(db: Session, event_id: str) -> dict[str, Any] | None:
         "category": event["category"],
         "venue": event["venue"],
         "city": city,
-        "state": "Florida" if row["city_slug"] == "orlando" else None,
+        "state": _CITY_STATE.get(row["city_slug"] or ""),
         "start_date": event["date"],
         "start_time": event["time"],
         "price_min": event["price_min"],

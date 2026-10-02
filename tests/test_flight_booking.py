@@ -44,7 +44,7 @@ def test_flight_book_success(mock_get_offer, mock_create_order, auth_header):
         "live_mode": False,
     }
 
-    with patch("app.services.flight_booking_service.settings") as mocked_settings:
+    with patch("app.services.duffel_client.settings") as mocked_settings:
         mocked_settings.duffel_api_key = "duffel_test_key"
         res = client.post(
             "/api/v1/flights/book",
@@ -136,7 +136,7 @@ def test_order_detail_normalizes_duffel_airport_objects(mock_get_order, auth_hea
         "live_mode": False,
     }
 
-    with patch("app.services.flight_booking_service.settings") as mocked_settings:
+    with patch("app.services.duffel_client.settings") as mocked_settings:
         mocked_settings.duffel_api_key = "duffel_test_key"
         response = client.get("/api/v1/flights/orders/ord_123")
 

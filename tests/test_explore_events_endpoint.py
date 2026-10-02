@@ -11,6 +11,12 @@ from app.services.explore_editorial_inventory import is_generated_explore_event_
 client = TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def _ticketmaster_path(monkeypatch):
+    """These tests cover the provider/cache path; keep Scaper city routing out even on a live Postgres."""
+    monkeypatch.setattr("app.services.explore_scaper_events.scaper_city_enabled", lambda db, city: False)
+
+
 def test_explore_events_endpoint_ticketmaster(monkeypatch):
     """Verify /api/v1/explore/events returns mocked Ticketmaster rows."""
     mock_event = {

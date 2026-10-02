@@ -1,6 +1,8 @@
 """Dedup rules against the real Orlando cases recorded in Scaper_Dedup_Spec.md §1."""
 from __future__ import annotations
 
+import dataclasses
+
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -81,14 +83,46 @@ def test_joey_cash_pair_hides_one_and_omri_pair_stays() -> None:
     assert plan == {joey_a.id: None, joey_b.id: joey_a.id, omri.id: None, mash.id: None}
 
 
-def test_start_window_and_distance_limits() -> None:
+def test_duplicate_window_and_distance_limits() -> None:
+    # Non-identical titles: only the ±30 min headliner rule can join them.
     a = _row("Indie Night", "Hall", None)
-    later = _row("Indie Night", "Hall", None, minutes=31)
-    far = _row("Indie Night", "Hall", None, lat=28.56)  # ~1.1 km away, no shared place
+    later = _row("Indie Night Encore", "Hall", None, minutes=31)
+    far = _row("Indie Night Encore", "Hall", None, lat=28.56)  # ~1.1 km away, no shared place
     assert all(v is None for v in plan_duplicates([a, later, far], "orlando").values())
-    near = _row("Indie Night", "Hall", None, minutes=30, lat=28.5505)  # ~55 m
+    near = _row("Indie Night Encore", "Hall", None, minutes=30, lat=28.5505)  # ~55 m
     plan = plan_duplicates([a, near], "orlando")
     assert sorted(v is None for v in plan.values()) == [False, True]
+
+
+def test_timed_entry_series_is_one_group_per_local_day() -> None:
+    title = "Balloon Museum | EmotionAir - Art You Can Feel - Chicago"
+    opening = datetime(2026, 10, 3, 15, 0, tzinfo=timezone.utc)  # 10:00 in Chicago
+
+    def slot(minutes: int) -> EventRow:
+        row = _row(title, "The Fields Studios", CELINE)
+        return dataclasses.replace(row, start_time=opening + timedelta(minutes=minutes), timezone="America/Chicago")
+
+    day1 = [slot(30 * i) for i in range(20)]  # 10:00-19:30 local: 10 h of 30-min slots
+    day2 = [slot(24 * 60 + 30 * i) for i in range(4)]
+    plan = plan_duplicates(day1 + day2, "chicago")
+    groups = {plan[e.id] or e.id for e in day1}
+    assert len(groups) == 1  # one card for the whole day, however far apart the slots are
+    assert {plan[e.id] or e.id for e in day2}.isdisjoint(groups)  # next day is its own card
+
+
+def test_series_needs_identical_title_and_same_place() -> None:
+    a = _row("Comedy Hour", "Hall", CONDUIT)
+    other_show = _row("Late Show", "Hall", CONDUIT, minutes=180)
+    elsewhere = _row("Comedy Hour", "Other Hall", CELINE, minutes=180, lat=28.60)
+    assert all(v is None for v in plan_duplicates([a, other_show, elsewhere], "orlando").values())
+
+
+def test_groups_never_span_local_midnight() -> None:
+    # 23:50 and 00:10 Chicago time on consecutive days: same show, but different local days.
+    late = _row("Indie Night", "Hall", CONDUIT, minutes=0)
+    late = dataclasses.replace(late, start_time=datetime(2026, 10, 3, 4, 50, tzinfo=timezone.utc), timezone="America/Chicago")
+    early = dataclasses.replace(late, id=uuid.uuid4(), start_time=datetime(2026, 10, 3, 5, 10, tzinfo=timezone.utc))
+    assert all(v is None for v in plan_duplicates([late, early], "orlando").values())
 
 
 def test_completeness_wins_then_ticketmaster_breaks_ties() -> None:

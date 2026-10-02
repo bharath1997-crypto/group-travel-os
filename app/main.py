@@ -312,6 +312,9 @@ def _register_routes(app: FastAPI) -> None:
     from app.routes.live_group import router as live_group_router
 
     app.include_router(place_media_router, prefix="/api/v1")
+    from app.routes.explore_place_photos import router as explore_place_photos_router
+
+    app.include_router(explore_place_photos_router, prefix="/api/v1")
     app.include_router(live_routing_router, prefix="/api/v1")
     app.include_router(live_preview_actions_router, prefix="/api/v1")
     app.include_router(live_place_reports_router, prefix="/api/v1")

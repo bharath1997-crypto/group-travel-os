@@ -1,5 +1,11 @@
 /** Fixture data ported from Rovvy Explore v6.dc.html — visual verification source. */
 
+export type ExplorePhotoCredit = {
+  attribution: string | null;
+  license: string | null;
+  sourceUrl: string | null;
+};
+
 export type ExploreSlotDetail = {
   id: string;
   source: string;
@@ -18,6 +24,12 @@ export type ExploreSlotDetail = {
   imageUrl?: string | null;
   openingHours?: string | null;
   hoursSource?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  imageCredit?: ExplorePhotoCredit | null;
+  listingKind?: "event" | "place";
 };
 
 export type ExploreSlotCard = ExploreSlotDetail & {

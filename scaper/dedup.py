@@ -10,7 +10,8 @@ import math
 import re
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 START_WINDOW = timedelta(minutes=30)
 NEARBY_M = 150.0
@@ -126,6 +127,15 @@ class EventRow:
     image_url: str | None
     first_seen_at: datetime
     status: str
+    timezone: str | None = None
+
+
+def local_day(e: EventRow) -> date:
+    """Calendar day at the venue; dedup groups never span two local days."""
+    try:
+        return e.start_time.astimezone(ZoneInfo(e.timezone or "UTC")).date()
+    except (ZoneInfoNotFoundError, ValueError):
+        return e.start_time.date()
 
 
 def _distance_m(a: EventRow, b: EventRow) -> float | None:
@@ -153,8 +163,15 @@ def _canonical_key(e: EventRow) -> tuple:
 
 def plan_duplicates(events: list[EventRow], city_slug: str | None) -> dict[uuid.UUID, uuid.UUID | None]:
     """
-    Desired duplicate_of for every event given. Cancelled events never cluster,
-    so they always stand on their own (approved: show cancelled and scheduled
+    Desired duplicate_of for every event given. Two rules, both limited to one
+    local day at the same place:
+
+    - duplicate listing: starts within ±30 min and one headliner contains the other;
+    - timed-entry series: identical normalized title (e.g. a museum's 30-min slots).
+
+    Readers show one row per group, picking the next upcoming slot at read time
+    (app/services/scaper_event_visibility.py). Cancelled events never cluster, so
+    they always stand on their own (approved: show cancelled and scheduled
     independently).
     """
     plan: dict[uuid.UUID, uuid.UUID | None] = {e.id: None for e in events}
@@ -169,12 +186,23 @@ def plan_duplicates(events: list[EventRow], city_slug: str | None) -> dict[uuid.
             x = parent[x]
         return x
 
+    days = {e.id: local_day(e) for e in live}
     for i, a in enumerate(live):
         for b in live[i + 1 :]:
             if b.start_time - a.start_time > START_WINDOW:
                 break
-            if _same_place(a, b) and same_show(titles[a.id], titles[b.id]):
+            if days[a.id] == days[b.id] and _same_place(a, b) and same_show(titles[a.id], titles[b.id]):
                 parent[find(a.id)] = find(b.id)
+
+    series: dict[tuple[date, tuple[str, ...]], list[EventRow]] = {}
+    for e in live:
+        if any(len(t) >= 3 for t in titles[e.id]):
+            series.setdefault((days[e.id], titles[e.id]), []).append(e)
+    for members in series.values():
+        for i, a in enumerate(members):
+            for b in members[i + 1 :]:
+                if _same_place(a, b):
+                    parent[find(a.id)] = find(b.id)
 
     clusters: dict[uuid.UUID, list[EventRow]] = {}
     for e in live:

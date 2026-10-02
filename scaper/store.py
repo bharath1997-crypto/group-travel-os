@@ -478,7 +478,7 @@ class PostgresStore:
                 text(
                     """
                     SELECT id, provider, title, venue_name, venue_place_id, lat, lng, start_time,
-                           end_time, price_min, image_url, first_seen_at, status, duplicate_of
+                           end_time, price_min, image_url, first_seen_at, status, duplicate_of, timezone
                     FROM public.events
                     WHERE source_id IS NOT NULL AND city_slug = :city
                       AND COALESCE(expires_at, end_time, start_time) > now()
@@ -502,6 +502,7 @@ class PostgresStore:
                     image_url=r["image_url"],
                     first_seen_at=r["first_seen_at"],
                     status=r["status"],
+                    timezone=r["timezone"],
                 )
                 for r in rows
             ]
