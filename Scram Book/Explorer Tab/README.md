@@ -2,6 +2,14 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-05 — Eventbrite/Ticketmaster compliance (purge + provider links)
+
+- **Context:** AGENTS.md §4 + `Scaper_Ticketmaster_National_Spec.md` items 10–11 (Eventbrite API terms: no past-event storage; crawlable outbound links; independence disclosure).
+- **Result:** `purge_past_events` deletes matching `ingest.raw_records`, Eventbrite-specific orphan **created** venue cleanup (scoped `place_id`s from `DELETE … RETURNING`), Ticketmaster 7-day post-end retention. Explore drawer: real `<a href>` CTAs **View on Eventbrite** / **Tickets via Ticketmaster** plus footer independence note.
+- **Verification:** `pytest -q` (CI sqlite) **971 passed**, 27 skipped; `tests/test_scaper_postgres.py` **13 passed** rolled-back Postgres; Vitest `explore-unknown-field-states` **14 passed**; `tests/test_scaper_store.py` asserts `PostgresStore.dedupe_city` / `relink_created_places` on class.
+- **Risks:** Supabase still holds ended Eventbrite rows until Claude runs one-off cleanup (not done in this pass).
+- **Next action:** Production DB cleanup; Ticketmaster 50-state pilot unchanged (migration 010 + owner approval).
+
 ## 2026-10-05 — Ticketmaster 50-state Scaper (Partial — pilot gates)
 
 - **Context:** Owner-approved spec `Scaper_Ticketmaster_National_Spec.md` (pilot AK, TX, CA before remaining states).
@@ -12,8 +20,9 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 
 ## 2026-10-05 — F48 drawer Directions → Live tab (Complete in code)
 
+- **2026-10-05 follow-up:** Deep link adds `address=` from drawer; `parseLiveDeepLink` returns `address`; Live handoff uses street address (not lat/lng fallback when present). Tests use real Overture UUID `5d1bbd9b-7a0d-4427-ba73-632cc1dc3f84`. Browser: Center for Native Futures Directions href includes `gers_id=dd5633a8-…` + `address=56+W+Adams+St…`; Live place panel opens with route preview.
 - **Context:** Explore drawer “Directions” must hand off to Rovvy Live (same tab, Back returns to Explore), not Google Maps.
-- **Result:** `live-explore-deeplink.ts` builds/parses `/live?gers_id&lat&lng&name`; `ExploreDetailDrawer` uses `<Link>` (places include Overture UUID `gers_id`); `LivePageClient` runs `selectDestination` once then `router.replace("/live")`. Removed `exploreDirectionsUrl`.
+- **Result:** `live-explore-deeplink.ts` builds/parses `/live?gers_id&lat&lng&name&address`; `ExploreDetailDrawer` uses `<Link>` (places include Overture UUID `gers_id`); `LivePageClient` runs `selectDestination` once then `router.replace("/live")`. Removed `exploreDirectionsUrl`.
 - **Tests:** Vitest `app/(dashboard)/explore` + `app/(dashboard)/live` (341+ tests pass); `live-explore-deeplink` + spine seed UUID cases; `tsc --noEmit` — only pre-existing `ProfileTravelMap.tsx` `zIndexOffset` errors.
 - **Browser (localhost:3000):** Center for Native Futures → Directions → `/live` with place panel, spine address, route preview (~5.6 mi); `/live?lat=abc` → normal Live (no forced panel). Pritzker Park not re-checked this pass after UUID fix (link now includes `gers_id`).
 - **Risks:** Route preview needs geolocation permission; without GPS, distance/route may differ. Automated browser did not exercise browser Back to Explore.
@@ -48,6 +57,38 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 
 - Independently reran the Eventbrite and pipeline unit suites: 31 passed. Read-only Supabase SELECTs confirmed source `eventbrite:org:84855780433`, 33 current event rows, 33 visible within 5 km of downtown Orlando, 10 Eventbrite venue links with `geo_name` matching, and `ingest.runs.purged`. The three most recent run counters match insert 33, purge 1, and reinsert 1. The separate Postgres test run (6/6), migration deployment, and in-progress event API response were reported by the Scaper worker; this review did not rerun those operations. At review time, the 5 km query found 0 events currently in progress, which does not invalidate an earlier time-dependent observation.
 - Decision: Eventbrite step 4 is credible and the live row counts are independently confirmed. Before a second connector, scope `purge_past_events()` to its source or move global purge into an explicit maintenance job; it currently deletes past rows across all Scaper sources and attributes the total to the source run that triggered it. Prioritize scheduling `run-due` and reading `public.events` in main `/explore` so the verified feed reaches the product. Ticketmaster can follow without replacing the existing v1 source until parity and deduplication are verified.
+
+## 2026-10-05 — Eventbrite API terms (Perplexity): past-event content must go
+
+- Source: Eventbrite API Terms of Use (last updated 2025-05-30) as quoted by Perplexity, plus Eventbrite platform docs; clauses not re-fetched by Claude.
+- Rules:
+  - §3.1: may store content for **future events only**; no past-event content (including venue and ticket data) without the organizer's explicit permission.
+  - §3.2: show the event title plus a direct, crawlable link to the Eventbrite page, without nofollow.
+  - §3.3: no Eventbrite trademarks; Rovvy must state it is independent.
+  - §3.6: no standalone or direct-commercial use and no competing product. Indirect benefit from supporting the app is allowed.
+  - §3.5: rate limit 1,000 calls/hour per token (the docs say 2,000/hour and 48,000/day; plan for 1,000).
+  - §8: the API is free but Eventbrite may charge later.
+- **Current non-compliance found (Supabase, read-only check):** 11 Eventbrite event rows have already ended but aren't purged (no scheduler runs); 14 raw payloads belong to ended events; 10 places were created from Eventbrite venue data. The drawer's "View provider" opens links with `window.open`, which isn't a crawlable `<a href>`.
+- Actions: rules added to AGENTS.md §4; spec items 10–11 added for Cursor (stricter Eventbrite purge including raw payloads and created venues; real `<a href>` provider links; independence note). A one-off cleanup of past Eventbrite data awaits owner approval.
+- Strategic risk: the "competes with Eventbrite" clause is undefined. Rovvy stays a group-planning app that links out for tickets; no ticketing, checkout or organizer tools on top of Eventbrite data.
+
+## 2026-10-05 — Provider terms research (Perplexity): decisions
+
+- Source: Perplexity research pasted by the owner, citing the live vendor pages (Ticketmaster terms dated 2023-06-27; Yelp API terms 2025-01-13; SeatGeek API terms; Meetup GraphQL docs; Cloudflare R2 pricing updated 2026-10-01; Supabase billing docs). The quoted clauses were not re-fetched by Claude.
+- **Ticketmaster: allowed for now, under conditions.**
+  - Store only for "reasonable periods"; no fixed limit is defined.
+  - Owner removal requests must be handled within 24 hours.
+  - Ticketmaster may throttle calls "not primarily in response to direct user actions".
+  - "derive revenues … except as set forth" means monetizing needs written approval.
+  - No mandatory logo found.
+  → The 50-state rollout is held at the 3-state pilot until Ticketmaster replies. Retention purge of raw payloads and a 24 h removal command were added to the national spec (items 8–9). Images stay hot-linked.
+- **Yelp: rejected.** $229/$299/$643 per month plus overage; content may be cached at most 24 hours; no own listings DB.
+- **SeatGeek: rejected.** No systematic storage; logo plus link required on every surface; no AI/ML use (conflicts with Wayra).
+- **Meetup: rejected for now.** API tied to Meetup Pro; price and aggregation rights unclear.
+- **Open-data event feeds:** no verified per-state list. Approve feeds one by one after checking license, endpoint and refresh.
+- **Pricing confirmed:** R2 matches my earlier quote (10 GB free, $0.015/GB-month, Class A $4.50/M, Class B $0.36/M, free egress). Supabase Pro: 8 GB of database included, then $0.125/GB.
+- Not yet researched: **Eventbrite API terms** (storage, attribution, commercial use), even though Eventbrite data is already stored.
+- Next actions: owner emails Ticketmaster for written approval; Perplexity researches the Eventbrite terms; Cursor implements spec items 8–9.
 
 ## 2026-10-05 — Ticketmaster all-50-states approved; spec handed to Cursor
 
