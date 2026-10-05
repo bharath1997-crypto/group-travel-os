@@ -127,7 +127,7 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
 
     if fetch_error is None:
         try:
-            stats.purged = store.purge_past_events(source.id)
+            stats.purged = store.purge_past_events(source)
         except Exception:
             logger.exception("scaper purge failed after %s", source.name)
         if stats.purged:

@@ -65,7 +65,7 @@ class Store(Protocol):
     ) -> tuple[int, int]: ...
     def expire_unseen(self, source: Source, run: RunHandle) -> int: ...
     def disable_ticketmaster_city_sources_for_state(self, state_code: str) -> int: ...
-    def purge_past_events(self, source_id: uuid.UUID) -> int: ...
+    def purge_past_events(self, source: Source) -> int: ...
     def dedupe_city(self, city_slug: str) -> int: ...
 
 
@@ -481,19 +481,55 @@ class PostgresStore:
             )
         return result.rowcount or 0
 
-    def purge_past_events(self, source_id: uuid.UUID) -> int:
-        """Delete only this source's finished events and attribute its run count accurately."""
+    def purge_past_events(self, source: Source) -> int:
+        """
+        Delete finished rows for this source, drop their raw payloads, and for Eventbrite
+        remove Scaper-created venue places nothing future still references.
+        """
+        if source.connector == "eventbrite":
+            past_sql = """
+                (end_time IS NOT NULL AND end_time < now())
+                OR (end_time IS NULL AND start_time + interval '6 hours' < now())
+            """
+        elif source.connector == "ticketmaster":
+            past_sql = """
+                COALESCE(end_time, start_time + interval '6 hours') + interval '7 days' < now()
+            """
+        else:
+            past_sql = "COALESCE(end_time, start_time + interval '6 hours') < now()"
+
         with self.engine.begin() as conn:
-            result = conn.execute(
+            deleted = conn.execute(
                 text(
-                    """
+                    f"""
                     DELETE FROM public.events
-                    WHERE source_id = :sid
-                      AND COALESCE(end_time, start_time + interval '6 hours') < now()
-                    """),
-                {"sid": source_id},
-            )
-        return result.rowcount or 0
+                    WHERE source_id = :sid AND ({past_sql})
+                    RETURNING provider, external_id, raw_record_id
+                    """
+                ),
+                {"sid": source.id},
+            ).mappings().all()
+            if not deleted:
+                return 0
+            raw_ids = [int(r["raw_record_id"]) for r in deleted if r["raw_record_id"] is not None]
+            if raw_ids:
+                conn.execute(
+                    text("DELETE FROM ingest.raw_records WHERE id = ANY(:ids)"),
+                    {"ids": raw_ids},
+                )
+            for row in deleted:
+                conn.execute(
+                    text(
+                        """
+                        DELETE FROM ingest.raw_records
+                        WHERE connector = :connector AND external_id = :external_id
+                        """
+                    ),
+                    {"connector": row["provider"], "external_id": row["external_id"]},
+                )
+            if source.connector == "eventbrite":
+                _purge_orphan_eventbrite_created_places(conn)
+        return len(deleted)
 
     def relink_created_places(self, city_slug: str | None = None) -> int:
         """
@@ -606,6 +642,44 @@ class PostgresStore:
                     {"dup": dup_of, "id": event_id},
                 )
         return newly_hidden
+
+
+def _purge_orphan_eventbrite_created_places(conn: Connection) -> None:
+    """Drop Eventbrite-only created places with no upcoming Eventbrite events."""
+    removed_links = conn.execute(
+        text(
+            """
+            DELETE FROM ingest.place_links l
+            WHERE l.connector = 'eventbrite' AND l.method = 'created'
+              AND EXISTS (
+                SELECT 1 FROM places p
+                WHERE p.id = l.place_id AND p.gers_id IS NULL
+              )
+              AND NOT EXISTS (
+                SELECT 1 FROM public.events e
+                WHERE e.venue_place_id = l.place_id AND e.provider = 'eventbrite'
+                  AND (
+                    (e.end_time IS NULL AND e.start_time + interval '6 hours' >= now())
+                    OR (e.end_time IS NOT NULL AND e.end_time >= now())
+                  )
+              )
+            RETURNING l.place_id
+            """
+        )
+    ).scalars().all()
+    if not removed_links:
+        return
+    conn.execute(
+        text(
+            """
+            DELETE FROM places p
+            WHERE p.id = ANY(:ids) AND p.gers_id IS NULL
+              AND NOT EXISTS (SELECT 1 FROM ingest.place_links WHERE place_id = p.id)
+              AND NOT EXISTS (SELECT 1 FROM public.events WHERE venue_place_id = p.id)
+            """
+        ),
+        {"ids": list(removed_links)},
+    )
 
 
 def _match_place(

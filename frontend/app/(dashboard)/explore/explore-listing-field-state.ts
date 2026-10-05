@@ -183,14 +183,30 @@ export function exploreAvailabilityFieldState(
   return { kind: "known", label };
 }
 
+/** Crawlable provider CTA copy for Scaper event inventory (AGENTS.md §4). */
+export function exploreScaperProviderLinkLabel(source: string | undefined | null): string | null {
+  const normalized = (source || "").trim().toLowerCase();
+  if (normalized === "eventbrite") return "View on Eventbrite";
+  if (normalized === "ticketmaster" || normalized.includes("ticketweb")) return "Tickets via Ticketmaster";
+  return null;
+}
+
+export const EXPLORE_PROVIDER_INDEPENDENCE_NOTE =
+  "Rovvy is independent and is not owned by Eventbrite or Ticketmaster.";
+
 export function exploreDrawerProviderActionLabel(input: {
+  source?: string | null;
   sourceUrl?: string | null;
   editorial?: boolean;
   priceKnown?: boolean;
   priceLabel: string;
+  listingKind?: "event" | "place";
 }): string {
   const canOpen = Boolean(input.sourceUrl?.trim()) && !input.editorial;
   if (!canOpen) return "No booking link";
+  const scaperLabel =
+    input.listingKind === "event" ? exploreScaperProviderLinkLabel(input.source) : null;
+  if (scaperLabel) return scaperLabel;
   if (input.priceKnown === false) return "View provider";
   return `Book · ${input.priceLabel}`;
 }

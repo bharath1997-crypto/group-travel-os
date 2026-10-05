@@ -119,11 +119,11 @@ class MemoryStore:
         self.deduped_cities.append(city_slug)
         return 0
 
-    def purge_past_events(self, source_id: uuid.UUID) -> int:
+    def purge_past_events(self, source: Source) -> int:
         now = datetime.now(timezone.utc)
         past = [
             k for k, e in self.events.items()
-            if e["source"] == source_id and (e["event"].ends_at or e["event"].starts_at) < now
+            if e["source"] == source.id and (e["event"].ends_at or e["event"].starts_at) < now
         ]
         for k in past:
             del self.events[k]

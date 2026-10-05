@@ -697,6 +697,13 @@
   color: var(--color-body-muted);
 }
 
+.drawerProviderNote {
+  margin: 12px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: rgba(15, 22, 20, 0.62);
+}
+
 .drawerSaveError {
   margin: 10px 0 0;
   font-size: 13px;
@@ -2562,6 +2569,11 @@ a.drawerPhotoCredit:hover {
   font-weight: 600;
   padding: 13px 16px;
   cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .drawerInvite {

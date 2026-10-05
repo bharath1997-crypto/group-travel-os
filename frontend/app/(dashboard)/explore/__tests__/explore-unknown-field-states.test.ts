@@ -126,21 +126,33 @@ describe("explore unknown field states (G08)", () => {
     expect(normalizeListingAvailability("sold_out")).toBe(EXPLORE_SOLD_OUT);
   });
 
-  it("drawer action View provider when price unknown but URL exists", () => {
+  it("drawer action uses provider-specific Scaper event links", () => {
+    expect(
+      exploreDrawerProviderActionLabel({
+        source: "Eventbrite",
+        sourceUrl: "https://www.eventbrite.com/e/1",
+        priceKnown: false,
+        priceLabel: EXPLORE_PRICE_UNKNOWN,
+        listingKind: "event",
+      }),
+    ).toBe("View on Eventbrite");
+    expect(
+      exploreDrawerProviderActionLabel({
+        source: "Ticketmaster",
+        sourceUrl: "https://www.ticketmaster.com/e/1",
+        priceKnown: true,
+        priceLabel: "$20",
+        listingKind: "event",
+      }),
+    ).toBe("Tickets via Ticketmaster");
     expect(
       exploreDrawerProviderActionLabel({
         sourceUrl: "https://ticket.example/e/1",
         priceKnown: false,
         priceLabel: EXPLORE_PRICE_UNKNOWN,
+        listingKind: "place",
       }),
     ).toBe("View provider");
-    expect(
-      exploreDrawerProviderActionLabel({
-        sourceUrl: "https://ticket.example/e/1",
-        priceKnown: true,
-        priceLabel: "$20",
-      }),
-    ).toBe("Book · $20");
   });
 
   it("drawer detail omits dash rating placeholder", () => {
