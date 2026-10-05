@@ -2,6 +2,24 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-05 — F47 drawer photo · Orlando enrich dry-run (Partial)
+
+- **Context:** Task 2 — run Wikidata + Wikimedia photo enrich for Orlando before prod writes; operator must approve Postgres updates.
+- **Dry-run:** `scripts/05_enrich_wikidata.py --dry-run --metros orlando` → 342 entities, 15,372 places scanned, **99** match candidates, 166 rejected, 2 ambiguous (`dry_run=1 no_writes`). Cache: `data/enrich/wikidata_orlando.csv`.
+- **Photos dry-run:** `scripts/07_enrich_wikimedia_photos.py --dry-run --metros orlando` → **0** places with QID awaiting Commons (expected until wikidata apply).
+- **API check:** `GET /api/v1/explore/places?city=Orlando&lat=28.5417&lon=-81.3776&category=attractions&limit=50` → **50** places, **0** with `image_url` (no Orlando spine photos yet).
+- **Scrum:** F47 row stays **Partial** (yellow); evidence + Cursor Context Log updated in `Rovvy_Explorer_Scrum_Book.xlsx`.
+- **Next action:** Operator approves prod run: `05_enrich_wikidata.py --metros orlando` then `07_enrich_wikimedia_photos.py --metros orlando`; re-hit API and drawer QA.
+
+## 2026-10-05 — CI flight unit test (Duffel adaptive path)
+
+- **Fix:** `test_search_flights_duffel_success` used expired `expires_at` (filtered by `group_offers_into_itineraries`); mock offer expiry now +60 days; patch `flight_enabled_providers=duffel`; failure test patches `flight_journey_service.create_offer_request`.
+- **Verify:** `tests/test_flight_service_unit.py` **6 passed** with CI env vars.
+
+## 2026-09-27 — Cursor development plans in Scrum workbook
+
+**Workbook:** `Rovvy_Explorer_Scrum_Book.xlsx` — column **J** (`Cursor development plan (engineering)`) on **Explorer Tasks** has one Cursor engineering plan per row (76 features/gates). New worksheet **Cursor Context Log** mirrors every task row with full acceptance/evidence plus the same plan (raw log for agents).
+
 ## 2026-09-26 — Eventbrite total and no-geographic-cutoff clarification
 
 - User clarified there should be no geographic cutoff for the requested total. Read-only Supabase counts: `public.events` has 33 rows total; all 33 are Scaper/Eventbrite rows from the sole enabled Eventbrite source, organizer `84855780433`. A read-only official organizer API request returned HTTP 200 with `pagination.object_count=33`, `page_count=1`, and `page_size=50`; this is the complete total for that configured organizer/query, not a count of every Eventbrite event.
@@ -13,6 +31,96 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 
 - Independently reran the Eventbrite and pipeline unit suites: 31 passed. Read-only Supabase SELECTs confirmed source `eventbrite:org:84855780433`, 33 current event rows, 33 visible within 5 km of downtown Orlando, 10 Eventbrite venue links with `geo_name` matching, and `ingest.runs.purged`. The three most recent run counters match insert 33, purge 1, and reinsert 1. The separate Postgres test run (6/6), migration deployment, and in-progress event API response were reported by the Scaper worker; this review did not rerun those operations. At review time, the 5 km query found 0 events currently in progress, which does not invalidate an earlier time-dependent observation.
 - Decision: Eventbrite step 4 is credible and the live row counts are independently confirmed. Before a second connector, scope `purge_past_events()` to its source or move global purge into an explicit maintenance job; it currently deletes past rows across all Scaper sources and attributes the total to the source run that triggered it. Prioritize scheduling `run-due` and reading `public.events` in main `/explore` so the verified feed reaches the product. Ticketmaster can follow without replacing the existing v1 source until parity and deduplication are verified.
+
+## 2026-10-05 — Shared AI rule book + dated/green workbook rule applied to Explorer
+
+- Context: the user asked whether Claude Code has a project rule book like Cursor (`.cursorrules`, 530 lines) and Antigravity (`GEMINI.md`, 307 lines). Claude's was 24 lines. The user approved consolidating, plus a new Scram Book rule: after development, put the date as a prefix on the feature's workbook row and make it green.
+- Rule book: `AGENTS.md` is now the single shared rule book, with sections for the Scram Book protocol, stack, never-do list, product data rules, approvals, git, testing and brand. `CLAUDE.md` imports it (`@AGENTS.md`). `.cursorrules`, `GEMINI.md` and `.claude/CLAUDE.md` carry a pointer saying AGENTS.md wins on conflicts; their feature and test registries are unchanged.
+- New completion rule (AGENTS.md §1):
+  - Prefix the Task cell with `[YYYY-MM-DD]`.
+  - Complete: `Complete in code` with a green fill (#DDF3E3). Partial: `Partial` with a yellow fill (#FFF2B3) and the gap in next action.
+  - Prepend the dated evidence, and add one Cursor Context Log row per feature.
+- Applied to `Rovvy_Explorer_Scrum_Book.xlsx` for this session's verified work:
+  - **Green:** F48 Drawer map / directions (was Pending), F31 Listing photos, F04 Verified event inventory.
+  - **Yellow:** F47 Drawer photo (Pending → Partial; landmark coverage only) and G06 Cross-provider dedup (Not started → Partial; Scaper cities only).
+  - 5 log rows were appended. The workbook was backed up first; the COUNTIF formulas and 6 conditional-format rules were preserved.
+- Compliance fix found by the new rules: the photo upload endpoint lacked 401 and 422 tests; both were added (17 upload tests pass).
+- Risks: other tabs' workbooks don't yet have dated prefixes for past work; the rule applies from now on. The `.cursorrules`/`GEMINI.md` registries still duplicate status info and can drift.
+- Next action: every assistant follows AGENTS.md §1 on its next task.
+
+## 2026-10-03 — Cloudflare R2 photo storage live (local), end-to-end verified
+
+- Context: the user created the Cloudflare R2 subscription ($0 due), the bucket `rovvy-place-media` and a bucket-scoped Object Read & Write token. The values are in the local `.env` only (gitignored). The first public URL given belonged to a different bucket and returned 401; the corrected `pub-a7cf…r2.dev` URL returns 404 for missing files, which confirms it's public.
+- End-to-end check against real R2 + Supabase (Millennium Park, Chicago):
+  1. The upload endpoint returned 201 with status `pending`.
+  2. Both renditions reached the bucket (`image/jpeg`).
+  3. The public URLs returned 200 at 1600 px and 640 px, with **0 EXIF tags and no GPS** (the source file carried GPS).
+  4. The pending photo was hidden from `/explore/places`.
+  5. `08_moderate_place_media.py approve` worked, and the photo was then served as the place image with the credit "Rovvy community photo".
+  6. Cleanup removed both objects and the DB row; nothing remains.
+- Risks: the secret key was pasted into the chat transcript, so the user should roll it. Production is not configured: the 5 `R2_*` values are not in Secret Manager or the Cloud Run deploy. r2.dev is rate-limited; move to a custom domain (e.g. `media.rovvy.app`) before launch.
+- Next action: add the R2 secrets to Secret Manager plus the deploy `--update-secrets`; resolve the flight test; push.
+
+## 2026-10-02 — Approved recommendations: R2 uploads, Cloud Run Job scheduler, series dedup, test fixes; commit e148254
+
+- Context: after a cost comparison the user approved Cloudflare R2 for uploads, a Cloud Run Job in us-west1 for `scaper run-due`, dedup option 1 (one card per day showing the next slot), and fixing the failing tests before pushing.
+- **Tests:** 5 tests failing at HEAD `19f1974` were fixed in the tests only. `test_flight_booking` patched a `settings` attribute that moved to `duffel_client`; `test_place_ingest_freshness_scoping` used bare MagicMocks, which the service now treats as non-Postgres.
+  - **Still failing:** `test_flight_service_unit::test_search_flights_duffel_success`. It also fails on the parent commit. Cause: it searches the metro code "NYC", and `airport_dataset_service` now loads OurAirports (8,800 IATA codes), so the request appears to be dropped before the mocked Duffel call. The flights feature is marked dropped by another session's commit `c726d13`; left for its owner or the user.
+- **Series dedup:** see `Scaper_Dedup_Spec.md` §8. Balloon Museum is 10 cards (one per day). v1 and v2 both return 347 Chicago events.
+- **R2 uploads:** boto3 is added to all requirements files. Uploads go to R2 when `R2_ENDPOINT_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_MEDIA_BUCKET` and `R2_MEDIA_PUBLIC_BASE_URL` are set; otherwise local disk in dev, or 503. 15 upload tests pass. No R2 bucket or credentials exist yet; the user must create them.
+- **Scheduler:** `scripts/deploy-scaper-job.ps1` deploys the Cloud Run Job `scaper-run-due` (us-west1, 512Mi, 1 h timeout) and an hourly Cloud Scheduler trigger through a dedicated invoker service account. It parse-checks clean; **not executed**. The `TICKETMASTER_API_KEY` secret is missing from Secret Manager; `DATABASE_URL` and `EVENTBRITE_TOKEN` exist.
+- **Commit `e148254`** (local; fast-forward of origin). On a clean checkout with CI's environment: 1081 passed, 1 failed (the flight test above). Because the deploy job needs green tests, **pushing will run CI but not deploy** until that test is resolved.
+- Next action: user decides on the flight test (fix, or remove as part of the dropped feature), creates the R2 bucket and keys plus the Ticketmaster secret, runs the deploy script, then pushes.
+
+## 2026-10-02 — Explore photos: Wikimedia Commons, Scaper events in v1 hub, user uploads; places query 20× faster
+
+- Context: the user asked why images don't appear. Cause: Overture carries no photos (0 of 38,178 Chicago places), `place_media` was empty, and the v1 hub didn't read Scaper events. The user approved every photo option **except the Google Places Photos API**.
+- **Wikimedia Commons** (`scripts/07_enrich_wikimedia_photos.py`):
+  - Flow: `wikidata_qid` → P18 → Commons imageinfo.
+  - Only CC0, public domain, CC BY and CC BY-SA are kept. NC/ND are rejected; a regex bug that would have let them through was caught by a test and fixed.
+  - URLs, author and license go into `place_media` (`open_license`, approved, `gers:<id>`). No image bytes are stored.
+  - Chicago: 1,278 QIDs → 260 with an image → **259 inserted**. Audit: CC BY 4.0 (92), BY-SA 3.0 (43), CC0 (31), BY-SA 4.0 (28), BY 2.0 (26), PD (18) and others; no NC/ND. Orlando has no QIDs yet (Wikidata enrichment was only run for Chicago).
+  - The `/explore/places` SQL joins the newest approved `place_media` row and returns `image_attribution`, `image_license` and `image_source_url` (the Commons file page).
+  - Cards show "Photo: author · Wikimedia Commons · license"; the drawer shows the same credit, linked. Verified on Pritzker Park (Mahir256, CC BY-SA 3.0).
+- **Scaper events in the v1 hub:** the route hard-coded `== "orlando"`; it now uses `scaper_city_enabled` (any enabled `ingest.sources` city). Chicago v1 `/explore/events` → `scaper_city`, 413 events, **200/200 with images, 1.2 s** (the live Ticketmaster path took ~30 s). In the browser the hub shows Ticketmaster/TicketWeb event images. `test_explore_events_endpoint.py` pins its Ticketmaster-path tests with an autouse fixture so local runs against Supabase stay green.
+- **Places performance:**
+  - Problem: under load, `/explore/places` took 20–33 s, so the hub showed "Attractions · Restaurants couldn't load".
+  - Cause: the SQL ran `ST_DWithin` over ~8.8k rows in a 100 km radius, then sorted all of them by distance.
+  - Fix: a GiST KNN (`<->`) inner scan over-fetching `2×limit+10`, then an exact `ST_Distance` filter and re-sort.
+  - Result: **identical IDs and order in 8/8 comparisons against HEAD** (Chicago, Orlando, radii 800 m–100 km), 0.09–0.54 s instead of 5–10 s. The photo join itself costs 0.15 ms × 48.
+- **User uploads:**
+  - `POST /api/v1/explore/places/{gers_id}/photos` (auth required, ≤10 MB, JPEG/PNG/WebP).
+  - Each file is re-encoded to JPEG, which **drops EXIF and GPS**, and resized to 1600 px plus a 640 px thumbnail.
+  - Stored in a GCS bucket when `PLACE_MEDIA_BUCKET` is set (publicly readable objects). Local disk is used in dev only; otherwise the endpoint returns 503.
+  - Rows are `rovvy_user`, `pending`, attributed "Rovvy community photo". Limit: 10 uploads per user per day.
+  - Moderation: `scripts/08_moderate_place_media.py list|approve|reject`.
+  - Drawer: "Add a photo" for places, or "Sign in to add a photo" when signed out.
+- Verification: upload tests 13 passed (EXIF/GPS stripping, resize, rejects, 201/404/422/429/503, path traversal); Wikimedia parser tests 5; address tests 4; spine 17; Scaper events + hub events 21 (local Supabase and CI SQLite); Explore Vitest 22 files / 121; tsc clean except the pre-existing `ProfileTravelMap.tsx` `zIndexOffset` errors. The moderation CLI `list` works against Supabase (0 pending).
+- Not verified / risks:
+  - The signed-in upload was not exercised in a browser (no test account in this session).
+  - **No production bucket exists**, so uploads return 503 in production until `PLACE_MEDIA_BUCKET` is set and its objects are public.
+  - Place photo coverage is low in the default feed (about 5 of 96 nearest places), because Commons covers landmarks, not shops and restaurants.
+  - Event data is **97 h stale**: no scheduler runs `scaper run-due`.
+  - Clean HEAD `19f1974` has 5 failing tests (2 flight booking, 3 place-ingest freshness scoping) that predate this work.
+  - Balloon Museum slot chaining is still undecided. Not committed.
+- Next action: user creates the GCS bucket (or picks another store), approves a `run-due` schedule, decides the Balloon Museum series rule, then commit and push.
+
+## 2026-10-01 — Explore drawer: full address, phone, Directions/Call/Website, real map pin
+
+- Context: the user compared the Explore drawer with Google's place panel. The drawer showed only "Chicago" and a striped placeholder map. The user wants a full address, actions, and (later) a ticket and admission chooser. This entry covers address and actions only. Ticket options, partner tickets and sponsored placements wait for the user's decision.
+- Root cause: `_format_address` (app/services/place_spine_service.py) ignored Overture's `freeform` street key unless every other part was empty, so the street line was dropped. `phone` was never selected by the spine SQL.
+- Built:
+  - The formatter now uses `freeform` as the street line when there's no number and road.
+  - The spine SQL selects `p.phone`, and `/explore/places` returns `phone`.
+  - The frontend carries address, phone and lat/lng through `ExplorePlaceRow` → `ExploreSlot` → `ExploreSlotDetail`.
+  - The drawer shows a real MapLibre pin map (new `ExploreDrawerMap.tsx`, OpenFreeMap via the Live resolver, with a one-time fallback to the public CDN).
+  - Below the map: the full address, the phone, and Directions (Google Maps deep link, no key), Call (`tel:`) and Website chips (`explore-place-actions.ts`).
+- Verification:
+  - Local API, Chicago (48 places): 42 now carry a street line (it was effectively 0); 32 have a phone. Argyle Street Market has no street in Overture, so it correctly stays "Chicago, IL".
+  - In the in-app browser, the drawer for Center for Native Futures shows "56 W Adams St, Chicago, IL, 60603", +17735193238, Directions/Call/Website, and a street map pinned at Clark & Adams.
+  - Tests: Explore Vitest 21 files / 116 passed plus 5 new; backend place tests 27 passed plus 4 new; tsc 0 errors.
+- Risks: the env resolves the map style to the unprovisioned `tiles.rovvy.app`, so each drawer open logs one failed fetch before falling back. Not verified on a phone or for event listings (events don't carry these fields yet). Not committed.
+- Next action: user decides on ticket options (events from the dedup cluster, which needs `public.events` wired into the v1 hub) and on partner tickets (Viator and similar need user signup).
 
 ## 2026-09-27 — Events API keyset pagination; Chicago ingest live; dedup chaining issue found
 
