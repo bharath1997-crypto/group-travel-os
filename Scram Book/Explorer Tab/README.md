@@ -2,6 +2,14 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-05 — Ticketmaster 50-state Scaper (Partial — pilot gates)
+
+- **Context:** Owner-approved spec `Scaper_Ticketmaster_National_Spec.md` (pilot AK, TX, CA before remaining states).
+- **Result:** State mode in `scaper/connectors/ticketmaster.py` (`countryCode` + `stateCode`, time-window bisect under 1k paging cap, API call logging). Migration `migrations/010_scaper_state.sql` adds `events.state_code` + index and `ingest.sources.state_code`. Pipeline stamps per-venue `city_slug`/`state_code`, dedupes every touched city, 200-row extraction batches. Hub `scaper_city_enabled` true when inventory exists without a city source. Overlap rule disables `ticketmaster:chicago` / `ticketmaster:orlando` when IL/FL state sources are registered.
+- **Verification:** `DATABASE_URL=sqlite:///./test.db SECRET_KEY=test-secret-key-for-ci-must-be-long-enough .venv\Scripts\python -m pytest -q` → **970 passed**, 14 skipped. Opt-in `tests/test_scaper_postgres.py` includes migration 010 idempotency + state stamp tests when `SCAPER_PG_TEST_URL` is set.
+- **Risks:** Production pilot not run — no migration 010 on Supabase, no `ticketmaster:state:*` sources added (per owner gate). Daily API budget: at 360 min intervals, 3 pilot states × ~6 runs/day; estimate **~30–120 calls/run** for TX/CA after bisect (owner to confirm on live pilot).
+- **Next action:** Owner approves → apply `010_scaper_state.sql` on Supabase → add/run `ticketmaster:state:ak`, `:tx`, `:ca` → pilot report → approval before other 47 states.
+
 ## 2026-10-05 — F48 drawer Directions → Live tab (Complete in code)
 
 - **Context:** Explore drawer “Directions” must hand off to Rovvy Live (same tab, Back returns to Explore), not Google Maps.
