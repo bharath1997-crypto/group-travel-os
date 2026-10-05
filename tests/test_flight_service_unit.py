@@ -68,13 +68,14 @@ def test_parse_duffel_offer():
 
 @patch("app.services.flight_journey_service.create_offer_request")
 def test_search_flights_duffel_success(mock_create):
+    offer_expires = (date.today() + timedelta(days=60)).isoformat() + "T12:00:00Z"
     mock_create.return_value = {
         "offers": [
             {
                 "id": "off_duffel",
                 "total_amount": "120.00",
                 "total_currency": "USD",
-                "expires_at": "2026-10-01T12:00:00Z",
+                "expires_at": offer_expires,
                 "live_mode": False,
                 "slices": [
                     {
@@ -98,7 +99,9 @@ def test_search_flights_duffel_success(mock_create):
 
     with patch.object(settings, "duffel_api_key", "mock-duffel-key"), patch.object(
         settings, "flight_live_provider", "duffel"
-    ), patch.object(settings, "allow_estimated_flights", False):
+    ), patch.object(settings, "flight_enabled_providers", "duffel"), patch.object(
+        settings, "allow_estimated_flights", False
+    ):
         from app.services.flight_service import _flight_cache
 
         _flight_cache.clear()
@@ -118,9 +121,10 @@ def test_search_flights_duffel_success(mock_create):
     assert results[0].origin == "NYC"
     assert results[0].destination == "MIA"
     assert results[0].stops == 0
+    assert mock_create.called
 
 
-@patch("app.services.flight_service.create_offer_request")
+@patch("app.services.flight_journey_service.create_offer_request")
 def test_search_flights_duffel_failure_returns_empty_not_mock(mock_create):
     mock_create.side_effect = Exception("Duffel Outage")
 
