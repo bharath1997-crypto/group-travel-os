@@ -62,6 +62,33 @@ only per-organizer/venue listing. Do not scrape eventbrite.com.
    `interval_minutes=360`. Check total daily calls stay < 5,000 (Ticketmaster limit) and
    report the estimate.
 
+## Compliance gates (added 2026-10-05 from Perplexity research of the live Ticketmaster terms)
+
+Source: developer.ticketmaster.com/support/terms-of-use (dated 2023-06-27, still live).
+
+- **Rollout beyond the 3-state pilot is ON HOLD** until Ticketmaster answers in writing. Two clauses apply:
+  (a) "rate limit or block applications that make a large number of calls … not primarily in response to direct user actions", which puts a scheduled national crawl at risk;
+  (b) no "deriv[ing] revenues" from the API without approval, so monetizing Rovvy needs written permission.
+- **Storage:** only "for reasonable periods in order to provide the service". Build these in:
+  8. **Retention purge.** When an event is purged (past) or delisted, delete its
+     `ingest.raw_records` payload too (today the payload is kept forever). Keep no Ticketmaster
+     content for events older than 7 days past their end.
+  9. **Owner removal within 24 hours.** Add `python -m scaper remove --provider ticketmaster
+     --external-id <id>` (or `--venue-id`) that deletes the event, its raw record and dedup
+     links immediately, and blocks re-ingest of that id (blocklist table). Test it.
+  10. **Eventbrite past-event rule (stricter).** For `provider='eventbrite'`, purge at event
+     end (no 6 h grace beyond `end_time`; if no end, start + 6 h), and in the same transaction
+     delete the raw record. Places created from an Eventbrite venue (`place_links.method='created'`,
+     `gers_id IS NULL`) are deleted when no future Eventbrite event references them; matched
+     Overture places stay (only the link row goes).
+  11. **Provider links.** Event cards/drawer render the provider event URL as a real
+     `<a href target="_blank" rel="noopener">` (no `nofollow`): "View on Eventbrite" /
+     "Tickets via Ticketmaster". Add a one-line footer/legal note: Rovvy is independent and
+     not owned by Eventbrite or Ticketmaster.
+- **Images:** keep hot-linking Ticketmaster image URLs. Never copy them to R2.
+- **Attribution:** event cards and drawer must show "Tickets via Ticketmaster" linking to the
+  API-provided event URL; never imply a partnership.
+
 ## Tests (AGENTS.md §7)
 
 - Unit (mock HTTP): state config validation; window bisect (counts 2,500 → splits until
