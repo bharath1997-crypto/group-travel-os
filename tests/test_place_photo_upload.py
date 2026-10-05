@@ -191,3 +191,14 @@ def test_local_file_route_rejects_path_tricks(monkeypatch) -> None:
     c = TestClient(app)
     assert c.get("/api/v1/explore/place-photos/files/..%2F..%2F.env").status_code == 404
     assert c.get("/api/v1/explore/place-photos/files/notauuid.jpg").status_code == 404
+
+
+def test_upload_requires_auth() -> None:
+    response = TestClient(app).post(URL, files={"file": ("p.jpg", _jpeg_with_gps((50, 50)), "image/jpeg")})
+    assert response.status_code == 401
+
+
+def test_upload_missing_file_is_422(client) -> None:
+    c, recorded, _ = client
+    assert c.post(URL, data={"caption": "no file"}).status_code == 422
+    assert recorded == []

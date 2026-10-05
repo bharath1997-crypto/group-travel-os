@@ -1,4 +1,10 @@
 # Rovvy — Cursor AI Rules
+
+> **Shared rule book: `AGENTS.md`** (consolidated 2026-10-05). It wins on conflicts.
+> Scram Book completion rule (AGENTS.md §1): after verified work, prefix the feature's
+> workbook Task cell with `[YYYY-MM-DD]`, set `Complete in code` + green fill (#DDF3E3)
+> or `Partial` + yellow (#FFF2B3), log it in `Cursor Context Log`, and add a README entry.
+
 # Read this before every task.
 
 ## Scram Book documentation protocol
@@ -510,6 +516,7 @@ After every feature change, update this section in .cursorrules:
 | Live PlacePanel (all picks, POI-only map tap, setup-dock hoisted route UI, deleted PlacePreviewCard) | Modified | 2026-09-17 |
 | Live place spine nearest lookup (`GET /places/spine/near`, 50 m fallback when tile lacks gers_id) | Complete | 2026-09-19 |
 | Live historic/scenic taxonomy + Parks & capitals discovery layer (zoom-tier capitals national→district, place preview labels) | Modified | 2026-09-20 |
+| Profile tab (9-section passport: cover hero, trust, stats, map, highlights, personality, tabs) | Modified | 2026-09-28 |
 
 ---
 
