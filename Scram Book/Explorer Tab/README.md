@@ -2,6 +2,38 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-05 — SHIFT HANDOFF (owner back in ~68 h): state of Explorer / Scaper
+
+**Read this first next shift.** The newest detailed entries are below this one.
+
+### Done and committed (local `Production-main`, 7 commits ahead of origin, NOT pushed)
+- `9bdbf37`: Explore drawer **Directions opens the Live tab** (not Google Maps). The UUID place-ID and address fixes are included.
+- `472b8fe`, `4e169ba`, `d7bc037`: Ticketmaster **state mode** (window bisect), migration 010 file, batched writes, hub works for any city with events.
+- `759f985`, `bcd984a`: **Eventbrite purge at event end** (raw payloads and orphan venues too; Ticketmaster after 7 days); "View on Eventbrite" / "Tickets via Ticketmaster" real `<a href>` links; independence note.
+- `1b0d4e6`: AGENTS.md §4 provider-terms rules and national-spec items 8–11.
+- Claude reviewed all of them: CI 971 passed / 0 failed; rolled-back Supabase suite 13/13; Explore + Live Vitest 127/127.
+- Already in production (pushed earlier, `86447c4`): photos (Wikimedia + uploads), faster places, address/phone/map drawer, Scaper events in hub, series dedup, events pagination, shared rule book, flight tests removed.
+
+### Waiting on the OWNER (in order)
+1. **Push** (= production deploy): `git push origin Production-main`.
+2. **"approve cleanup"**: purge the 11 ended Eventbrite events, the raw copies of ended events and their orphan venues from Supabase (Eventbrite §3.1 non-compliance). Claude does it by running the 6 Eventbrite sources once with the new purge.
+3. **Email Ticketmaster** for written approval (caching period, scheduled refresh, monetization); the draft is in the 2026-10-05 provider-terms entry. **The 47-state rollout is blocked until they reply.**
+4. **Secrets/scheduler:** create the `TICKETMASTER_API_KEY` secret, add the 5 `R2_*` secrets, then run `scripts/deploy-scaper-job.ps1`. Without the scheduler, data stays stale (last fetch 2026-09-27) and past events are never purged.
+5. **Roll the R2 secret key** (it was pasted in chat).
+6. **Migration 010 + 3-state pilot** (AK, TX, CA): Cursor asks before applying and running.
+
+### Open engineering tasks (who)
+- **Cursor:** spec item 9: `scaper remove --provider --external-id` plus a re-ingest blocklist (24 h Ticketmaster owner removal). Required before going beyond the pilot.
+- **Cursor or Claude:** mix providers within each day in the hub feed (F27). Eventbrite is invisible today (Chicago: 0 of the 24 shown).
+- **Codex (optional):** retire the HTML scrapers (`eventbrite_scraper.py`, `seatgeek_scraper.py`, `stubhub_scraper.py`); remove the dropped flight code (tests already gone).
+- **Rejected sources:** Yelp, SeatGeek, Meetup. Flights are dropped; travel is A→B directions only (AGENTS.md §4).
+
+### Known risks
+- Ticketmaster may throttle scheduled crawls; monetizing needs their approval.
+- Eventbrite: the "competing product" clause is undefined, so Rovvy stays a group-planning app that links out for tickets.
+- r2.dev is rate-limited; switch to a custom domain (e.g. media.rovvy.app) before launch.
+- `scratch/update_explorer_workbook_f48.py` was committed by mistake (harmless).
+
 ## 2026-10-05 — Eventbrite/Ticketmaster compliance (purge + provider links)
 
 - **Context:** AGENTS.md §4 + `Scaper_Ticketmaster_National_Spec.md` items 10–11 (Eventbrite API terms: no past-event storage; crawlable outbound links; independence disclosure).
