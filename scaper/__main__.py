@@ -67,6 +67,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--name", required=True)
     p.add_argument("--config", required=True, help="source config JSON")
     p.add_argument("--city-slug")
+    p.add_argument("--state-code", help="US state for ticketmaster:state:xx sources (e.g. TX)")
     p.add_argument("--interval-minutes", type=int, default=360)
 
     sub.add_parser("list-sources")
@@ -97,11 +98,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "add-source":
         config = json.loads(args.config)
         build_connector(args.connector, settings).parse_config(config)  # validate before writing
+        state_code = args.state_code or config.get("state_code")
         source = store.add_source(
             connector=args.connector,
             name=args.name,
             config=config,
             city_slug=args.city_slug,
+            state_code=str(state_code).upper() if state_code else None,
             interval_minutes=args.interval_minutes,
         )
         print(source.model_dump_json())

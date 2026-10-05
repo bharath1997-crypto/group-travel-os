@@ -13,9 +13,20 @@ from scaper.connectors.base import Connector
 from scaper.connectors.eventbrite import EventbriteConnector
 from scaper.http import ConnectorError
 from scaper.models import EventRecord, ExtractResult, RawItem, RunStats, RunStatus, Source, VenueRecord
+from dataclasses import dataclass
+
 from scaper.pipeline import run_due, run_source
 from scaper.store import RunHandle, RunInProgress
 from tests.scaper_fixtures import eventbrite_event
+
+
+@dataclass
+class _MemoryRow:
+    raw_id: int
+    event: EventRecord
+    place_id: uuid.UUID | None
+    city_slug: str | None
+    state_code: str | None = None
 
 
 class MemoryStore:
@@ -72,16 +83,37 @@ class MemoryStore:
     def upsert_event(
         self, connector: str, source: Source, raw_id: int, event: EventRecord, place_id: uuid.UUID | None
     ) -> Literal["inserted", "updated"]:
-        key = (connector, event.external_id)
-        existed = key in self.events
-        self.events[key] = {
-            "event": event,
-            "place_id": place_id,
-            "source": source.id,
-            "seen": self._tick(),
-            "expired": False,
-        }
-        return "updated" if existed else "inserted"
+        ins, upd = self.persist_extractions(
+            connector,
+            source,
+            [_MemoryRow(raw_id, event, place_id, source.city_slug, None)],
+        )
+        return "inserted" if ins else "updated"
+
+    def persist_extractions(self, connector: str, source: Source, rows: list) -> tuple[int, int]:
+        inserted = updated = 0
+        for row in rows:
+            key = (connector, row.event.external_id)
+            existed = key in self.events
+            self.events[key] = {
+                "event": row.event,
+                "place_id": row.place_id,
+                "source": source.id,
+                "city_slug": row.city_slug,
+                "seen": self._tick(),
+                "expired": False,
+            }
+            if existed:
+                updated += 1
+            else:
+                inserted += 1
+            for raw in self.raw.values():
+                if raw["id"] == row.raw_id:
+                    raw["status"] = "extracted"
+        return inserted, updated
+
+    def disable_ticketmaster_city_sources_for_state(self, state_code: str) -> int:
+        return 0
 
     def dedupe_city(self, city_slug: str) -> int:
         self.deduped_cities.append(city_slug)
@@ -276,6 +308,49 @@ def test_purge_runs_after_successful_fetch_and_is_counted() -> None:
     assert report.stats.purged == 1
     assert list(store.events) == [("eventbrite", "new")]
     assert store.runs[report.run_id]["stats"].purged == 1
+
+
+def test_state_run_dedupes_each_touched_city() -> None:
+    source = _source(
+        connector="ticketmaster",
+        name="ticketmaster:state:tx",
+        config={"state_code": "TX", "days_ahead": 60},
+        city_slug=None,
+    )
+    source = source.model_copy(update={"state_code": "TX"})
+    store = MemoryStore([source])
+
+    class TmConnector(ListConnector):
+        name = "ticketmaster"
+
+        def __init__(self) -> None:
+            from scaper.connectors.ticketmaster import TicketmasterStateConfig
+
+            super().__init__([])
+            self.config_model = TicketmasterStateConfig
+
+        def fetch(self, config: dict[str, Any]) -> Iterator[RawItem]:
+            from tests.scaper_fixtures import ticketmaster_event
+
+            for city, eid in (("Austin", "a1"), ("Dallas", "d1")):
+                payload = ticketmaster_event(id=eid)
+                payload["_embedded"]["venues"][0]["city"]["name"] = city
+                yield RawItem(external_id=eid, payload=payload)
+            self.last_fetch_complete = True
+
+        def extract(self, payload: dict[str, Any]) -> ExtractResult:
+            from scaper.connectors.ticketmaster import TicketmasterConnector
+            from scaper.http import RetryingClient
+            import httpx
+
+            tm = TicketmasterConnector(
+                api_key="k",
+                client=RetryingClient(httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(500)))),
+            )
+            return tm.extract(payload)
+
+    run_source(store, TmConnector(), source)
+    assert sorted(store.deduped_cities) == ["austin", "dallas"]
 
 
 def test_purge_skipped_when_fetch_fails() -> None:

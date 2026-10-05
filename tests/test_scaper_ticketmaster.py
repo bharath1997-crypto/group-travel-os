@@ -1,13 +1,13 @@
 """Ticketmaster connector: extraction mapping, paging completeness, key handling."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import httpx
 import pytest
 from pydantic import ValidationError
 
-from scaper.connectors.ticketmaster import TicketmasterConnector
+from scaper.connectors.ticketmaster import TicketmasterConnector, venue_city_and_state
 from scaper.http import ConnectorError, RetryingClient
 from scaper.models import EventRecord, RawItem, Rejected
 from tests.scaper_fixtures import ticketmaster_event, ticketmaster_page
@@ -172,3 +172,89 @@ def test_http_error_message_does_not_leak_key() -> None:
     with pytest.raises(ConnectorError) as exc:
         list(connector.fetch(CONFIG))
     assert "apikey=" not in str(exc.value)
+
+
+# ── state mode ────────────────────────────────────────────────────────────
+
+STATE_CONFIG = {"state_code": "TX", "days_ahead": 60}
+
+
+def test_state_config_validation() -> None:
+    from scaper.connectors.ticketmaster import TicketmasterStateConfig
+
+    connector = _connector(lambda r: httpx.Response(200, json=ticketmaster_page([], number=0, total_pages=0, total=0)))
+    assert isinstance(connector.parse_config(STATE_CONFIG), TicketmasterStateConfig)
+    with pytest.raises(ValidationError):
+        connector.parse_config({"state_code": "XX", "days_ahead": 60})
+    with pytest.raises(ValidationError):
+        connector.parse_config({"state_code": "T", "days_ahead": 60})
+
+
+def test_state_fetch_uses_country_and_state_params() -> None:
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(
+            200,
+            json=ticketmaster_page([ticketmaster_event(id="tx1")], number=0, total_pages=1, total=1),
+        )
+
+    connector = _connector(handler)
+    items = list(connector.fetch(STATE_CONFIG))
+    assert [i.external_id for i in items] == ["tx1"]
+    params = seen[0].url.params
+    assert params["countryCode"] == "US" and params["stateCode"] == "TX"
+    assert "latlong" not in params
+    assert connector.api_calls_used == 1
+
+
+def test_window_bisect_when_total_exceeds_cap() -> None:
+    root = ("2026-09-26T06:00:00Z", "2026-11-25T12:00:00Z")
+    windows: set[tuple[str, str]] = set()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        start = request.url.params["startDateTime"]
+        end = request.url.params["endDateTime"]
+        page = int(request.url.params["page"])
+        windows.add((start, end))
+        total = 2500 if (start, end) == root and page == 0 else 400
+        body = ticketmaster_page([ticketmaster_event(id=f"{len(windows)}-{page}")], number=page, total_pages=2, total=total)
+        return httpx.Response(200, json=body)
+
+    connector = _connector(handler)
+    list(connector.fetch(STATE_CONFIG))
+    assert connector.last_fetch_complete is True
+    assert len(windows) >= 2
+
+
+def test_sub_hour_window_over_cap_is_incomplete() -> None:
+    from scaper.connectors import ticketmaster as tm
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        page = int(request.url.params["page"])
+        if page > tm.MAX_PAGE_INDEX:
+            raise AssertionError(f"requested page {page} past Discovery cap")
+        body = ticketmaster_page([ticketmaster_event(id=f"e{page}")], number=page, total_pages=8, total=1500)
+        return httpx.Response(200, json=body)
+
+    connector = _connector(handler)
+    base = {"countryCode": "US", "stateCode": "CA", "size": 200, "sort": "date,asc"}
+    narrow_start = NOW - timedelta(minutes=30)
+    narrow_end = NOW + timedelta(minutes=20)
+    gen = connector._fetch_window(base, narrow_start, narrow_end)
+    try:
+        while True:
+            next(gen)
+    except StopIteration as stop:
+        assert stop.value is False
+    assert connector.api_calls_used <= 6
+
+
+def test_venue_city_and_state_from_payload() -> None:
+    payload = ticketmaster_event()
+    assert venue_city_and_state(payload) == ("orlando", "FL")
+    payload = ticketmaster_event(
+        _embedded={"venues": [{"city": {"name": "New York"}, "state": {"stateCode": "NY"}, "location": {"latitude": "1", "longitude": "2"}, "id": "v", "name": "Hall"}]}
+    )
+    assert venue_city_and_state(payload) == ("new-york", "NY")

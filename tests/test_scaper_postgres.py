@@ -28,7 +28,7 @@ pytestmark = pytest.mark.scaper_postgres
 
 MIGRATIONS = [
     Path(__file__).resolve().parents[1] / "migrations" / name
-    for name in ("008_scaper_ingest.sql", "009_scaper_dedup.sql")
+    for name in ("008_scaper_ingest.sql", "009_scaper_dedup.sql", "010_scaper_state.sql")
 ]
 # Open ocean, so no Overture place can match by accident.
 OCEAN = {"lat": "0.5000", "lng": "-150.5000"}
@@ -303,3 +303,82 @@ def test_reader_shows_next_upcoming_slot_per_group(pg) -> None:
     # Once every slot has started, the most recently started one is shown.
     later = conn.execute(text("SELECT now() + interval '3 hours'")).scalar_one()
     assert [r.id for r in conn.execute(query, {"now": later})] == [upcoming[1]]
+
+
+# ── 010 state Ticketmaster ────────────────────────────────────────────────
+
+from tests.scaper_fixtures import ticketmaster_event
+
+
+class _TmStateConnector(ListConnector):
+    name = "ticketmaster"
+
+    def __init__(self, payloads: list[dict[str, Any]]) -> None:
+        from scaper.connectors.ticketmaster import TicketmasterStateConfig
+
+        super().__init__(payloads)
+        self.config_model = TicketmasterStateConfig
+        self.last_fetch_complete = True
+        from scaper.connectors.ticketmaster import TicketmasterConnector
+        from scaper.http import RetryingClient
+        import httpx
+
+        self._extract_fn = TicketmasterConnector(
+            api_key="k",
+            client=RetryingClient(httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(500)))),
+        ).extract
+
+    def extract(self, payload: dict[str, Any]):
+        return self._extract_fn(payload)
+
+
+def _tm_ocean_event(event_id: str, *, city: str, state: str) -> dict[str, Any]:
+    ev = ticketmaster_event(id=event_id)
+    ev["_embedded"]["venues"][0]["city"]["name"] = city
+    ev["_embedded"]["venues"][0]["state"]["stateCode"] = state
+    ev["_embedded"]["venues"][0]["location"] = {"latitude": OCEAN["lat"], "longitude": OCEAN["lng"]}
+    return ev
+
+
+def test_state_run_stamps_per_venue_city_and_state(pg) -> None:
+    store, conn = pg
+    source = store.add_source(
+        connector="ticketmaster",
+        name=f"ticketmaster:state:it-{uuid.uuid4().hex[:6]}",
+        config={"state_code": "TX", "days_ahead": 60},
+        city_slug=None,
+        state_code="TX",
+    )
+    payloads = [
+        _tm_ocean_event("tm-austin", city="Austin", state="TX"),
+        _tm_ocean_event("tm-dallas", city="Dallas", state="TX"),
+    ]
+    report = run_source(store, _TmStateConnector(payloads), source)
+    assert report.status == "succeeded"
+    rows = conn.execute(
+        text("SELECT external_id, city_slug, state_code FROM events WHERE source_id = :sid ORDER BY external_id"),
+        {"sid": source.id},
+    ).all()
+    assert [(r.external_id, r.city_slug, r.state_code) for r in rows] == [
+        ("tm-austin", "austin", "TX"),
+        ("tm-dallas", "dallas", "TX"),
+    ]
+
+
+def test_scaper_city_enabled_without_city_source(pg) -> None:
+    from app.services.explore_scaper_events import scaper_city_enabled
+    from sqlalchemy.orm import Session
+
+    store, conn = pg
+    future = {"utc": "2099-06-01T00:00:00Z", "timezone": "UTC"}
+    source = store.add_source(
+        connector="ticketmaster",
+        name=f"ticketmaster:state:it-{uuid.uuid4().hex[:6]}",
+        config={"state_code": "AK", "days_ahead": 60},
+        city_slug=None,
+        state_code="AK",
+    )
+    run_source(store, _TmStateConnector([_tm_ocean_event("tm-anch", city="Anchorage", state="AK")]), source)
+    session = Session(bind=conn)
+    assert scaper_city_enabled(session, "Anchorage") is True
+    assert scaper_city_enabled(session, "Nowhereville") is False
