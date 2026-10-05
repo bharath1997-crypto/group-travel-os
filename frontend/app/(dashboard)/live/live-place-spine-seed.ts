@@ -2,16 +2,24 @@ import type { PlacePreviewData } from "./live-place-preview-data";
 import { sanitizePlaceCategoryLabel } from "./live-place-category-label";
 import type { Place, PlaceDistance, PlaceSeed } from "./place-panel-types";
 
+function normalizeSpineGersId(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) {
+    return trimmed.toLowerCase();
+  }
+  if (/^[0-9a-f]{16,64}$/i.test(trimmed)) return trimmed.toLowerCase();
+  return null;
+}
+
 export function readSpineGersId(tags: PlacePreviewData["tags"]): string | null {
   if (!tags || typeof tags !== "object") return null;
   const raw = tags.gers_id ?? tags.gersId ?? tags.id ?? tags.overture_id;
   if (typeof raw !== "string") return null;
-  const trimmed = raw.trim();
-  return /^[0-9a-f]{16,64}$/i.test(trimmed) ? trimmed : null;
+  return normalizeSpineGersId(raw);
 }
 
 export function isSpineGersId(gersId: string): boolean {
-  return /^[0-9a-f]{16,64}$/i.test(gersId.trim());
+  return normalizeSpineGersId(gersId) != null;
 }
 
 function categorySlug(categoryLabel: string): string {

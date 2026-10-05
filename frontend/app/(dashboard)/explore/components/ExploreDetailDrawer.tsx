@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+
+import { buildLiveDirectionsHref } from "@/app/(dashboard)/live/live-explore-deeplink";
 import type { ExploreSlotDetail } from "../explore-fixtures";
 import { drawerHoursSourceLabel } from "../explore-availability-copy";
 import {
@@ -12,7 +15,7 @@ import styles from "../explore.module.css";
 import { ExploreDrawerMap } from "./ExploreDrawerMap";
 import { ExploreDrawerPhotoUpload } from "./ExploreDrawerPhotoUpload";
 import { photoCreditText } from "../explore-photo-credit";
-import { exploreDirectionsUrl, explorePhoneHref } from "../explore-place-actions";
+import { explorePhoneHref } from "../explore-place-actions";
 
 type ExploreDetailDrawerProps = {
   detail: ExploreSlotDetail | null;
@@ -42,12 +45,14 @@ export function ExploreDetailDrawer({
   const canBook = bookLabel !== "No booking link";
   const hasPin = typeof detail.lat === "number" && typeof detail.lng === "number";
   const fullAddress = detail.address?.trim() || null;
-  const directionsUrl = exploreDirectionsUrl({
-    lat: detail.lat,
-    lng: detail.lng,
-    name: detail.title,
-    address: fullAddress,
-  });
+  const liveDirectionsHref = hasPin
+    ? buildLiveDirectionsHref({
+        gersId: detail.listingKind === "place" ? detail.id : null,
+        lat: detail.lat,
+        lng: detail.lng,
+        name: detail.title,
+      })
+    : null;
   const phoneHref = explorePhoneHref(detail.phone);
   const ratingLine = exploreVerifiedRatingLine(detail.rating, undefined);
   const heroStyle = detail.imageUrl
@@ -110,15 +115,15 @@ export function ExploreDetailDrawer({
               <span className={styles.drawerMapDot} aria-hidden />
             </div>
           ) : null}
-          {fullAddress || phoneHref || directionsUrl ? (
+          {fullAddress || phoneHref || liveDirectionsHref ? (
             <div className={styles.drawerPlaceInfo}>
               {fullAddress ? <p className={styles.drawerAddress}>{fullAddress}</p> : null}
               {detail.phone && phoneHref ? <p className={styles.drawerPhone}>{detail.phone}</p> : null}
               <div className={styles.drawerPlaceActions}>
-                {directionsUrl ? (
-                  <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className={styles.drawerChip}>
+                {liveDirectionsHref ? (
+                  <Link href={liveDirectionsHref} className={styles.drawerChip}>
                     Directions
-                  </a>
+                  </Link>
                 ) : null}
                 {phoneHref ? (
                   <a href={phoneHref} className={styles.drawerChip}>

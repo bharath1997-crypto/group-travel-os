@@ -2,6 +2,15 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-05 — F48 drawer Directions → Live tab (Complete in code)
+
+- **Context:** Explore drawer “Directions” must hand off to Rovvy Live (same tab, Back returns to Explore), not Google Maps.
+- **Result:** `live-explore-deeplink.ts` builds/parses `/live?gers_id&lat&lng&name`; `ExploreDetailDrawer` uses `<Link>` (places include Overture UUID `gers_id`); `LivePageClient` runs `selectDestination` once then `router.replace("/live")`. Removed `exploreDirectionsUrl`.
+- **Tests:** Vitest `app/(dashboard)/explore` + `app/(dashboard)/live` (341+ tests pass); `live-explore-deeplink` + spine seed UUID cases; `tsc --noEmit` — only pre-existing `ProfileTravelMap.tsx` `zIndexOffset` errors.
+- **Browser (localhost:3000):** Center for Native Futures → Directions → `/live` with place panel, spine address, route preview (~5.6 mi); `/live?lat=abc` → normal Live (no forced panel). Pritzker Park not re-checked this pass after UUID fix (link now includes `gers_id`).
+- **Risks:** Route preview needs geolocation permission; without GPS, distance/route may differ. Automated browser did not exercise browser Back to Explore.
+- **Next action:** Optional manual Back-button QA on device; regression only for this path.
+
 ## 2026-10-05 — F47 drawer photo · Orlando enrich dry-run (Partial)
 
 - **Context:** Task 2 — run Wikidata + Wikimedia photo enrich for Orlando before prod writes; operator must approve Postgres updates.
@@ -31,6 +40,16 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 
 - Independently reran the Eventbrite and pipeline unit suites: 31 passed. Read-only Supabase SELECTs confirmed source `eventbrite:org:84855780433`, 33 current event rows, 33 visible within 5 km of downtown Orlando, 10 Eventbrite venue links with `geo_name` matching, and `ingest.runs.purged`. The three most recent run counters match insert 33, purge 1, and reinsert 1. The separate Postgres test run (6/6), migration deployment, and in-progress event API response were reported by the Scaper worker; this review did not rerun those operations. At review time, the 5 km query found 0 events currently in progress, which does not invalidate an earlier time-dependent observation.
 - Decision: Eventbrite step 4 is credible and the live row counts are independently confirmed. Before a second connector, scope `purge_past_events()` to its source or move global purge into an explicit maintenance job; it currently deletes past rows across all Scaper sources and attributes the total to the source run that triggered it. Prioritize scheduling `run-due` and reading `public.events` in main `/explore` so the verified feed reaches the product. Ticketmaster can follow without replacing the existing v1 source until parity and deduplication are verified.
+
+## 2026-10-05 — Ticketmaster all-50-states approved; spec handed to Cursor
+
+- Context: the owner asked for Ticketmaster and Eventbrite data for every US state. Measured on the Discovery API (next 60 days): CA 5,709, TX 3,070, AK 19; the US total exceeds the API's 10,000 counter (estimated 40k–60k).
+- Decision: **Ticketmaster nationwide is approved**, as a pilot (AK, TX, CA) first. **Eventbrite stays curated per organizer**: its official API has no search, and scraping is out.
+- Assigned to **Cursor** (owner choice, token budget). Spec: `Scaper_Ticketmaster_National_Spec.md` (state mode with window bisect, per-venue city/state with migration 010, batched writes, any-city hub lookup, overlap rule, tests, pilot gates).
+- Estimated cost: Ticketmaster API $0 (under 5,000 calls/day); about 6 KB per event, so ~300–400 MB for 60k events (current DB 1.4 GB); scheduler ~$0–3/month.
+- Also found today: Eventbrite is invisible in the hub. Chicago shows 1 Eventbrite event in the first 100 loaded and 0 in the 24 shown, because the feed sorts by start time only and Ticketmaster dominates. Fix proposed: mix sources within each day (F27). Not started.
+- Risks: Ticketmaster's terms on storing data are unverified (owner to check before going national). The scheduler isn't deployed, so data is stale since 2026-09-27.
+- Next action: Cursor builds and runs the pilot (asking before each DB step); owner approves the full 50-state rollout.
 
 ## 2026-10-05 — Shared AI rule book + dated/green workbook rule applied to Explorer
 
