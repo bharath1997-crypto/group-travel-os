@@ -101,4 +101,4 @@ aiosqlite==0.20.0
 duffel-api
 yt-dlp
 instaloader
-
+boto3>=1.34

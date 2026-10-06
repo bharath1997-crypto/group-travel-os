@@ -1,3 +1,4 @@
+import type { ExplorePhotoCredit } from "./explore-fixtures";
 import { apiFetch } from "@/lib/api";
 import type { ExplorerDrawerItem } from "@/components/explorer/ExplorerItemDetailDrawer";
 import {
@@ -85,6 +86,12 @@ export type ExploreSlot = ExplorerDrawerItem & {
   exploreListingKind: "event" | "place";
   explorePlaceBucket?: "attractions" | "restaurants";
   eventDateIso?: string | null;
+  /** Full street address from the provider (places only). */
+  placeAddress?: string | null;
+  phone?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  imageCredit?: ExplorePhotoCredit | null;
 };
 
 export type ExploreHubPayload = {
@@ -304,6 +311,15 @@ function placeListingUrl(place: ExplorePlaceRow): string | null {
   return null;
 }
 
+function placePhotoCredit(place: ExplorePlaceRow): ExplorePhotoCredit | null {
+  if (!place.image_url || !(place.image_attribution || place.image_license)) return null;
+  return {
+    attribution: place.image_attribution?.trim() || null,
+    license: place.image_license?.trim() || null,
+    sourceUrl: place.image_source_url?.trim() || null,
+  };
+}
+
 function placeToSlot(
   place: ExplorePlaceRow,
   city: string,
@@ -358,6 +374,11 @@ function placeToSlot(
     badge: hasHours ? placeCardAvailability(true) : hubListingBadge({ availability: null }),
     exploreListingKind: "place",
     explorePlaceBucket: bucket,
+    placeAddress: address ?? null,
+    phone: place.phone?.trim() || null,
+    lat: place.lat ?? null,
+    lng: place.lng ?? null,
+    imageCredit: placePhotoCredit(place),
   };
 }
 

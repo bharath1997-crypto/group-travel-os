@@ -37,6 +37,9 @@ def _format_address(address: Any) -> str | None:
             )
             if part
         )
+        if not line1 and isinstance(address.get("freeform"), str):
+            # Overture stores the street line as `freeform` (e.g. "100 S Eola Dr").
+            line1 = address["freeform"].strip()
         line2 = ", ".join(
             part
             for part in (

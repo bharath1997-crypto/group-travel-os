@@ -1,5 +1,11 @@
 # Rovvy — Project Memory for AntiGravity
 
+> **Shared rule book: `AGENTS.md`** (consolidated 2026-10-05). It wins on conflicts.
+> Scram Book completion rule (AGENTS.md §1): after verified work, prefix the feature's
+> workbook Task cell with `[YYYY-MM-DD]`, set `Complete in code` + green fill (#DDF3E3)
+> or `Partial` + yellow (#FFF2B3), log it in `Cursor Context Log`, and add a README entry.
+
+
 # Auto-read every task. Execute autonomously. Never pause for confirmation.
 
 ---

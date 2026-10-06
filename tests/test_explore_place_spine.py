@@ -176,10 +176,16 @@ def test_search_places_spatial_path() -> None:
         limit=5,
     )
     sql_text = str(db.execute.call_args[0][0])
-    assert "ST_DWithin" in sql_text
-    assert "LIMIT" in sql_text
-    assert db.execute.call_args[0][1]["lim"] == 5
+    params = db.execute.call_args[0][1]
+    # Index-ordered nearest scan, then an exact radius filter + ST_Distance re-sort.
+    assert "geog <-> ST_SetSRID" in sql_text
+    assert "distance_m <= :radius_m" in sql_text
+    assert "LIMIT :knn_lim" in sql_text and "LIMIT :lim" in sql_text
+    assert params["lim"] == 5
+    assert params["knn_lim"] == 5 * 2 + 10
+    assert params["radius_m"] == 5000
     assert "ORDER BY" in sql_text and "ST_Distance" in sql_text
+    assert "place_media" in sql_text and "moderation_status = 'approved'" in sql_text
     assert "gers_id ASC" in sql_text
     assert "ROW_NUMBER" not in sql_text
 

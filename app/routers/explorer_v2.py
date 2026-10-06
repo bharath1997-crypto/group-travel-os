@@ -23,6 +23,7 @@ from app.schemas.explorer_v2 import (
     SearchLogRequest,
 )
 from app.services.explorer.explorer_v2_service import explorer_v2_service
+from app.services.scaper_event_visibility import visible_events_cte
 from app.utils.auth import get_current_user
 from app.utils.database import get_db
 from app.utils.exceptions import AppException
@@ -373,21 +374,20 @@ def get_events(
             "limit": limit + 1,
         }
     else:
-        # PostgreSQL PostGIS query. Rows are written by Scaper (migrations/008):
-        # in-progress events stay visible until expires_at; cancelled/completed
-        # and provider-delisted (expires_at = fetch time) rows drop out; Scaper
-        # dedup (migrations/009) hides duplicates via duplicate_of.
+        # PostgreSQL PostGIS query over Scaper rows (migrations/008, 009). Visibility,
+        # status and one-row-per-dedup-group live in scaper_event_visibility.
+        cte = visible_events_cte("""
+            AND ST_DWithin(
+                geom::geography,
+                ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
+                :radius_m
+            )
+        """)
         query = text(f"""
+            {cte}
             SELECT id, title, start_time, end_time, ticket_url, price_min, price_max, category, lat, lng
-            FROM events
-            WHERE COALESCE(expires_at, end_time, start_time) > :now
-              AND status IN ('scheduled', 'sold_out', 'postponed')
-              AND duplicate_of IS NULL
-              AND ST_DWithin(
-                  geom::geography,
-                  ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
-                  :radius_m
-              )
+            FROM visible
+            WHERE true
               {keyset}
             ORDER BY start_time ASC, id ASC
             LIMIT :limit

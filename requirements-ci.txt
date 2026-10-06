@@ -110,3 +110,4 @@ duffel-api
 yt-dlp
 instaloader
 reverse_geocoder
+boto3>=1.34

@@ -280,15 +280,17 @@ async def explore_events(
         city_strip = "Chicago"
     d_from = date_from or start_date
     d_to = date_to or end_date
-    # Orlando's curated Eventbrite/Ticketmaster sources live in public.events.
-    # The city stamp defines this feed; GPS and radius do not truncate it.
-    if city_strip.split(",")[0].strip().lower() == "orlando":
-        from app.services.explore_scaper_events import scaper_events_for_city
+    # Cities with Scaper sources (ingest.sources) read deduped Eventbrite/Ticketmaster
+    # rows from public.events. The city stamp defines this feed; GPS and radius do
+    # not truncate it.
+    from app.services.explore_scaper_events import scaper_city_enabled, scaper_events_for_city
 
+    scaper_city = city_strip.split(",")[0].strip()
+    if scaper_city_enabled(db, scaper_city):
         try:
             return scaper_events_for_city(
                 db,
-                city="Orlando",
+                city=scaper_city.title(),
                 category=category,
                 date_from=d_from,
                 date_to=d_to,
@@ -298,8 +300,8 @@ async def explore_events(
         except (ValueError, TypeError) as exc:
             raise HTTPException(status_code=422, detail="Invalid event date filter") from exc
         except Exception as exc:
-            logger.exception("Scaper events unavailable for Orlando")
-            raise HTTPException(status_code=503, detail="Orlando event index unavailable") from exc
+            logger.exception("Scaper events unavailable for %s", scaper_city)
+            raise HTTPException(status_code=503, detail=f"{scaper_city.title()} event index unavailable") from exc
     geo_search = lat is not None and lon is not None
     nearby_cities: list[dict[str, Any]] = []
     display_city = city_strip.split(",")[0].strip()

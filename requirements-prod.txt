@@ -100,3 +100,4 @@ qrcode[pil]==7.4.2
 geopandas>=1.0.0
 reverse_geocoder>=1.5.1
 aiosqlite==0.20.0
+boto3>=1.34

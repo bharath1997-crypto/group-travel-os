@@ -5,6 +5,7 @@ import type { ExploreSlotCard as ExploreSlotCardType } from "../explore-fixtures
 import { cardRatingDisplay } from "../explore-card-copy";
 import { EXPLORE_PHOTO_UNAVAILABLE } from "../explore-listing-field-state";
 import { ExploreProviderBadge } from "./ExploreProviderBadge";
+import { photoCreditText } from "../explore-photo-credit";
 import styles from "../explore.module.css";
 
 type ExploreSlotCardProps = {
@@ -40,6 +41,9 @@ export function ExploreSlotCard({ slot, onOpen, isSaved = false }: ExploreSlotCa
         ) : (
           <span className={styles.slotMediaLabel}>{photoLabel}</span>
         )}
+        {showPhoto && slot.imageCredit ? (
+          <span className={styles.slotPhotoCredit}>{photoCreditText(slot.imageCredit)}</span>
+        ) : null}
         {isSaved ? <span className={styles.slotSavedMark}>Saved</span> : null}
         {!slot.overlayTitle ? <ExploreProviderBadge label={slot.source} variant="dark" /> : null}
         {slot.badge ? (

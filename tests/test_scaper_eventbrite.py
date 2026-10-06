@@ -36,8 +36,8 @@ def test_extract_maps_live_event() -> None:
     assert event.title == "Rooftop Jazz Night"
     assert event.description == "Live jazz trio on the roof every Friday."
     assert event.category == "music"
-    assert event.starts_at == datetime(2026, 10, 3, 0, 0, tzinfo=timezone.utc)
-    assert event.ends_at == datetime(2026, 10, 3, 3, 0, tzinfo=timezone.utc)
+    assert event.starts_at == datetime(2099, 10, 3, 0, 0, tzinfo=timezone.utc)
+    assert event.ends_at == datetime(2099, 10, 3, 3, 0, tzinfo=timezone.utc)
     assert event.timezone == "America/Chicago"
     assert event.status == "scheduled"
     assert (event.price_min, event.price_max, event.currency) == (15.0, 40.0, "USD")
