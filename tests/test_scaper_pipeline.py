@@ -38,6 +38,7 @@ class MemoryStore:
         self.links: dict[tuple[str, str], uuid.UUID] = {}
         self.clock = 0
         self.deduped_cities: list[str] = []
+        self.blocklist: set[tuple[str, str]] = set()
 
     def _tick(self) -> int:
         self.clock += 1
@@ -135,6 +136,25 @@ class MemoryStore:
         for e in stale:
             e["expired"] = True
         return len(stale)
+
+    def is_provider_blocked(self, provider: str, external_id: str) -> bool:
+        return (provider, external_id) in self.blocklist
+
+    def remove_provider_event(
+        self, provider: str, external_id: str, *, reason: str | None = None
+    ) -> dict[str, Any]:
+        key = (provider, external_id)
+        events_deleted = 1 if key in self.events else 0
+        self.events.pop(key, None)
+        self.raw.pop(key, None)
+        self.blocklist.add(key)
+        return {
+            "provider": provider,
+            "external_id": external_id,
+            "events_deleted": events_deleted,
+            "raw_records_deleted": events_deleted,
+            "blocked": True,
+        }
 
 
 class ListConnector(Connector):

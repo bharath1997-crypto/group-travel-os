@@ -66,6 +66,8 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
     try:
         for item in connector.fetch(source.config):
             stats.fetched += 1
+            if store.is_provider_blocked(connector.name, item.external_id):
+                continue
             raw_id, needs_extraction = store.upsert_raw(source, run, connector.name, item)
             if needs_extraction:
                 to_extract.append((raw_id, item.payload))

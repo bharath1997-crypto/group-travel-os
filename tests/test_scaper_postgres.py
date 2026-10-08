@@ -28,7 +28,12 @@ pytestmark = pytest.mark.scaper_postgres
 
 MIGRATIONS = [
     Path(__file__).resolve().parents[1] / "migrations" / name
-    for name in ("008_scaper_ingest.sql", "009_scaper_dedup.sql", "010_scaper_state.sql")
+    for name in (
+        "008_scaper_ingest.sql",
+        "009_scaper_dedup.sql",
+        "010_scaper_state.sql",
+        "011_scaper_blocklist.sql",
+    )
 ]
 # Open ocean, so no Overture place can match by accident.
 OCEAN = {"lat": "0.5000", "lng": "-150.5000"}
@@ -458,3 +463,36 @@ def test_scaper_city_enabled_without_city_source(pg) -> None:
     db = _ConnDb()
     assert scaper_city_enabled(db, "Anchorage") is True
     assert scaper_city_enabled(db, "Nowhereville") is False
+
+
+def test_remove_blocks_reingest(pg) -> None:
+    store, conn = pg
+    source = _add_source(store)
+    ext_id = "rm-pg-1"
+    run_source(store, ListConnector([_ocean_event(ext_id)]), source)
+    assert conn.execute(
+        text("SELECT 1 FROM events WHERE provider='eventbrite' AND external_id=:e"),
+        {"e": ext_id},
+    ).scalar() == 1
+
+    out = store.remove_provider_event("eventbrite", ext_id, reason="owner")
+    assert out["events_deleted"] == 1
+    assert conn.execute(
+        text("SELECT 1 FROM ingest.blocklist WHERE provider='eventbrite' AND external_id=:e"),
+        {"e": ext_id},
+    ).scalar() == 1
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM events WHERE provider='eventbrite' AND external_id=:e"),
+        {"e": ext_id},
+    ).scalar() == 0
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM ingest.raw_records WHERE connector='eventbrite' AND external_id=:e"),
+        {"e": ext_id},
+    ).scalar() == 0
+
+    again = run_source(store, ListConnector([_ocean_event(ext_id)]), source)
+    assert again.stats.inserted == 0
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM events WHERE provider='eventbrite' AND external_id=:e"),
+        {"e": ext_id},
+    ).scalar() == 0

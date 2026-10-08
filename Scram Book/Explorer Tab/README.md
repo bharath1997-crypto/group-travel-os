@@ -7,7 +7,7 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 - **Context:** SHIFT HANDOFF + Ticketmaster national spec item 9; removal requests need a published contact (`rovvy230@gmail.com` via `frontend/lib/contact-config.ts` until owner moves to support@).
 - **Goals:** `python -m scaper remove --provider --external-id`; block re-ingest; legal data-sources page; Explore drawer removal link.
 - **Result:** `migrations/011_scaper_blocklist.sql`; `PostgresStore.remove_provider_event` + pipeline blocklist check; CLI `remove`; `/legal/data` with Overture, Wikimedia, Ticketmaster, Eventbrite, independence, `#removal`; drawer “Is this your event? Contact us”.
-- **Verification:** `pytest tests/test_scaper_remove.py tests/test_scaper_pipeline.py tests/test_scaper_store.py` 18 passed; full backend suite not re-run this pass; PG `test_remove_blocks_reingest` when `SCAPER_PG_TEST_URL` set.
+- **Verification:** `pytest tests/test_scaper_remove.py tests/test_scaper_pipeline.py tests/test_scaper_store.py` **18 passed**; full backend `pytest -q` **973 passed**, 1 failed (pre-existing `test_ticketmaster_job`); Vitest `contact-config` + `explore-unknown-field-states` **16 passed**; PG `test_remove_blocks_reingest` when `SCAPER_PG_TEST_URL` set (not run locally).
 - **Risks:** Migration **011 not applied to Supabase** — ask owner before apply.
 - **Next action:** Owner approves 011 on prod; forward TM/EB API registration mail to `CONTACT_EMAIL`; run remove CLI after verified takedown emails.
 

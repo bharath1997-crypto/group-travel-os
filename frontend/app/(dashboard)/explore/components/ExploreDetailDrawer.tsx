@@ -219,7 +219,14 @@ export function ExploreDetailDrawer({
             </p>
           ) : null}
           {showProviderIndependence ? (
-            <p className={styles.drawerProviderNote}>{EXPLORE_PROVIDER_INDEPENDENCE_NOTE}</p>
+            <>
+              <p className={styles.drawerProviderNote}>{EXPLORE_PROVIDER_INDEPENDENCE_NOTE}</p>
+              <p className={styles.drawerProviderNote}>
+                <Link href="/legal/data#removal" className={styles.drawerRemovalLink}>
+                  Is this your event? Contact us
+                </Link>
+              </p>
+            </>
           ) : null}
         </div>
       </aside>

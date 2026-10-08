@@ -126,6 +126,12 @@ describe("explore unknown field states (G08)", () => {
     expect(normalizeListingAvailability("sold_out")).toBe(EXPLORE_SOLD_OUT);
   });
 
+  it("Scaper event drawer links organizers to legal data removal contact", () => {
+    const drawer = readFileSync(join(EXPLORE_ROOT, "components/ExploreDetailDrawer.tsx"), "utf8");
+    expect(drawer).toContain('href="/legal/data#removal"');
+    expect(drawer).toContain("Is this your event? Contact us");
+  });
+
   it("drawer action uses provider-specific Scaper event links", () => {
     expect(
       exploreDrawerProviderActionLabel({

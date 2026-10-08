@@ -8,6 +8,7 @@ Scaper CLI.
   python -m scaper run --source eventbrite:org:123
   python -m scaper run-due            # cron entrypoint
   python -m scaper relink-venues      # backfill after venue-matching changes
+  python -m scaper remove --provider ticketmaster --external-id <id>
 
 `preview` hits the provider but never touches the database.
 """
@@ -85,6 +86,11 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("relink-venues", help="re-match Scaper-created places against widened venue rules")
     p.add_argument("--city-slug")
 
+    p = sub.add_parser("remove", help="owner removal: delete event + raw payload and block re-ingest")
+    p.add_argument("--provider", choices=CONNECTOR_NAMES, required=True)
+    p.add_argument("--external-id", required=True)
+    p.add_argument("--reason", help="optional note stored on the blocklist row")
+
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     # httpx logs full request URLs at INFO; Ticketmaster carries its API key in the query string.
@@ -126,6 +132,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if report.status in ("succeeded", "partial") else 1
     if args.command == "relink-venues":
         print(json.dumps({"relinked": store.relink_created_places(args.city_slug)}))
+        return 0
+    if args.command == "remove":
+        print(json.dumps(store.remove_provider_event(args.provider, args.external_id, reason=args.reason)))
         return 0
     if args.command == "run-due":
         reports = run_due(store, lambda name: build_connector(name, settings), city_slug=args.city_slug)

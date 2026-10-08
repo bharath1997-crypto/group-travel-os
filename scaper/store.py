@@ -67,6 +67,10 @@ class Store(Protocol):
     def disable_ticketmaster_city_sources_for_state(self, state_code: str) -> int: ...
     def purge_past_events(self, source: Source) -> int: ...
     def dedupe_city(self, city_slug: str) -> int: ...
+    def is_provider_blocked(self, provider: str, external_id: str) -> bool: ...
+    def remove_provider_event(
+        self, provider: str, external_id: str, *, reason: str | None = None
+    ) -> dict[str, Any]: ...
 
 
 _SOURCE_COLUMNS = (
@@ -530,6 +534,64 @@ class PostgresStore:
             if source.connector == "eventbrite":
                 _purge_orphan_eventbrite_created_places(conn)
         return len(deleted)
+
+    def is_provider_blocked(self, provider: str, external_id: str) -> bool:
+        with self.engine.connect() as conn:
+            found = conn.execute(
+                text(
+                    "SELECT 1 FROM ingest.blocklist WHERE provider = :provider AND external_id = :external_id"
+                ),
+                {"provider": provider, "external_id": external_id},
+            ).scalar()
+        return found is not None
+
+    def remove_provider_event(
+        self, provider: str, external_id: str, *, reason: str | None = None
+    ) -> dict[str, Any]:
+        """Delete public event + raw payload, then block re-ingest (owner removal).
+
+        ``duplicate_of`` links from other events are cleared via ON DELETE SET NULL on
+        ``events_duplicate_of_fk`` in the same transaction.
+        """
+        with self.engine.begin() as conn:
+            event_ids = conn.execute(
+                text(
+                    """
+                    DELETE FROM public.events
+                    WHERE provider = :provider AND external_id = :external_id
+                    RETURNING id
+                    """
+                ),
+                {"provider": provider, "external_id": external_id},
+            ).scalars().all()
+            raw_deleted = conn.execute(
+                text(
+                    """
+                    DELETE FROM ingest.raw_records
+                    WHERE connector = :provider AND external_id = :external_id
+                    """
+                ),
+                {"provider": provider, "external_id": external_id},
+            ).rowcount or 0
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO ingest.blocklist (provider, external_id, reason)
+                    VALUES (:provider, :external_id, :reason)
+                    ON CONFLICT (provider, external_id) DO UPDATE SET
+                      reason = COALESCE(EXCLUDED.reason, ingest.blocklist.reason),
+                      blocked_at = now()
+                    """
+                ),
+                {"provider": provider, "external_id": external_id, "reason": reason},
+            )
+        return {
+            "provider": provider,
+            "external_id": external_id,
+            "events_deleted": len(event_ids),
+            "raw_records_deleted": int(raw_deleted),
+            "blocked": True,
+        }
 
     def relink_created_places(self, city_slug: str | None = None) -> int:
         """
