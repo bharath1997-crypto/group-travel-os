@@ -28,6 +28,11 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 - **Codex (optional):** retire the HTML scrapers (`eventbrite_scraper.py`, `seatgeek_scraper.py`, `stubhub_scraper.py`); remove the dropped flight code (tests already gone).
 - **Rejected sources:** Yelp, SeatGeek, Meetup. Flights are dropped; travel is A→B directions only (AGENTS.md §4).
 
+### Added 2026-10-08: removal requests need a contact channel
+- Gap: Rovvy has no published contact/takedown address. A Ticketmaster removal request would go to whatever email registered the API key, which nobody watches. The `scaper remove` command (spec item 9) is only half the solution.
+- **Owner:** choose the address (e.g. `support@rovvy.app` or `legal@rovvy.app`); confirm which accounts registered the Ticketmaster and Eventbrite keys and forward that mail to the address.
+- **Cursor:** item 9 (remove + blocklist), plus a `/legal/data` page (data sources, attribution, independence note, removal contact) and an "Is this your event? Contact us" link in the Scaper event drawer.
+
 ### Known risks
 - Ticketmaster may throttle scheduled crawls; monetizing needs their approval.
 - Eventbrite: the "competing product" clause is undefined, so Rovvy stays a group-planning app that links out for tickets.
