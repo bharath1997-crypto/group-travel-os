@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from scaper.dedup import EventRow, norm_postcode, plan_duplicates, same_venue_address, same_venue_name
 from scaper.models import EventRecord, RawItem, RunStats, RunStatus, Source, VenueRecord
+from scaper.raw_purge import orphan_past_raw_delete_sql
 from scaper.ticketmaster_overlap import city_slugs_for_state
 
 # Venue -> places matching thresholds. Conservative: a wrong link attaches an
@@ -488,8 +489,9 @@ class PostgresStore:
 
     def purge_past_events(self, source: Source) -> int:
         """
-        Delete finished rows for this source, drop their raw payloads, and for Eventbrite
-        remove Scaper-created venue places nothing future still references.
+        Delete finished rows for this source, drop their raw payloads, purge past
+        ingest.raw_records with no public.events row (rejected/orphans), and for
+        Eventbrite remove Scaper-created venue places nothing future still references.
         """
         if source.connector == "eventbrite":
             past_sql = """
@@ -514,8 +516,6 @@ class PostgresStore:
                 ),
                 {"sid": source.id},
             ).mappings().all()
-            if not deleted:
-                return 0
             raw_ids = [int(r["raw_record_id"]) for r in deleted if r["raw_record_id"] is not None]
             if raw_ids:
                 conn.execute(
@@ -532,9 +532,13 @@ class PostgresStore:
                     ),
                     {"connector": row["provider"], "external_id": row["external_id"]},
                 )
+            orphan_raw = conn.execute(
+                orphan_past_raw_delete_sql(source.connector),
+                {"sid": source.id, "connector": source.connector},
+            ).rowcount or 0
             if source.connector == "eventbrite":
                 _purge_orphan_eventbrite_created_places(conn)
-        return len(deleted)
+        return len(deleted) + orphan_raw
 
     def blocked_ids(self, provider: str) -> set[str]:
         """All blocked external ids for a provider (one query per pipeline run)."""
