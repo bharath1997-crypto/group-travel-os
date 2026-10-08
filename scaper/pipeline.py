@@ -3,12 +3,40 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from scaper.connectors.base import Connector
-from scaper.models import Rejected, RunReport, RunStats, RunStatus, Source
+from scaper.connectors.ticketmaster import venue_city_and_state
+from scaper.models import EventRecord, Rejected, RunReport, RunStats, RunStatus, Source
 from scaper.store import RunInProgress, Store
 
 logger = logging.getLogger(__name__)
+
+EXTRACT_CHUNK_SIZE = 200
+
+
+def _is_state_source(source: Source) -> bool:
+    return bool(source.state_code or source.config.get("state_code"))
+
+
+def _event_location(source: Source, event: EventRecord, payload: dict) -> tuple[str | None, str | None]:
+    """Return (city_slug, state_code) stamped onto the event row."""
+    if _is_state_source(source):
+        slug, state = venue_city_and_state(payload)
+        return slug, state
+    state = None
+    if event.venue and event.venue.region:
+        state = str(event.venue.region).strip().upper() or None
+    return source.city_slug, state
+
+
+@dataclass(frozen=True)
+class _PersistRow:
+    raw_id: int
+    event: EventRecord
+    place_id: object
+    city_slug: str | None
+    state_code: str | None
 
 
 def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
@@ -22,20 +50,25 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
     - Vanished events are expired only after a complete, error-free fetch.
     - Past Scaper events (ended, or started 6h+ ago with no end) are deleted
       after any run whose fetch succeeded; never after a failed fetch.
-    - Then the source's city is re-deduplicated (duplicate_of), after purge.
+    - Then every touched city is re-deduplicated (duplicate_of), after purge.
     """
     if source.connector != connector.name:
         raise ValueError(f"source {source.name} is for {source.connector}, not {connector.name}")
     connector.parse_config(source.config)
 
+    blocked_ids = store.blocked_ids(connector.name)
     run = store.start_run(source)
     stats = RunStats()
     to_extract: list[tuple[int, dict]] = []
     fetch_error: str | None = None
+    place_cache: dict[tuple[str, str], object] = {}
+    touched_cities: set[str] = set()
 
     try:
         for item in connector.fetch(source.config):
             stats.fetched += 1
+            if item.external_id in blocked_ids:
+                continue
             raw_id, needs_extraction = store.upsert_raw(source, run, connector.name, item)
             if needs_extraction:
                 to_extract.append((raw_id, item.payload))
@@ -46,6 +79,17 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
         fetch_error = f"fetch: {exc}"
         logger.exception("scaper fetch failed for %s", source.name)
 
+    chunk: list[_PersistRow] = []
+
+    def flush_chunk() -> None:
+        nonlocal chunk
+        if not chunk:
+            return
+        inserted, updated = store.persist_extractions(connector.name, source, chunk)
+        stats.inserted += inserted
+        stats.updated += updated
+        chunk = []
+
     for raw_id, payload in to_extract:
         try:
             result = connector.extract(payload)
@@ -53,17 +97,22 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
                 store.mark_raw(raw_id, "rejected", result.reason)
                 stats.rejected += 1
                 continue
-            place_id = (
-                store.resolve_place(connector.name, result.venue, source.city_slug)
-                if result.venue
-                else None
-            )
-            outcome = store.upsert_event(connector.name, source, raw_id, result, place_id)
-            store.mark_raw(raw_id, "extracted")
-            if outcome == "inserted":
-                stats.inserted += 1
-            else:
-                stats.updated += 1
+            city_slug, state_code = _event_location(source, result, payload)
+            if city_slug:
+                touched_cities.add(city_slug)
+            place_id = None
+            if result.venue:
+                cache_key = (connector.name, result.venue.external_id)
+                if cache_key in place_cache:
+                    place_id = place_cache[cache_key]
+                else:
+                    place_id = store.resolve_place(
+                        connector.name, result.venue, city_slug or source.city_slug
+                    )
+                    place_cache[cache_key] = place_id
+            chunk.append(_PersistRow(raw_id, result, place_id, city_slug, state_code))
+            if len(chunk) >= EXTRACT_CHUNK_SIZE:
+                flush_chunk()
         except Exception as exc:
             stats.failed += 1
             logger.exception("scaper extract failed for raw_record %s", raw_id)
@@ -72,26 +121,29 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
             except Exception:
                 logger.exception("could not mark raw_record %s failed", raw_id)
 
+    flush_chunk()
+
     if fetch_error is None and connector.last_fetch_complete:
         expired = store.expire_unseen(source, run)
         if expired:
             logger.info("scaper %s: expired %d vanished events", source.name, expired)
 
-    # Purge only after a successful fetch, so a provider outage never empties Explorer.
     if fetch_error is None:
         try:
-            stats.purged = store.purge_past_events(source.id)
+            stats.purged = store.purge_past_events(source)
         except Exception:
             logger.exception("scaper purge failed after %s", source.name)
         if stats.purged:
             logger.info("scaper %s: purged %d past events", source.name, stats.purged)
 
-    # Dedup after purge: a purged canonical frees its duplicates, which get re-clustered here.
+    dedupe_targets = set(touched_cities)
     if source.city_slug:
+        dedupe_targets.add(source.city_slug)
+    for city in sorted(dedupe_targets):
         try:
-            stats.deduped = store.dedupe_city(source.city_slug)
+            stats.deduped += store.dedupe_city(city)
         except Exception:
-            logger.exception("scaper dedup failed for %s", source.city_slug)
+            logger.exception("scaper dedup failed for %s", city)
 
     status: RunStatus
     if fetch_error:

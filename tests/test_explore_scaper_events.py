@@ -101,6 +101,27 @@ def test_hub_routes_any_scaper_city_to_scaper_feed(monkeypatch):
     assert calls == ["Chicago"]
 
 
+def test_scaper_city_enabled_true_when_inventory_exists(monkeypatch):
+    from app.services.explore_scaper_events import scaper_city_enabled
+
+    calls = []
+
+    class Db:
+        bind = SimpleNamespace(dialect=SimpleNamespace(name="postgresql"))
+
+        def begin_nested(self):
+            return nullcontext()
+
+        def execute(self, statement, params):
+            calls.append(str(statement))
+            if "ingest.sources" in str(statement):
+                return SimpleNamespace(scalar=lambda: None)
+            return SimpleNamespace(scalar=lambda: 1)
+
+    assert scaper_city_enabled(Db(), "Austin") is True
+    assert any("public.events" in c for c in calls)
+
+
 def test_scaper_city_enabled_is_false_off_postgres():
     from types import SimpleNamespace
 

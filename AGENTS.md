@@ -86,6 +86,24 @@ After verified work, in the same tab folder:
   propose or fix flight features. Travel support is **Google-Maps-style
   directions only**: how to get from A to B (to C), e.g. a directions deep
   link or route preview — not selling or comparing flights.
+- **Event/venue provider terms (Perplexity research 2026-10-05; details in
+  Scram Book/Explorer Tab/README.md):**
+  - Ticketmaster: store only for "reasonable periods" (purge past/delisted events and their
+    raw payloads); remove owner-requested content within 24 hours; hot-link images, never
+    re-host; no revenue from the API without written approval; scheduled crawls not tied to
+    user actions may be throttled. Label "Tickets via Ticketmaster".
+  - Eventbrite (API terms last updated 2025-05-30): store content **only for future events**;
+    after an event has occurred delete its event row, raw payload and any venue data taken from
+    it (no grace period stated). Every Eventbrite listing shows the event title and a **direct,
+    crawlable `<a href>` to the Eventbrite event page (no `rel=nofollow`, not a JS-only click)**.
+    No Eventbrite logo/trademark without written consent; Rovvy must state it is not owned by
+    Eventbrite. No reselling or standalone use of the data; no competing-product use. Rate
+    limit: plan for 1,000 calls/hour per token (docs conflict); never rotate tokens to evade.
+  - Yelp: **not used** (paid from $229/month; content may be cached at most 24 hours; no own listings DB).
+  - SeatGeek: **not used** (no systematic storage; logo required on every surface; no AI/ML
+    use, which conflicts with Wayra).
+  - Meetup: **not used** (API tied to paid Meetup Pro; aggregation rights unclear).
+  - Open-data feeds: per-feed approval only, after the license, endpoint and refresh are verified.
 - Infrastructure budget cap: USD 15–20/month (`data-spine.md` §8). Any new
   paid service or spend needs user approval with a cost estimate first.
 

@@ -28,6 +28,25 @@ describe("live-place-spine-seed", () => {
     expect(isSpineGersId(seed.gers_id)).toBe(true);
   });
 
+  it("accepts UUID Overture gers_id in tags", () => {
+    const uuid = "78b4925d-0560-4352-8453-553395500ec6";
+    const place: PlacePreviewData = {
+      name: "Grant Park",
+      categoryLabel: "Park",
+      address: "Chicago",
+      phone: null,
+      lat: 41.88,
+      lng: -87.62,
+      distanceM: null,
+      openingHours: null,
+      openStatus: null,
+      tags: { gers_id: uuid },
+    };
+    expect(readSpineGersId(place.tags)).toBe(uuid);
+    expect(placePreviewToPlaceSeed(place).gers_id).toBe(uuid);
+    expect(isSpineGersId(uuid)).toBe(true);
+  });
+
   it("builds local seed for OSM-only picks", () => {
     const place: PlacePreviewData = {
       name: "Shell Gas",

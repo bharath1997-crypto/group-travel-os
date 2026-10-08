@@ -80,6 +80,7 @@ import { haversineM } from "@/lib/geo";
 import { emitClearWayraContext, emitOpenWayra, WAYRA_CONTEXT_EVENT } from "@/lib/open-wayra";
 import { emitWayraPlacePicked, WAYRA_MAP_FOCUS_EVENT, type WayraMapFocusDetail } from "@/lib/wayra/live-map-context";
 import type { PlacePreviewData } from "./live-place-preview-data";
+import { parseLiveDeepLink } from "./live-explore-deeplink";
 import LivePlacePanelHost from "./LivePlacePanelHost";
 import {
   buildPlacePanelDistance,
@@ -703,6 +704,7 @@ export default function LivePageClient() {
 
   const mapRef = useRef<LiveMapRef | null>(null);
   const initialLocateDoneRef = useRef(false);
+  const exploreDeepLinkHandledRef = useRef(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const tripId = searchParams.get("trip_id")?.trim() || null;
@@ -2492,6 +2494,38 @@ export default function LivePageClient() {
     },
     [savedPlaceToPreview, selectDestination, tripSavedPlaces],
   );
+
+  useEffect(() => {
+    if (exploreDeepLinkHandledRef.current) return;
+    const parsed = parseLiveDeepLink(searchParams);
+    if (!parsed) return;
+    exploreDeepLinkHandledRef.current = true;
+
+    const tags: Record<string, unknown> = parsed.gersId ? { gers_id: parsed.gersId } : {};
+    const preview: PlacePreviewData = {
+      name: parsed.name || "Place",
+      categoryLabel: "Place",
+      address: `${parsed.lat.toFixed(5)}, ${parsed.lng.toFixed(5)}`,
+      phone: null,
+      lat: parsed.lat,
+      lng: parsed.lng,
+      distanceM: userLocation
+        ? haversineM(userLocation.lat, userLocation.lng, parsed.lat, parsed.lng)
+        : null,
+      openingHours: null,
+      openStatus: null,
+      source: "explore_handoff",
+      tags,
+    };
+
+    void selectDestination(preview, {
+      origin: "search",
+      clickLat: parsed.lat,
+      clickLng: parsed.lng,
+      showPlacePanel: true,
+    });
+    router.replace("/live", { scroll: false });
+  }, [router, searchParams, selectDestination, userLocation]);
 
   const zoomToMapTap = useCallback(
     (payload: Pick<MapClickPayload, "lat" | "lng">) => {

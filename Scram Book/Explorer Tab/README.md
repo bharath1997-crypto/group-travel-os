@@ -2,6 +2,78 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-08 — Scaper owner removal + `/legal/data` (spec item 9)
+
+- **Context:** SHIFT HANDOFF + Ticketmaster national spec item 9; removal requests need a published contact (`rovvy230@gmail.com` via `frontend/lib/contact-config.ts` until owner moves to support@).
+- **Goals:** `python -m scaper remove --provider --external-id`; block re-ingest; legal data-sources page; Explore drawer removal link.
+- **Result:** `migrations/011_scaper_blocklist.sql`; `PostgresStore.remove_provider_event` + pipeline blocklist check; CLI `remove`; `/legal/data` with Overture, Wikimedia, Ticketmaster, Eventbrite, independence, `#removal`; drawer “Is this your event? Contact us”.
+- **Verification (2026-10-08 CI rerun):** Backend `pytest tests/` (CI env: sqlite `DATABASE_URL`, `SECRET_KEY`) **976 passed**, 28 skipped, 0 failed; frontend `npx vitest run` **587 passed** (127 files); Scaper PG `tests/test_scaper_postgres.py` via `SCAPER_PG_TEST_URL` **14 passed** (rolled back). Commits: `a427726`, `17e6ff7` (`blocked_ids` once per run), `87a1126` (`blocked_ids` before `start_run`).
+- **Risks:** Migration **011 not applied to Supabase** — ask owner before apply.
+- **Next action:** Owner approves 011 on prod; forward TM/EB API registration mail to `CONTACT_EMAIL`; run remove CLI after verified takedown emails.
+
+## 2026-10-05 — SHIFT HANDOFF (owner back in ~68 h): state of Explorer / Scaper
+
+**Read this first next shift.** The newest detailed entries are below this one.
+
+### Done and committed (local `Production-main`, 7 commits ahead of origin, NOT pushed)
+- `9bdbf37`: Explore drawer **Directions opens the Live tab** (not Google Maps). The UUID place-ID and address fixes are included.
+- `472b8fe`, `4e169ba`, `d7bc037`: Ticketmaster **state mode** (window bisect), migration 010 file, batched writes, hub works for any city with events.
+- `759f985`, `bcd984a`: **Eventbrite purge at event end** (raw payloads and orphan venues too; Ticketmaster after 7 days); "View on Eventbrite" / "Tickets via Ticketmaster" real `<a href>` links; independence note.
+- `1b0d4e6`: AGENTS.md §4 provider-terms rules and national-spec items 8–11.
+- Claude reviewed all of them: CI 971 passed / 0 failed; rolled-back Supabase suite 13/13; Explore + Live Vitest 127/127.
+- Already in production (pushed earlier, `86447c4`): photos (Wikimedia + uploads), faster places, address/phone/map drawer, Scaper events in hub, series dedup, events pagination, shared rule book, flight tests removed.
+
+### Waiting on the OWNER (in order)
+1. **Push** (= production deploy): `git push origin Production-main`.
+2. **"approve cleanup"**: purge the 11 ended Eventbrite events, the raw copies of ended events and their orphan venues from Supabase (Eventbrite §3.1 non-compliance). Claude does it by running the 6 Eventbrite sources once with the new purge.
+3. **Email Ticketmaster** for written approval (caching period, scheduled refresh, monetization); the draft is in the 2026-10-05 provider-terms entry. **The 47-state rollout is blocked until they reply.**
+4. **Secrets/scheduler:** create the `TICKETMASTER_API_KEY` secret, add the 5 `R2_*` secrets, then run `scripts/deploy-scaper-job.ps1`. Without the scheduler, data stays stale (last fetch 2026-09-27) and past events are never purged.
+5. **Roll the R2 secret key** (it was pasted in chat).
+6. **Migration 010 + 3-state pilot** (AK, TX, CA): Cursor asks before applying and running.
+
+### Open engineering tasks (who)
+- ~~**Cursor:** spec item 9 (remove + blocklist + `/legal/data`)~~ — **2026-10-08 Complete in code** (migration 011 prod pending).
+- **Cursor or Claude:** mix providers within each day in the hub feed (F27). Eventbrite is invisible today (Chicago: 0 of the 24 shown).
+- **Codex (optional):** retire the HTML scrapers (`eventbrite_scraper.py`, `seatgeek_scraper.py`, `stubhub_scraper.py`); remove the dropped flight code (tests already gone).
+- **Rejected sources:** Yelp, SeatGeek, Meetup. Flights are dropped; travel is A→B directions only (AGENTS.md §4).
+
+### Added 2026-10-08: removal requests need a contact channel
+- Gap: Rovvy has no published contact/takedown address. A Ticketmaster removal request would go to whatever email registered the API key, which nobody watches. The `scaper remove` command (spec item 9) is only half the solution.
+- **Decided 2026-10-08:** contact/removal address is **`rovvy230@gmail.com`** (a dedicated Rovvy Gmail, not the owner's personal inbox); move to `support@rovvy.app` later through one config constant. Ticketmaster and Eventbrite API keys are registered to the **owner's personal Gmail** (address deliberately not recorded here; repo appears public). **Owner to do:** Gmail filter `from:(ticketmaster.com OR eventbrite.com)` → forward to `rovvy230@gmail.com`.
+- **Cursor:** item 9 (remove + blocklist), plus a `/legal/data` page (data sources, attribution, independence note, removal contact) and an "Is this your event? Contact us" link in the Scaper event drawer.
+
+### Known risks
+- Ticketmaster may throttle scheduled crawls; monetizing needs their approval.
+- Eventbrite: the "competing product" clause is undefined, so Rovvy stays a group-planning app that links out for tickets.
+- r2.dev is rate-limited; switch to a custom domain (e.g. media.rovvy.app) before launch.
+- `scratch/update_explorer_workbook_f48.py` was committed by mistake (harmless).
+
+## 2026-10-05 — Eventbrite/Ticketmaster compliance (purge + provider links)
+
+- **Context:** AGENTS.md §4 + `Scaper_Ticketmaster_National_Spec.md` items 10–11 (Eventbrite API terms: no past-event storage; crawlable outbound links; independence disclosure).
+- **Result:** `purge_past_events` deletes matching `ingest.raw_records`, Eventbrite-specific orphan **created** venue cleanup (scoped `place_id`s from `DELETE … RETURNING`), Ticketmaster 7-day post-end retention. Explore drawer: real `<a href>` CTAs **View on Eventbrite** / **Tickets via Ticketmaster** plus footer independence note.
+- **Verification:** `pytest -q` (CI sqlite) **971 passed**, 27 skipped; `tests/test_scaper_postgres.py` **13 passed** rolled-back Postgres; Vitest `explore-unknown-field-states` **14 passed**; `tests/test_scaper_store.py` asserts `PostgresStore.dedupe_city` / `relink_created_places` on class.
+- **Risks:** Supabase still holds ended Eventbrite rows until Claude runs one-off cleanup (not done in this pass).
+- **Next action:** Production DB cleanup; Ticketmaster 50-state pilot unchanged (migration 010 + owner approval).
+
+## 2026-10-05 — Ticketmaster 50-state Scaper (Partial — pilot gates)
+
+- **Context:** Owner-approved spec `Scaper_Ticketmaster_National_Spec.md` (pilot AK, TX, CA before remaining states).
+- **Result:** State mode in `scaper/connectors/ticketmaster.py` (`countryCode` + `stateCode`, time-window bisect under 1k paging cap, API call logging). Migration `migrations/010_scaper_state.sql` adds `events.state_code` + index and `ingest.sources.state_code`. Pipeline stamps per-venue `city_slug`/`state_code`, dedupes every touched city, 200-row extraction batches. Hub `scaper_city_enabled` true when inventory exists without a city source. Overlap rule disables `ticketmaster:chicago` / `ticketmaster:orlando` when IL/FL state sources are registered.
+- **Verification:** `DATABASE_URL=sqlite:///./test.db SECRET_KEY=test-secret-key-for-ci-must-be-long-enough .venv\Scripts\python -m pytest -q` → **970 passed**, 14 skipped. Opt-in `tests/test_scaper_postgres.py` includes migration 010 idempotency + state stamp tests when `SCAPER_PG_TEST_URL` is set.
+- **Risks:** Production pilot not run — no migration 010 on Supabase, no `ticketmaster:state:*` sources added (per owner gate). Daily API budget: at 360 min intervals, 3 pilot states × ~6 runs/day; estimate **~30–120 calls/run** for TX/CA after bisect (owner to confirm on live pilot).
+- **Next action:** Owner approves → apply `010_scaper_state.sql` on Supabase → add/run `ticketmaster:state:ak`, `:tx`, `:ca` → pilot report → approval before other 47 states.
+
+## 2026-10-05 — F48 drawer Directions → Live tab (Complete in code)
+
+- **2026-10-05 follow-up:** Deep link adds `address=` from drawer; `parseLiveDeepLink` returns `address`; Live handoff uses street address (not lat/lng fallback when present). Tests use real Overture UUID `5d1bbd9b-7a0d-4427-ba73-632cc1dc3f84`. Browser: Center for Native Futures Directions href includes `gers_id=dd5633a8-…` + `address=56+W+Adams+St…`; Live place panel opens with route preview.
+- **Context:** Explore drawer “Directions” must hand off to Rovvy Live (same tab, Back returns to Explore), not Google Maps.
+- **Result:** `live-explore-deeplink.ts` builds/parses `/live?gers_id&lat&lng&name&address`; `ExploreDetailDrawer` uses `<Link>` (places include Overture UUID `gers_id`); `LivePageClient` runs `selectDestination` once then `router.replace("/live")`. Removed `exploreDirectionsUrl`.
+- **Tests:** Vitest `app/(dashboard)/explore` + `app/(dashboard)/live` (341+ tests pass); `live-explore-deeplink` + spine seed UUID cases; `tsc --noEmit` — only pre-existing `ProfileTravelMap.tsx` `zIndexOffset` errors.
+- **Browser (localhost:3000):** Center for Native Futures → Directions → `/live` with place panel, spine address, route preview (~5.6 mi); `/live?lat=abc` → normal Live (no forced panel). Pritzker Park not re-checked this pass after UUID fix (link now includes `gers_id`).
+- **Risks:** Route preview needs geolocation permission; without GPS, distance/route may differ. Automated browser did not exercise browser Back to Explore.
+- **Next action:** Optional manual Back-button QA on device; regression only for this path.
+
 ## 2026-10-05 — F47 drawer photo · Orlando enrich dry-run (Partial)
 
 - **Context:** Task 2 — run Wikidata + Wikimedia photo enrich for Orlando before prod writes; operator must approve Postgres updates.
@@ -31,6 +103,48 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 
 - Independently reran the Eventbrite and pipeline unit suites: 31 passed. Read-only Supabase SELECTs confirmed source `eventbrite:org:84855780433`, 33 current event rows, 33 visible within 5 km of downtown Orlando, 10 Eventbrite venue links with `geo_name` matching, and `ingest.runs.purged`. The three most recent run counters match insert 33, purge 1, and reinsert 1. The separate Postgres test run (6/6), migration deployment, and in-progress event API response were reported by the Scaper worker; this review did not rerun those operations. At review time, the 5 km query found 0 events currently in progress, which does not invalidate an earlier time-dependent observation.
 - Decision: Eventbrite step 4 is credible and the live row counts are independently confirmed. Before a second connector, scope `purge_past_events()` to its source or move global purge into an explicit maintenance job; it currently deletes past rows across all Scaper sources and attributes the total to the source run that triggered it. Prioritize scheduling `run-due` and reading `public.events` in main `/explore` so the verified feed reaches the product. Ticketmaster can follow without replacing the existing v1 source until parity and deduplication are verified.
+
+## 2026-10-05 — Eventbrite API terms (Perplexity): past-event content must go
+
+- Source: Eventbrite API Terms of Use (last updated 2025-05-30) as quoted by Perplexity, plus Eventbrite platform docs; clauses not re-fetched by Claude.
+- Rules:
+  - §3.1: may store content for **future events only**; no past-event content (including venue and ticket data) without the organizer's explicit permission.
+  - §3.2: show the event title plus a direct, crawlable link to the Eventbrite page, without nofollow.
+  - §3.3: no Eventbrite trademarks; Rovvy must state it is independent.
+  - §3.6: no standalone or direct-commercial use and no competing product. Indirect benefit from supporting the app is allowed.
+  - §3.5: rate limit 1,000 calls/hour per token (the docs say 2,000/hour and 48,000/day; plan for 1,000).
+  - §8: the API is free but Eventbrite may charge later.
+- **Current non-compliance found (Supabase, read-only check):** 11 Eventbrite event rows have already ended but aren't purged (no scheduler runs); 14 raw payloads belong to ended events; 10 places were created from Eventbrite venue data. The drawer's "View provider" opens links with `window.open`, which isn't a crawlable `<a href>`.
+- Actions: rules added to AGENTS.md §4; spec items 10–11 added for Cursor (stricter Eventbrite purge including raw payloads and created venues; real `<a href>` provider links; independence note). A one-off cleanup of past Eventbrite data awaits owner approval.
+- Strategic risk: the "competes with Eventbrite" clause is undefined. Rovvy stays a group-planning app that links out for tickets; no ticketing, checkout or organizer tools on top of Eventbrite data.
+
+## 2026-10-05 — Provider terms research (Perplexity): decisions
+
+- Source: Perplexity research pasted by the owner, citing the live vendor pages (Ticketmaster terms dated 2023-06-27; Yelp API terms 2025-01-13; SeatGeek API terms; Meetup GraphQL docs; Cloudflare R2 pricing updated 2026-10-01; Supabase billing docs). The quoted clauses were not re-fetched by Claude.
+- **Ticketmaster: allowed for now, under conditions.**
+  - Store only for "reasonable periods"; no fixed limit is defined.
+  - Owner removal requests must be handled within 24 hours.
+  - Ticketmaster may throttle calls "not primarily in response to direct user actions".
+  - "derive revenues … except as set forth" means monetizing needs written approval.
+  - No mandatory logo found.
+  → The 50-state rollout is held at the 3-state pilot until Ticketmaster replies. Retention purge of raw payloads and a 24 h removal command were added to the national spec (items 8–9). Images stay hot-linked.
+- **Yelp: rejected.** $229/$299/$643 per month plus overage; content may be cached at most 24 hours; no own listings DB.
+- **SeatGeek: rejected.** No systematic storage; logo plus link required on every surface; no AI/ML use (conflicts with Wayra).
+- **Meetup: rejected for now.** API tied to Meetup Pro; price and aggregation rights unclear.
+- **Open-data event feeds:** no verified per-state list. Approve feeds one by one after checking license, endpoint and refresh.
+- **Pricing confirmed:** R2 matches my earlier quote (10 GB free, $0.015/GB-month, Class A $4.50/M, Class B $0.36/M, free egress). Supabase Pro: 8 GB of database included, then $0.125/GB.
+- Not yet researched: **Eventbrite API terms** (storage, attribution, commercial use), even though Eventbrite data is already stored.
+- Next actions: owner emails Ticketmaster for written approval; Perplexity researches the Eventbrite terms; Cursor implements spec items 8–9.
+
+## 2026-10-05 — Ticketmaster all-50-states approved; spec handed to Cursor
+
+- Context: the owner asked for Ticketmaster and Eventbrite data for every US state. Measured on the Discovery API (next 60 days): CA 5,709, TX 3,070, AK 19; the US total exceeds the API's 10,000 counter (estimated 40k–60k).
+- Decision: **Ticketmaster nationwide is approved**, as a pilot (AK, TX, CA) first. **Eventbrite stays curated per organizer**: its official API has no search, and scraping is out.
+- Assigned to **Cursor** (owner choice, token budget). Spec: `Scaper_Ticketmaster_National_Spec.md` (state mode with window bisect, per-venue city/state with migration 010, batched writes, any-city hub lookup, overlap rule, tests, pilot gates).
+- Estimated cost: Ticketmaster API $0 (under 5,000 calls/day); about 6 KB per event, so ~300–400 MB for 60k events (current DB 1.4 GB); scheduler ~$0–3/month.
+- Also found today: Eventbrite is invisible in the hub. Chicago shows 1 Eventbrite event in the first 100 loaded and 0 in the 24 shown, because the feed sorts by start time only and Ticketmaster dominates. Fix proposed: mix sources within each day (F27). Not started.
+- Risks: Ticketmaster's terms on storing data are unverified (owner to check before going national). The scheduler isn't deployed, so data is stale since 2026-09-27.
+- Next action: Cursor builds and runs the pilot (asking before each DB step); owner approves the full 50-state rollout.
 
 ## 2026-10-05 — Shared AI rule book + dated/green workbook rule applied to Explorer
 

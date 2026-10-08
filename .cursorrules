@@ -434,6 +434,8 @@ After every feature change, update this section in .cursorrules:
 | Explore G01 Overture hot-index `/explore/places` (Postgres places.gers_id; no FS/OSM route fallback) | Complete | 2026-09-24 |
 | Explore G02 Overture ingest runs + R2 publish script (cold artifact contract) | Complete | 2026-09-24 |
 | Explore G08 unknown field states (price/photo/hours/availability; no stock photos on inventory) | Complete | 2026-09-24 |
+| Scaper owner removal CLI + ingest blocklist (migration 011; pipeline skip before upsert) | Complete | 2026-10-08 |
+| Legal `/legal/data` (sources, attribution, independence, CONTACT_EMAIL removal) + Explore drawer link | Complete | 2026-10-08 |
 | Explore F14 ratings cleanup (Explore tree only; no pseudoRating on inventory surfaces) | Complete | 2026-09-24 |
 | Browse-first auth (Phase 1 — explorer default, no login wall) | Modified | 2026-07 |
 | Live POI category icons (churches, libraries, schools, parks, landmarks) | Complete | 2026-07 |

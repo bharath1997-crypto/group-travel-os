@@ -28,7 +28,12 @@ pytestmark = pytest.mark.scaper_postgres
 
 MIGRATIONS = [
     Path(__file__).resolve().parents[1] / "migrations" / name
-    for name in ("008_scaper_ingest.sql", "009_scaper_dedup.sql")
+    for name in (
+        "008_scaper_ingest.sql",
+        "009_scaper_dedup.sql",
+        "010_scaper_state.sql",
+        "011_scaper_blocklist.sql",
+    )
 ]
 # Open ocean, so no Overture place can match by accident.
 OCEAN = {"lat": "0.5000", "lng": "-150.5000"}
@@ -173,6 +178,61 @@ def test_expire_unseen_hides_delisted_events_from_reader(pg) -> None:
     assert visible == ["it-1"]
 
 
+def test_eventbrite_purge_deletes_raw_and_orphan_created_place(pg) -> None:
+    store, conn = pg
+    source = store.add_source(
+        connector="eventbrite",
+        name=f"scaper-eb-purge-{uuid.uuid4().hex[:8]}",
+        config={"kind": "organizer", "id": "5550001"},
+        city_slug="scaper-eb-purge",
+    )
+    past = {"utc": "2020-01-01T00:00:00Z", "timezone": "UTC"}
+    future = {"utc": "2099-01-01T00:00:00Z", "timezone": "UTC"}
+    run_source(store, ListConnector([_ocean_event("eb-future", start=future, end=None)]), source)
+    created_place = conn.execute(
+        text(
+            "SELECT place_id FROM ingest.place_links WHERE external_id = 'scaper-it-venue' AND method = 'created'"
+        )
+    ).scalar_one()
+    past_raw = conn.execute(
+        text(
+            """
+            INSERT INTO ingest.raw_records (connector, external_id, source_id, payload, payload_sha256)
+            VALUES ('eventbrite', 'eb-past', :sid, '{}'::jsonb, 'deadbeef')
+            RETURNING id
+            """
+        ),
+        {"sid": source.id},
+    ).scalar_one()
+    conn.execute(
+        text(
+            """
+            INSERT INTO public.events (
+              provider, external_id, title, start_time, end_time, status, source_id, raw_record_id, city_slug
+            ) VALUES (
+              'eventbrite', 'eb-past', 'Past show', '2020-01-01T00:00:00Z', '2020-01-01T00:00:00Z',
+              'scheduled', :sid, :raw_id, 'scaper-eb-purge'
+            )
+            """
+        ),
+        {"sid": source.id, "raw_id": past_raw},
+    )
+
+    report = run_source(store, ListConnector([_ocean_event("eb-future", start=future, end=None)]), source)
+    assert report.stats.purged >= 1
+    assert conn.execute(text("SELECT count(*) FROM events WHERE external_id = 'eb-past'")).scalar_one() == 0
+    assert conn.execute(text("SELECT count(*) FROM ingest.raw_records WHERE id = :id"), {"id": past_raw}).scalar_one() == 0
+    assert conn.execute(text("SELECT count(*) FROM events WHERE external_id = 'eb-future'")).scalar_one() == 1
+    # Created venue stays while a future event still references it.
+    assert conn.execute(text("SELECT count(*) FROM places WHERE id = :id"), {"id": created_place}).scalar_one() == 1
+
+    conn.execute(
+        text("UPDATE events SET end_time = '2020-01-01T00:00:00Z', start_time = '2020-01-01T00:00:00Z' WHERE external_id = 'eb-future'")
+    )
+    run_source(store, ListConnector([_ocean_event("eb-future", start=past, end=past)]), source)
+    assert conn.execute(text("SELECT count(*) FROM places WHERE id = :id"), {"id": created_place}).scalar_one() == 0
+
+
 def test_purge_deletes_only_past_scaper_events(pg) -> None:
     store, conn = pg
     source = _add_source(store)
@@ -303,3 +363,136 @@ def test_reader_shows_next_upcoming_slot_per_group(pg) -> None:
     # Once every slot has started, the most recently started one is shown.
     later = conn.execute(text("SELECT now() + interval '3 hours'")).scalar_one()
     assert [r.id for r in conn.execute(query, {"now": later})] == [upcoming[1]]
+
+
+# ── 010 state Ticketmaster ────────────────────────────────────────────────
+
+from tests.scaper_fixtures import ticketmaster_event
+
+
+class _TmStateConnector(ListConnector):
+    name = "ticketmaster"
+
+    def __init__(self, payloads: list[dict[str, Any]]) -> None:
+        from scaper.connectors.ticketmaster import TicketmasterStateConfig
+
+        super().__init__(payloads)
+        self.config_model = TicketmasterStateConfig
+        self.last_fetch_complete = True
+        from scaper.connectors.ticketmaster import TicketmasterConnector
+        from scaper.http import RetryingClient
+        import httpx
+
+        self._extract_fn = TicketmasterConnector(
+            api_key="k",
+            client=RetryingClient(httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(500)))),
+        ).extract
+
+    def extract(self, payload: dict[str, Any]):
+        return self._extract_fn(payload)
+
+
+def _tm_ocean_event(event_id: str, *, city: str, state: str, **overrides: Any) -> dict[str, Any]:
+    ev = ticketmaster_event(id=event_id, **overrides)
+    ev["_embedded"]["venues"][0]["city"]["name"] = city
+    ev["_embedded"]["venues"][0]["state"]["stateCode"] = state
+    ev["_embedded"]["venues"][0]["location"] = {"latitude": OCEAN["lat"], "longitude": OCEAN["lng"]}
+    return ev
+
+
+def test_state_run_stamps_per_venue_city_and_state(pg) -> None:
+    store, conn = pg
+    source = store.add_source(
+        connector="ticketmaster",
+        name=f"ticketmaster:state:it-{uuid.uuid4().hex[:6]}",
+        config={"state_code": "TX", "days_ahead": 60},
+        city_slug=None,
+        state_code="TX",
+    )
+    payloads = [
+        _tm_ocean_event("tm-austin", city="Austin", state="TX"),
+        _tm_ocean_event("tm-dallas", city="Dallas", state="TX"),
+    ]
+    report = run_source(store, _TmStateConnector(payloads), source)
+    assert report.status == "succeeded"
+    rows = conn.execute(
+        text("SELECT external_id, city_slug, state_code FROM events WHERE source_id = :sid ORDER BY external_id"),
+        {"sid": source.id},
+    ).all()
+    assert [(r.external_id, r.city_slug, r.state_code) for r in rows] == [
+        ("tm-austin", "austin", "TX"),
+        ("tm-dallas", "dallas", "TX"),
+    ]
+
+
+def test_scaper_city_enabled_without_city_source(pg) -> None:
+    from contextlib import contextmanager
+
+    from app.services.explore_scaper_events import scaper_city_enabled
+
+    store, conn = pg
+    future = {"utc": "2099-06-01T00:00:00Z", "timezone": "UTC"}
+
+    class _ConnDb:
+        """ORM Session(bind=conn) leaves bind unset in SQLAlchemy 2 — use the connection directly."""
+
+        bind = conn
+
+        @contextmanager
+        def begin_nested(self):
+            with conn.begin_nested():
+                yield
+
+        def execute(self, statement, params):
+            return conn.execute(statement, params)
+
+    source = store.add_source(
+        connector="ticketmaster",
+        name=f"ticketmaster:state:it-{uuid.uuid4().hex[:6]}",
+        config={"state_code": "AK", "days_ahead": 60},
+        city_slug=None,
+        state_code="AK",
+    )
+    anch = _tm_ocean_event("tm-anch", city="Anchorage", state="AK")
+    anch["dates"] = {
+        "start": {"dateTime": future["utc"]},
+        "status": {"code": "onsale"},
+        "timezone": future["timezone"],
+    }
+    run_source(store, _TmStateConnector([anch]), source)
+    db = _ConnDb()
+    assert scaper_city_enabled(db, "Anchorage") is True
+    assert scaper_city_enabled(db, "Nowhereville") is False
+
+
+def test_remove_blocks_reingest(pg) -> None:
+    store, conn = pg
+    source = _add_source(store)
+    ext_id = "rm-pg-1"
+    run_source(store, ListConnector([_ocean_event(ext_id)]), source)
+    assert conn.execute(
+        text("SELECT 1 FROM events WHERE provider='eventbrite' AND external_id=:e"),
+        {"e": ext_id},
+    ).scalar() == 1
+
+    out = store.remove_provider_event("eventbrite", ext_id, reason="owner")
+    assert out["events_deleted"] == 1
+    assert conn.execute(
+        text("SELECT 1 FROM ingest.blocklist WHERE provider='eventbrite' AND external_id=:e"),
+        {"e": ext_id},
+    ).scalar() == 1
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM events WHERE provider='eventbrite' AND external_id=:e"),
+        {"e": ext_id},
+    ).scalar() == 0
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM ingest.raw_records WHERE connector='eventbrite' AND external_id=:e"),
+        {"e": ext_id},
+    ).scalar() == 0
+
+    again = run_source(store, ListConnector([_ocean_event(ext_id)]), source)
+    assert again.stats.inserted == 0
+    assert conn.execute(
+        text("SELECT COUNT(*) FROM events WHERE provider='eventbrite' AND external_id=:e"),
+        {"e": ext_id},
+    ).scalar() == 0

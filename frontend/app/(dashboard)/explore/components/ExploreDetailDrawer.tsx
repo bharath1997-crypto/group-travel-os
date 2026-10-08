@@ -1,10 +1,15 @@
 "use client";
 
+import Link from "next/link";
+
+import { buildLiveDirectionsHref } from "@/app/(dashboard)/live/live-explore-deeplink";
 import type { ExploreSlotDetail } from "../explore-fixtures";
 import { drawerHoursSourceLabel } from "../explore-availability-copy";
 import {
   EXPLORE_PHOTO_UNAVAILABLE,
+  EXPLORE_PROVIDER_INDEPENDENCE_NOTE,
   exploreDrawerProviderActionLabel,
+  exploreScaperProviderLinkLabel,
   exploreVerifiedRatingLine,
 } from "../explore-listing-field-state";
 import { openExploreListingUrl } from "../explore-open-listing";
@@ -12,7 +17,7 @@ import styles from "../explore.module.css";
 import { ExploreDrawerMap } from "./ExploreDrawerMap";
 import { ExploreDrawerPhotoUpload } from "./ExploreDrawerPhotoUpload";
 import { photoCreditText } from "../explore-photo-credit";
-import { exploreDirectionsUrl, explorePhoneHref } from "../explore-place-actions";
+import { explorePhoneHref } from "../explore-place-actions";
 
 type ExploreDetailDrawerProps = {
   detail: ExploreSlotDetail | null;
@@ -34,20 +39,31 @@ export function ExploreDetailDrawer({
   if (!detail) return null;
 
   const bookLabel = exploreDrawerProviderActionLabel({
+    source: detail.source,
     sourceUrl: detail.sourceUrl,
     editorial: detail.editorial,
     priceKnown: detail.priceKnown,
     priceLabel: detail.price,
+    listingKind: detail.listingKind,
   });
   const canBook = bookLabel !== "No booking link";
+  const scaperTicketHref =
+    detail.listingKind === "event" && detail.sourceUrl?.trim()
+      ? detail.sourceUrl.trim()
+      : null;
+  const showProviderIndependence =
+    detail.listingKind === "event" && Boolean(exploreScaperProviderLinkLabel(detail.source));
   const hasPin = typeof detail.lat === "number" && typeof detail.lng === "number";
   const fullAddress = detail.address?.trim() || null;
-  const directionsUrl = exploreDirectionsUrl({
-    lat: detail.lat,
-    lng: detail.lng,
-    name: detail.title,
-    address: fullAddress,
-  });
+  const liveDirectionsHref = hasPin
+    ? buildLiveDirectionsHref({
+        gersId: detail.listingKind === "place" ? detail.id : null,
+        lat: detail.lat,
+        lng: detail.lng,
+        name: detail.title,
+        address: fullAddress,
+      })
+    : null;
   const phoneHref = explorePhoneHref(detail.phone);
   const ratingLine = exploreVerifiedRatingLine(detail.rating, undefined);
   const heroStyle = detail.imageUrl
@@ -110,15 +126,15 @@ export function ExploreDetailDrawer({
               <span className={styles.drawerMapDot} aria-hidden />
             </div>
           ) : null}
-          {fullAddress || phoneHref || directionsUrl ? (
+          {fullAddress || phoneHref || liveDirectionsHref ? (
             <div className={styles.drawerPlaceInfo}>
               {fullAddress ? <p className={styles.drawerAddress}>{fullAddress}</p> : null}
               {detail.phone && phoneHref ? <p className={styles.drawerPhone}>{detail.phone}</p> : null}
               <div className={styles.drawerPlaceActions}>
-                {directionsUrl ? (
-                  <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className={styles.drawerChip}>
+                {liveDirectionsHref ? (
+                  <Link href={liveDirectionsHref} className={styles.drawerChip}>
                     Directions
-                  </a>
+                  </Link>
                 ) : null}
                 {phoneHref ? (
                   <a href={phoneHref} className={styles.drawerChip}>
@@ -143,15 +159,27 @@ export function ExploreDetailDrawer({
             <p className={styles.drawerBody}>{detail.openingHours}</p>
           ) : null}
           <div className={styles.drawerActions}>
-            <button
-              type="button"
-              className={styles.drawerBook}
-              disabled={!canBook}
-              title={canBook ? "Open provider booking page" : "No verified booking link for this listing"}
-              onClick={() => openExploreListingUrl(detail.sourceUrl)}
-            >
-              {bookLabel}
-            </button>
+            {scaperTicketHref ? (
+              <a
+                href={scaperTicketHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.drawerBook}
+                title={bookLabel}
+              >
+                {bookLabel}
+              </a>
+            ) : (
+              <button
+                type="button"
+                className={styles.drawerBook}
+                disabled={!canBook}
+                title={canBook ? "Open provider booking page" : "No verified booking link for this listing"}
+                onClick={() => openExploreListingUrl(detail.sourceUrl)}
+              >
+                {bookLabel}
+              </button>
+            )}
             <button
               type="button"
               className={styles.drawerSave}
@@ -189,6 +217,16 @@ export function ExploreDetailDrawer({
                 Retry
               </button>
             </p>
+          ) : null}
+          {showProviderIndependence ? (
+            <>
+              <p className={styles.drawerProviderNote}>{EXPLORE_PROVIDER_INDEPENDENCE_NOTE}</p>
+              <p className={styles.drawerProviderNote}>
+                <Link href="/legal/data#removal" className={styles.drawerRemovalLink}>
+                  Is this your event? Contact us
+                </Link>
+              </p>
+            </>
           ) : null}
         </div>
       </aside>

@@ -5,13 +5,14 @@ import json
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from sqlalchemy import Connection, Engine, text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from scaper.dedup import EventRow, norm_postcode, plan_duplicates, same_venue_address, same_venue_name
 from scaper.models import EventRecord, RawItem, RunStats, RunStatus, Source, VenueRecord
+from scaper.ticketmaster_overlap import city_slugs_for_state
 
 # Venue -> places matching thresholds. Conservative: a wrong link attaches an
 # event to the wrong venue, a missed link only creates a duplicate place row.
@@ -23,6 +24,15 @@ WIDE_MATCH_RADIUS_M = 250.0
 ADDRESS_MATCH_RADIUS_M = 500.0
 # Stale 'running' rows older than this are treated as crashed workers.
 RUN_LEASE = "2 hours"
+
+
+@dataclass(frozen=True)
+class _ExtractionRow:
+    raw_id: int
+    event: EventRecord
+    place_id: uuid.UUID | None
+    city_slug: str | None
+    state_code: str | None = None
 
 
 class RunInProgress(Exception):
@@ -47,12 +57,26 @@ class Store(Protocol):
     def upsert_event(
         self, connector: str, source: Source, raw_id: int, event: EventRecord, place_id: uuid.UUID | None
     ) -> Literal["inserted", "updated"]: ...
+    def persist_extractions(
+        self,
+        connector: str,
+        source: Source,
+        rows: list,
+    ) -> tuple[int, int]: ...
     def expire_unseen(self, source: Source, run: RunHandle) -> int: ...
-    def purge_past_events(self, source_id: uuid.UUID) -> int: ...
+    def disable_ticketmaster_city_sources_for_state(self, state_code: str) -> int: ...
+    def purge_past_events(self, source: Source) -> int: ...
     def dedupe_city(self, city_slug: str) -> int: ...
+    def blocked_ids(self, provider: str) -> set[str]: ...
+    def is_provider_blocked(self, provider: str, external_id: str) -> bool: ...
+    def remove_provider_event(
+        self, provider: str, external_id: str, *, reason: str | None = None
+    ) -> dict[str, Any]: ...
 
 
-_SOURCE_COLUMNS = "id, connector, name, config, city_slug, enabled, interval_minutes, last_run_at"
+_SOURCE_COLUMNS = (
+    "id, connector, name, config, city_slug, state_code, enabled, interval_minutes, last_run_at"
+)
 
 
 class PostgresStore:
@@ -67,18 +91,21 @@ class PostgresStore:
         name: str,
         config: dict,
         city_slug: str | None,
+        state_code: str | None = None,
         interval_minutes: int = 360,
     ) -> Source:
+        state = state_code.strip().upper() if state_code else None
         with self.engine.begin() as conn:
             row = conn.execute(
                 text(
                     f"""
-                    INSERT INTO ingest.sources (connector, name, config, city_slug, interval_minutes)
-                    VALUES (:connector, :name, CAST(:config AS jsonb), :city_slug, :interval_minutes)
+                    INSERT INTO ingest.sources (connector, name, config, city_slug, state_code, interval_minutes)
+                    VALUES (:connector, :name, CAST(:config AS jsonb), :city_slug, :state_code, :interval_minutes)
                     ON CONFLICT (name) DO UPDATE SET
                       connector = EXCLUDED.connector,
                       config = EXCLUDED.config,
                       city_slug = EXCLUDED.city_slug,
+                      state_code = EXCLUDED.state_code,
                       interval_minutes = EXCLUDED.interval_minutes,
                       updated_at = now()
                     RETURNING {_SOURCE_COLUMNS}
@@ -89,10 +116,33 @@ class PostgresStore:
                     "name": name,
                     "config": json.dumps(config),
                     "city_slug": city_slug,
+                    "state_code": state,
                     "interval_minutes": interval_minutes,
                 },
             ).mappings().one()
-        return Source.model_validate(dict(row))
+        source = Source.model_validate(dict(row))
+        if source.connector == "ticketmaster" and source.state_code:
+            self.disable_ticketmaster_city_sources_for_state(source.state_code)
+        return source
+
+    def disable_ticketmaster_city_sources_for_state(self, state_code: str) -> int:
+        slugs = city_slugs_for_state(state_code)
+        if not slugs:
+            return 0
+        with self.engine.begin() as conn:
+            result = conn.execute(
+                text(
+                    """
+                    UPDATE ingest.sources
+                    SET enabled = false, updated_at = now()
+                    WHERE connector = 'ticketmaster'
+                      AND city_slug = ANY(:slugs)
+                      AND enabled
+                    """
+                ),
+                {"slugs": slugs},
+            )
+        return result.rowcount or 0
 
     def get_source(self, name: str) -> Source | None:
         with self.engine.connect() as conn:
@@ -294,73 +344,115 @@ class PostgresStore:
 
     # ── events ───────────────────────────────────────────────────────────
     def upsert_event(
-        self, connector: str, source: Source, raw_id: int, event: EventRecord, place_id: uuid.UUID | None
+        self,
+        connector: str,
+        source: Source,
+        raw_id: int,
+        event: EventRecord,
+        place_id: uuid.UUID | None,
+        *,
+        city_slug: str | None = None,
+        state_code: str | None = None,
     ) -> Literal["inserted", "updated"]:
-        venue = event.venue
-        with self.engine.begin() as conn:
-            inserted = conn.execute(
-                text(
-                    """
-                    INSERT INTO public.events (
-                      id, provider, external_id, title, description, category,
-                      start_time, end_time, timezone, status, is_free,
-                      price_min, price_max, currency, ticket_url, image_url,
-                      venue_name, venue_place_id, lat, lng, geom, city_slug,
-                      source_id, raw_record_id, fetched_at, expires_at,
-                      first_seen_at, last_seen_at, updated_at
-                    ) VALUES (
-                      gen_random_uuid(), :provider, :external_id, :title, :description, :category,
-                      :starts_at, :ends_at, :timezone, :status, :is_free,
-                      :price_min, :price_max, :currency, :url, :image_url,
-                      :venue_name, :place_id, :lat, :lng,
-                      CASE WHEN :lat IS NULL THEN NULL
-                           ELSE ST_SetSRID(ST_MakePoint(:lng, :lat), 4326) END,
-                      :city_slug, :source_id, :raw_id, now(),
-                      COALESCE(:ends_at, :starts_at + interval '6 hours'),
-                      now(), now(), now()
-                    )
-                    ON CONFLICT (provider, external_id) DO UPDATE SET
-                      title = EXCLUDED.title, description = EXCLUDED.description,
-                      category = EXCLUDED.category, start_time = EXCLUDED.start_time,
-                      end_time = EXCLUDED.end_time, timezone = EXCLUDED.timezone,
-                      status = EXCLUDED.status, is_free = EXCLUDED.is_free,
-                      price_min = EXCLUDED.price_min, price_max = EXCLUDED.price_max,
-                      currency = EXCLUDED.currency, ticket_url = EXCLUDED.ticket_url,
-                      image_url = EXCLUDED.image_url, venue_name = EXCLUDED.venue_name,
-                      venue_place_id = EXCLUDED.venue_place_id, lat = EXCLUDED.lat,
-                      lng = EXCLUDED.lng, geom = EXCLUDED.geom, city_slug = EXCLUDED.city_slug,
-                      source_id = EXCLUDED.source_id, raw_record_id = EXCLUDED.raw_record_id,
-                      fetched_at = now(), expires_at = EXCLUDED.expires_at,
-                      last_seen_at = now(), updated_at = now()
-                    RETURNING (xmax = 0) AS inserted
-                    """
-                ),
-                {
-                    "provider": connector,
-                    "external_id": event.external_id,
-                    "title": event.title,
-                    "description": event.description,
-                    "category": event.category,
-                    "starts_at": event.starts_at,
-                    "ends_at": event.ends_at,
-                    "timezone": event.timezone,
-                    "status": event.status,
-                    "is_free": event.is_free,
-                    "price_min": event.price_min,
-                    "price_max": event.price_max,
-                    "currency": event.currency,
-                    "url": event.url,
-                    "image_url": event.image_url,
-                    "venue_name": venue.name if venue else None,
-                    "place_id": place_id,
-                    "lat": venue.lat if venue else None,
-                    "lng": venue.lng if venue else None,
-                    "city_slug": source.city_slug,
-                    "source_id": source.id,
-                    "raw_id": raw_id,
-                },
-            ).scalar_one()
+        stamped_city = city_slug if city_slug is not None else source.city_slug
+        inserted, _updated = self.persist_extractions(
+            connector,
+            source,
+            [_ExtractionRow(raw_id, event, place_id, stamped_city, state_code)],
+        )
         return "inserted" if inserted else "updated"
+
+    def persist_extractions(
+        self,
+        connector: str,
+        source: Source,
+        rows: list[Any],
+    ) -> tuple[int, int]:
+        if not rows:
+            return 0, 0
+        inserted = updated = 0
+        with self.engine.begin() as conn:
+            for row in rows:
+                venue = row.event.venue
+                was_insert = conn.execute(
+                    text(
+                        """
+                        INSERT INTO public.events (
+                          id, provider, external_id, title, description, category,
+                          start_time, end_time, timezone, status, is_free,
+                          price_min, price_max, currency, ticket_url, image_url,
+                          venue_name, venue_place_id, lat, lng, geom, city_slug, state_code,
+                          source_id, raw_record_id, fetched_at, expires_at,
+                          first_seen_at, last_seen_at, updated_at
+                        ) VALUES (
+                          gen_random_uuid(), :provider, :external_id, :title, :description, :category,
+                          :starts_at, :ends_at, :timezone, :status, :is_free,
+                          :price_min, :price_max, :currency, :url, :image_url,
+                          :venue_name, :place_id, :lat, :lng,
+                          CASE WHEN :lat IS NULL THEN NULL
+                               ELSE ST_SetSRID(ST_MakePoint(:lng, :lat), 4326) END,
+                          :city_slug, :state_code, :source_id, :raw_id, now(),
+                          COALESCE(:ends_at, :starts_at + interval '6 hours'),
+                          now(), now(), now()
+                        )
+                        ON CONFLICT (provider, external_id) DO UPDATE SET
+                          title = EXCLUDED.title, description = EXCLUDED.description,
+                          category = EXCLUDED.category, start_time = EXCLUDED.start_time,
+                          end_time = EXCLUDED.end_time, timezone = EXCLUDED.timezone,
+                          status = EXCLUDED.status, is_free = EXCLUDED.is_free,
+                          price_min = EXCLUDED.price_min, price_max = EXCLUDED.price_max,
+                          currency = EXCLUDED.currency, ticket_url = EXCLUDED.ticket_url,
+                          image_url = EXCLUDED.image_url, venue_name = EXCLUDED.venue_name,
+                          venue_place_id = EXCLUDED.venue_place_id, lat = EXCLUDED.lat,
+                          lng = EXCLUDED.lng, geom = EXCLUDED.geom, city_slug = EXCLUDED.city_slug,
+                          state_code = EXCLUDED.state_code,
+                          source_id = EXCLUDED.source_id, raw_record_id = EXCLUDED.raw_record_id,
+                          fetched_at = now(), expires_at = EXCLUDED.expires_at,
+                          last_seen_at = now(), updated_at = now()
+                        RETURNING (xmax = 0) AS inserted
+                        """
+                    ),
+                    {
+                        "provider": connector,
+                        "external_id": row.event.external_id,
+                        "title": row.event.title,
+                        "description": row.event.description,
+                        "category": row.event.category,
+                        "starts_at": row.event.starts_at,
+                        "ends_at": row.event.ends_at,
+                        "timezone": row.event.timezone,
+                        "status": row.event.status,
+                        "is_free": row.event.is_free,
+                        "price_min": row.event.price_min,
+                        "price_max": row.event.price_max,
+                        "currency": row.event.currency,
+                        "url": row.event.url,
+                        "image_url": row.event.image_url,
+                        "venue_name": venue.name if venue else None,
+                        "place_id": row.place_id,
+                        "lat": venue.lat if venue else None,
+                        "lng": venue.lng if venue else None,
+                        "city_slug": row.city_slug,
+                        "state_code": row.state_code,
+                        "source_id": source.id,
+                        "raw_id": row.raw_id,
+                    },
+                ).scalar_one()
+                if was_insert:
+                    inserted += 1
+                else:
+                    updated += 1
+                conn.execute(
+                    text(
+                        """
+                        UPDATE ingest.raw_records
+                        SET extraction_status = 'extracted', extraction_error = NULL, extracted_at = now()
+                        WHERE id = :id
+                        """
+                    ),
+                    {"id": row.raw_id},
+                )
+        return inserted, updated
 
     def touch_event(self, connector: str, external_id: str) -> None:
         """Payload unchanged: record that the provider still lists it (undoes a prior expiry)."""
@@ -394,19 +486,134 @@ class PostgresStore:
             )
         return result.rowcount or 0
 
-    def purge_past_events(self, source_id: uuid.UUID) -> int:
-        """Delete only this source's finished events and attribute its run count accurately."""
+    def purge_past_events(self, source: Source) -> int:
+        """
+        Delete finished rows for this source, drop their raw payloads, and for Eventbrite
+        remove Scaper-created venue places nothing future still references.
+        """
+        if source.connector == "eventbrite":
+            past_sql = """
+                (end_time IS NOT NULL AND end_time < now())
+                OR (end_time IS NULL AND start_time + interval '6 hours' < now())
+            """
+        elif source.connector == "ticketmaster":
+            past_sql = """
+                COALESCE(end_time, start_time + interval '6 hours') + interval '7 days' < now()
+            """
+        else:
+            past_sql = "COALESCE(end_time, start_time + interval '6 hours') < now()"
+
         with self.engine.begin() as conn:
-            result = conn.execute(
+            deleted = conn.execute(
+                text(
+                    f"""
+                    DELETE FROM public.events
+                    WHERE source_id = :sid AND ({past_sql})
+                    RETURNING provider, external_id, raw_record_id
+                    """
+                ),
+                {"sid": source.id},
+            ).mappings().all()
+            if not deleted:
+                return 0
+            raw_ids = [int(r["raw_record_id"]) for r in deleted if r["raw_record_id"] is not None]
+            if raw_ids:
+                conn.execute(
+                    text("DELETE FROM ingest.raw_records WHERE id = ANY(:ids)"),
+                    {"ids": raw_ids},
+                )
+            for row in deleted:
+                conn.execute(
+                    text(
+                        """
+                        DELETE FROM ingest.raw_records
+                        WHERE connector = :connector AND external_id = :external_id
+                        """
+                    ),
+                    {"connector": row["provider"], "external_id": row["external_id"]},
+                )
+            if source.connector == "eventbrite":
+                _purge_orphan_eventbrite_created_places(conn)
+        return len(deleted)
+
+    def blocked_ids(self, provider: str) -> set[str]:
+        """All blocked external ids for a provider (one query per pipeline run)."""
+        with self.engine.connect() as conn:
+            try:
+                rows = conn.execute(
+                    text(
+                        "SELECT external_id FROM ingest.blocklist WHERE provider = :provider"
+                    ),
+                    {"provider": provider},
+                ).scalars().all()
+            except ProgrammingError as exc:
+                if getattr(getattr(exc, "orig", None), "pgcode", None) == "42P01":
+                    return set()
+                raise
+        return set(rows)
+
+    def is_provider_blocked(self, provider: str, external_id: str) -> bool:
+        with self.engine.connect() as conn:
+            try:
+                found = conn.execute(
+                    text(
+                        "SELECT 1 FROM ingest.blocklist WHERE provider = :provider AND external_id = :external_id"
+                    ),
+                    {"provider": provider, "external_id": external_id},
+                ).scalar()
+            except ProgrammingError as exc:
+                if getattr(getattr(exc, "orig", None), "pgcode", None) == "42P01":
+                    return False
+                raise
+        return found is not None
+
+    def remove_provider_event(
+        self, provider: str, external_id: str, *, reason: str | None = None
+    ) -> dict[str, Any]:
+        """Delete public event + raw payload, then block re-ingest (owner removal).
+
+        ``duplicate_of`` links from other events are cleared via ON DELETE SET NULL on
+        ``events_duplicate_of_fk`` in the same transaction.
+        """
+        with self.engine.begin() as conn:
+            event_ids = conn.execute(
                 text(
                     """
                     DELETE FROM public.events
-                    WHERE source_id = :sid
-                      AND COALESCE(end_time, start_time + interval '6 hours') < now()
-                    """),
-                {"sid": source_id},
+                    WHERE provider = :provider AND external_id = :external_id
+                    RETURNING id
+                    """
+                ),
+                {"provider": provider, "external_id": external_id},
+            ).scalars().all()
+            raw_deleted = conn.execute(
+                text(
+                    """
+                    DELETE FROM ingest.raw_records
+                    WHERE connector = :provider AND external_id = :external_id
+                    """
+                ),
+                {"provider": provider, "external_id": external_id},
+            ).rowcount or 0
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO ingest.blocklist (provider, external_id, reason)
+                    VALUES (:provider, :external_id, :reason)
+                    ON CONFLICT (provider, external_id) DO UPDATE SET
+                      reason = COALESCE(EXCLUDED.reason, ingest.blocklist.reason),
+                      blocked_at = now()
+                    """
+                ),
+                {"provider": provider, "external_id": external_id, "reason": reason},
             )
-        return result.rowcount or 0
+        return {
+            "provider": provider,
+            "external_id": external_id,
+            "events_deleted": len(event_ids),
+            "raw_records_deleted": int(raw_deleted),
+            "blocked": True,
+        }
 
     def relink_created_places(self, city_slug: str | None = None) -> int:
         """
@@ -519,6 +726,44 @@ class PostgresStore:
                     {"dup": dup_of, "id": event_id},
                 )
         return newly_hidden
+
+
+def _purge_orphan_eventbrite_created_places(conn: Connection) -> None:
+    """Drop Eventbrite-only created places with no upcoming Eventbrite events."""
+    removed_links = conn.execute(
+        text(
+            """
+            DELETE FROM ingest.place_links l
+            WHERE l.connector = 'eventbrite' AND l.method = 'created'
+              AND EXISTS (
+                SELECT 1 FROM places p
+                WHERE p.id = l.place_id AND p.gers_id IS NULL
+              )
+              AND NOT EXISTS (
+                SELECT 1 FROM public.events e
+                WHERE e.venue_place_id = l.place_id AND e.provider = 'eventbrite'
+                  AND (
+                    (e.end_time IS NULL AND e.start_time + interval '6 hours' >= now())
+                    OR (e.end_time IS NOT NULL AND e.end_time >= now())
+                  )
+              )
+            RETURNING l.place_id
+            """
+        )
+    ).scalars().all()
+    if not removed_links:
+        return
+    conn.execute(
+        text(
+            """
+            DELETE FROM places p
+            WHERE p.id = ANY(:ids) AND p.gers_id IS NULL
+              AND NOT EXISTS (SELECT 1 FROM ingest.place_links WHERE place_id = p.id)
+              AND NOT EXISTS (SELECT 1 FROM public.events WHERE venue_place_id = p.id)
+            """
+        ),
+        {"ids": list(removed_links)},
+    )
 
 
 def _match_place(

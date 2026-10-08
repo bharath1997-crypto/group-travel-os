@@ -22,15 +22,37 @@ def city_slug(city: str) -> str:
 
 
 def scaper_city_enabled(db: Session, city: str) -> bool:
-    """True when at least one enabled Scaper source is stamped with this city."""
+    """True when a Scaper source covers this city or live inventory exists for its slug."""
     if db.bind is None or db.bind.dialect.name != "postgresql" or not city.strip():
         return False
+    slug = city_slug(city)
+    now = datetime.now(timezone.utc)
     try:
         with db.begin_nested():
             return bool(
                 db.execute(
-                    text("SELECT 1 FROM ingest.sources WHERE enabled AND city_slug = :city LIMIT 1"),
-                    {"city": city_slug(city)},
+                    text(
+                        """
+                        SELECT 1 FROM ingest.sources
+                        WHERE enabled AND city_slug = :city
+                        LIMIT 1
+                        """
+                    ),
+                    {"city": slug},
+                ).scalar()
+                or db.execute(
+                    text(
+                        """
+                        SELECT 1 FROM public.events
+                        WHERE source_id IS NOT NULL
+                          AND city_slug = :city
+                          AND duplicate_of IS NULL
+                          AND status IN ('scheduled', 'sold_out', 'postponed')
+                          AND COALESCE(expires_at, end_time, start_time) > :now
+                        LIMIT 1
+                        """
+                    ),
+                    {"city": slug, "now": now},
                 ).scalar()
             )
     except Exception:

@@ -90,6 +90,7 @@ class Source(BaseModel):
     name: str
     config: dict[str, Any]
     city_slug: str | None = None
+    state_code: str | None = None
     enabled: bool = True
     interval_minutes: int = 360
     last_run_at: datetime | None = None
