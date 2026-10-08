@@ -2,6 +2,15 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-08 — Scaper owner removal + `/legal/data` (spec item 9)
+
+- **Context:** SHIFT HANDOFF + Ticketmaster national spec item 9; removal requests need a published contact (`rovvy230@gmail.com` via `frontend/lib/contact-config.ts` until owner moves to support@).
+- **Goals:** `python -m scaper remove --provider --external-id`; block re-ingest; legal data-sources page; Explore drawer removal link.
+- **Result:** `migrations/011_scaper_blocklist.sql`; `PostgresStore.remove_provider_event` + pipeline blocklist check; CLI `remove`; `/legal/data` with Overture, Wikimedia, Ticketmaster, Eventbrite, independence, `#removal`; drawer “Is this your event? Contact us”.
+- **Verification:** `pytest tests/test_scaper_remove.py tests/test_scaper_pipeline.py tests/test_scaper_store.py` 18 passed; full backend suite not re-run this pass; PG `test_remove_blocks_reingest` when `SCAPER_PG_TEST_URL` set.
+- **Risks:** Migration **011 not applied to Supabase** — ask owner before apply.
+- **Next action:** Owner approves 011 on prod; forward TM/EB API registration mail to `CONTACT_EMAIL`; run remove CLI after verified takedown emails.
+
 ## 2026-10-05 — SHIFT HANDOFF (owner back in ~68 h): state of Explorer / Scaper
 
 **Read this first next shift.** The newest detailed entries are below this one.
@@ -23,14 +32,14 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 6. **Migration 010 + 3-state pilot** (AK, TX, CA): Cursor asks before applying and running.
 
 ### Open engineering tasks (who)
-- **Cursor:** spec item 9: `scaper remove --provider --external-id` plus a re-ingest blocklist (24 h Ticketmaster owner removal). Required before going beyond the pilot.
+- ~~**Cursor:** spec item 9 (remove + blocklist + `/legal/data`)~~ — **2026-10-08 Complete in code** (migration 011 prod pending).
 - **Cursor or Claude:** mix providers within each day in the hub feed (F27). Eventbrite is invisible today (Chicago: 0 of the 24 shown).
 - **Codex (optional):** retire the HTML scrapers (`eventbrite_scraper.py`, `seatgeek_scraper.py`, `stubhub_scraper.py`); remove the dropped flight code (tests already gone).
 - **Rejected sources:** Yelp, SeatGeek, Meetup. Flights are dropped; travel is A→B directions only (AGENTS.md §4).
 
 ### Added 2026-10-08: removal requests need a contact channel
 - Gap: Rovvy has no published contact/takedown address. A Ticketmaster removal request would go to whatever email registered the API key, which nobody watches. The `scaper remove` command (spec item 9) is only half the solution.
-- **Decided 2026-10-08:** contact/removal address is **`rovvy230@gmail.com`** (a dedicated Rovvy Gmail, not the owner's personal inbox); move to `support@rovvy.app` later through one config constant. **Owner still to do:** confirm which accounts registered the Ticketmaster and Eventbrite API keys and forward that mail to `rovvy230@gmail.com`.
+- **Decided 2026-10-08:** contact/removal address is **`rovvy230@gmail.com`** (a dedicated Rovvy Gmail, not the owner's personal inbox); move to `support@rovvy.app` later through one config constant. Ticketmaster and Eventbrite API keys are registered to the **owner's personal Gmail** (address deliberately not recorded here; repo appears public). **Owner to do:** Gmail filter `from:(ticketmaster.com OR eventbrite.com)` → forward to `rovvy230@gmail.com`.
 - **Cursor:** item 9 (remove + blocklist), plus a `/legal/data` page (data sources, attribution, independence note, removal contact) and an "Is this your event? Contact us" link in the Scaper event drawer.
 
 ### Known risks
