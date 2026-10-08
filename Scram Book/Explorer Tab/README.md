@@ -30,7 +30,7 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 
 ### Added 2026-10-08: removal requests need a contact channel
 - Gap: Rovvy has no published contact/takedown address. A Ticketmaster removal request would go to whatever email registered the API key, which nobody watches. The `scaper remove` command (spec item 9) is only half the solution.
-- **Owner:** choose the address (e.g. `support@rovvy.app` or `legal@rovvy.app`); confirm which accounts registered the Ticketmaster and Eventbrite keys and forward that mail to the address.
+- **Decided 2026-10-08:** contact/removal address is **`rovvy230@gmail.com`** (a dedicated Rovvy Gmail, not the owner's personal inbox); move to `support@rovvy.app` later through one config constant. **Owner still to do:** confirm which accounts registered the Ticketmaster and Eventbrite API keys and forward that mail to `rovvy230@gmail.com`.
 - **Cursor:** item 9 (remove + blocklist), plus a `/legal/data` page (data sources, attribution, independence note, removal contact) and an "Is this your event? Contact us" link in the Scaper event drawer.
 
 ### Known risks
