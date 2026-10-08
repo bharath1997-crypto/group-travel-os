@@ -137,6 +137,9 @@ class MemoryStore:
             e["expired"] = True
         return len(stale)
 
+    def blocked_ids(self, provider: str) -> set[str]:
+        return {ext for prov, ext in self.blocklist if prov == provider}
+
     def is_provider_blocked(self, provider: str, external_id: str) -> bool:
         return (provider, external_id) in self.blocklist
 

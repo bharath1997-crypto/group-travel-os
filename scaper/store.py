@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any, Literal, Protocol
 
 from sqlalchemy import Connection, Engine, text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from scaper.dedup import EventRow, norm_postcode, plan_duplicates, same_venue_address, same_venue_name
 from scaper.models import EventRecord, RawItem, RunStats, RunStatus, Source, VenueRecord
@@ -67,6 +67,7 @@ class Store(Protocol):
     def disable_ticketmaster_city_sources_for_state(self, state_code: str) -> int: ...
     def purge_past_events(self, source: Source) -> int: ...
     def dedupe_city(self, city_slug: str) -> int: ...
+    def blocked_ids(self, provider: str) -> set[str]: ...
     def is_provider_blocked(self, provider: str, external_id: str) -> bool: ...
     def remove_provider_event(
         self, provider: str, external_id: str, *, reason: str | None = None
@@ -535,14 +536,35 @@ class PostgresStore:
                 _purge_orphan_eventbrite_created_places(conn)
         return len(deleted)
 
+    def blocked_ids(self, provider: str) -> set[str]:
+        """All blocked external ids for a provider (one query per pipeline run)."""
+        with self.engine.connect() as conn:
+            try:
+                rows = conn.execute(
+                    text(
+                        "SELECT external_id FROM ingest.blocklist WHERE provider = :provider"
+                    ),
+                    {"provider": provider},
+                ).scalars().all()
+            except ProgrammingError as exc:
+                if getattr(getattr(exc, "orig", None), "pgcode", None) == "42P01":
+                    return set()
+                raise
+        return set(rows)
+
     def is_provider_blocked(self, provider: str, external_id: str) -> bool:
         with self.engine.connect() as conn:
-            found = conn.execute(
-                text(
-                    "SELECT 1 FROM ingest.blocklist WHERE provider = :provider AND external_id = :external_id"
-                ),
-                {"provider": provider, "external_id": external_id},
-            ).scalar()
+            try:
+                found = conn.execute(
+                    text(
+                        "SELECT 1 FROM ingest.blocklist WHERE provider = :provider AND external_id = :external_id"
+                    ),
+                    {"provider": provider, "external_id": external_id},
+                ).scalar()
+            except ProgrammingError as exc:
+                if getattr(getattr(exc, "orig", None), "pgcode", None) == "42P01":
+                    return False
+                raise
         return found is not None
 
     def remove_provider_event(

@@ -62,11 +62,12 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
     fetch_error: str | None = None
     place_cache: dict[tuple[str, str], object] = {}
     touched_cities: set[str] = set()
+    blocked_ids = store.blocked_ids(connector.name)
 
     try:
         for item in connector.fetch(source.config):
             stats.fetched += 1
-            if store.is_provider_blocked(connector.name, item.external_id):
+            if item.external_id in blocked_ids:
                 continue
             raw_id, needs_extraction = store.upsert_raw(source, run, connector.name, item)
             if needs_extraction:
