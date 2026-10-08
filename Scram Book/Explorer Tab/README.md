@@ -24,6 +24,8 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 - Already in production (pushed earlier, `86447c4`): photos (Wikimedia + uploads), faster places, address/phone/map drawer, Scaper events in hub, series dedup, events pagination, shared rule book, flight tests removed.
 
 ### Waiting on the OWNER (in order)
+> **Update 2026-10-08 (cleanup, owner-approved):** ran the 6 Eventbrite sources once (all succeeded; purged 2+0+0+3+0+6 = 11 ended events, which were also refreshed from Eventbrite). Then deleted 4 leftover raw copies of ended events by exact ID: 2 orphans whose events had been purged on 2026-09-27, before raw cleanup existed, and 2 rejected online events. **Result: 0 ended Eventbrite events, 0 ended raw copies, 0 created Eventbrite venues without a future event.** Eventbrite now has 91 events (all future) and 100 raw copies; Ticketmaster is untouched (947). **Code gap for Cursor:** the purge only deletes raw copies of events it deletes in the same step; it must also delete raw copies of ended events that have no event row (rejected items and old orphans).
+
 > **Update 2026-10-08:** Pushed `ab1e3f2` (15 commits incl. spec item 9 blocklist and `/legal/data`). Migrations **010 and 011 applied** to Supabase and verified by Claude (blocklist table exists and is empty; 947/1,037 events have `state_code`; the 90 without are Eventbrite). CI/CD run 37761861393 was in progress at the time of writing. Reviewed by Claude: CI 976 passed / 0 failed; rolled-back Supabase suite 14/14. Frontend (`/legal/data`, drawer links) goes live only after the `main` sync. Items 1 (push) and 6's migration step are done; the rest of this list remains.
 
 1. **Push** (= production deploy): `git push origin Production-main`.
