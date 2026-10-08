@@ -56,13 +56,13 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
         raise ValueError(f"source {source.name} is for {source.connector}, not {connector.name}")
     connector.parse_config(source.config)
 
+    blocked_ids = store.blocked_ids(connector.name)
     run = store.start_run(source)
     stats = RunStats()
     to_extract: list[tuple[int, dict]] = []
     fetch_error: str | None = None
     place_cache: dict[tuple[str, str], object] = {}
     touched_cities: set[str] = set()
-    blocked_ids = store.blocked_ids(connector.name)
 
     try:
         for item in connector.fetch(source.config):
