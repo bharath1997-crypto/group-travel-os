@@ -13,6 +13,14 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 - Decision: **Phase 1 spec** `Explore_Feed_Phase1_Spec.md`, assigned to Cursor. It maps to existing rows (G18/F02 location, F27 mixed feed, F31/G12 photo-first + map crop, F03 quality filter, F05 smaller labels with required links, F24/F28 real-data reason labels). Phase 2 (action-based ranking) and Phase 3 (place pages and Rovvy moments) come later.
 - Pending separately: push of 4 local commits (CI duckdb fix), so production deploys at all.
 
+## 2026-10-09 — Explore Feed Phase 1 (items 1–6, spec `Explore_Feed_Phase1_Spec.md`)
+
+- **Context:** Owner-approved honest photo-first feed; F15 hide facts without backing data.
+- **Result:** Hero scope drives places API coords (events stay city-scoped); per-day TM/EB interleave; photo-first rank + z17 map crop (G12); chain/category demote; smaller provider labels; reason chips from real fields + Collection similarity.
+- **Verification:** Explore Vitest **126 passed** (23 files); `tsc --noEmit` 0 new errors (2 pre-existing ProfileTravelMap `zIndexOffset`); browser QA on `/explore` with Naperville-style scope (owner).
+- **Risks:** Wikidata display names not in API yet — chain/category demote only; F27 still client pool only (no backend pagination).
+- **Next action:** Phase 2 action-based ranking; owner browser sign-off on non-downtown location.
+
 ## 2026-10-08 — Scaper owner removal + `/legal/data` (spec item 9)
 
 - **Context:** SHIFT HANDOFF + Ticketmaster national spec item 9; removal requests need a published contact (`rovvy230@gmail.com` via `frontend/lib/contact-config.ts` until owner moves to support@).

@@ -249,6 +249,27 @@ describe("fetchExploreHub source outcomes", () => {
     );
   });
 
+  it("uses hero coordinates for places only; events stay city-scoped", async () => {
+    mockedFetch
+      .mockResolvedValueOnce({ city: "Chicago", events: [] })
+      .mockResolvedValueOnce({ places: [] })
+      .mockResolvedValueOnce({ places: [] });
+
+    await fetchExploreHub({
+      city: "Chicago",
+      lat: 41.7508,
+      lon: -88.1535,
+      displayLabel: "Naperville, Illinois",
+    });
+
+    const calls = mockedFetch.mock.calls.map((c) => String(c[0]));
+    const eventsCall = calls.find((u) => u.includes("/explore/events")) ?? "";
+    const placesCall = calls.find((u) => u.includes("/explore/places")) ?? "";
+    expect(eventsCall).not.toMatch(/lat=41\.7508/);
+    expect(placesCall).toMatch(/lat=41\.7508/);
+    expect(placesCall).toMatch(/lon=-88\.1535/);
+  });
+
   it("starts all three source requests before any resolve", async () => {
     const resolvers: Array<(value: unknown) => void> = [];
     mockedFetch.mockImplementation(
