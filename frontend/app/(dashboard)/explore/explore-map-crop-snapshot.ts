@@ -114,9 +114,27 @@ export function testReleaseExploreMapCropRenderSlot(): void {
   releaseRenderSlot();
 }
 
+/** MapLibre init for feed snapshots (canvas only — venue pin is a CSS overlay). */
+export function buildExploreMapCropSnapshotMapOptions(
+  container: HTMLElement,
+  lng: number,
+  lat: number,
+  zoom: number,
+) {
+  return {
+    container,
+    style: resolveOpenFreeMapCleanStyleUrlForLiveMap(),
+    center: [lng, lat] as [number, number],
+    zoom,
+    interactive: false,
+    canvasContextAttributes: { preserveDrawingBuffer: true },
+    attributionControl: false as const,
+  };
+}
+
 async function captureMapToDataUrl(
   container: HTMLElement,
-  { lat, lng, zoom = 17, showMarker = true }: ExploreStaticMapOptions,
+  { lat, lng, zoom = 17 }: ExploreStaticMapOptions,
   isCancelled: () => boolean,
 ): Promise<string | null> {
   const { default: maplibregl } = await import("maplibre-gl");
@@ -124,19 +142,9 @@ async function captureMapToDataUrl(
 
   if (isCancelled()) return null;
 
-  const map = new maplibregl.Map({
-    container,
-    style: resolveOpenFreeMapCleanStyleUrlForLiveMap(),
-    center: [lng, lat],
-    zoom,
-    interactive: false,
-    preserveDrawingBuffer: true,
-    attributionControl: false,
-  });
-
-  if (showMarker) {
-    new maplibregl.Marker({ color: "#0f6b5c" }).setLngLat([lng, lat]).addTo(map);
-  }
+  const map = new maplibregl.Map(
+    buildExploreMapCropSnapshotMapOptions(container, lng, lat, zoom),
+  );
 
   let usedFallback = false;
   map.on("error", () => {

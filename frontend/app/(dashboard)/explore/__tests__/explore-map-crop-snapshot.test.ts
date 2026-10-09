@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildExploreMapCropSnapshotMapOptions,
   exploreMapCropSnapshotCacheKey,
   getCachedExploreMapCropSnapshot,
   getExploreMapCropActiveRenderCountForTests,
@@ -14,6 +15,12 @@ import {
 } from "../explore-map-crop-snapshot";
 
 describe("explore-map-crop-snapshot", () => {
+  it("sets canvasContextAttributes.preserveDrawingBuffer for PNG snapshots", () => {
+    const host = document.createElement("div");
+    const options = buildExploreMapCropSnapshotMapOptions(host, -88.1535, 41.7508, 17);
+    expect(options.canvasContextAttributes?.preserveDrawingBuffer).toBe(true);
+  });
+
   it("builds stable cache keys from lat/lng/zoom", () => {
     resetExploreMapCropSnapshotStateForTests();
     expect(exploreMapCropSnapshotCacheKey(41.7508, -88.1535, 17)).toBe(

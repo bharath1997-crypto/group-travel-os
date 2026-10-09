@@ -60,7 +60,7 @@ export function ExploreMapCrop({
 
     void queueExploreMapCropSnapshot(
       container,
-      { lat, lng, zoom, showMarker: true },
+      { lat, lng, zoom, showMarker: false },
       isCancelled,
       (cancelWait) => {
         cancelQueueWait = cancelWait;
@@ -91,7 +91,10 @@ export function ExploreMapCrop({
         <div ref={mapHostRef} className={styles.slotMapCropMapHost} />
       ) : null}
       {(snapshotUrl || showLiveMapHost) && (
-        <span className={styles.slotMapAttribution}>{EXPLORE_MAP_CROP_ATTRIBUTION}</span>
+        <>
+          <span className={styles.slotMapCropPin} aria-hidden />
+          <span className={styles.slotMapAttribution}>{EXPLORE_MAP_CROP_ATTRIBUTION}</span>
+        </>
       )}
     </div>
   );
