@@ -30,6 +30,7 @@ import { useExploreHubSaves } from "./use-explore-hub-saves";
 import { ExploreWayraPlanCard } from "./components/ExploreWayraPlanCard";
 
 import { exploreCardReasonLabel } from "./explore-card-reason";
+import { exploreRankingHasKnownPrice } from "./explore-card-display";
 import { HeroLocationWidget } from "./HeroLocationWidget";
 
 import {
@@ -55,6 +56,8 @@ import {
   hubSlotToDetail,
 
   hubSlotsToRanking,
+
+  orderExploreSlotCardsForMasonry,
 
   slotsToWayraPlans,
 
@@ -250,13 +253,13 @@ export default function ExplorePage() {
   );
 
   const ranking = useMemo(() => hubSlotsToRanking(visibleSlots), [visibleSlots]);
+  const showRankingTable = ranking.length > 0 && exploreRankingHasKnownPrice(ranking);
 
   const masonryFeed = useMemo(() => {
-
-    const cards = visibleSlots.map((slot, index) => hubSlotToCard(slot, index));
-
+    const cards = orderExploreSlotCardsForMasonry(
+      visibleSlots.map((slot, index) => hubSlotToCard(slot, index)),
+    );
     return buildMasonryFeed(cards);
-
   }, [visibleSlots]);
 
 
@@ -896,7 +899,7 @@ export default function ExplorePage() {
 
 
 
-        {showInventorySections && ranking.length > 0 ? (
+        {showInventorySections && showRankingTable ? (
 
           <section className={styles.ranking}>
 

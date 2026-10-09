@@ -2,6 +2,12 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-09 — Explore feed card design (Milwaukee review; no location logic)
+
+- **Context:** Owner screenshot (East Side Milwaukee); architecture spec paused (§9).
+- **Result:** Place cards — category + street only, no price line, no Overture provider badge; event cards — `Price on provider site` / `From $X + fees` (TM), date then venue; masonry interleaves photo + text cards; hide Explore picks table when all prices unknown; Lounge dock bottom-right on `/explore` (no feed overlap).
+- **Verification:** Explore Vitest **137 passed** (27 files); `tsc --noEmit` (2 pre-existing ProfileTravelMap); owner browser Milwaukee + Chicago.
+
 ## 2026-10-09 — Explore feed architecture spec (one location, one server pipeline)
 
 - Context: the owner asked to design the architecture before more UI patches. Explore is dynamic per person and location, but each section resolved its own location in the browser (hero via GPS/IP, places via `CITY_COORDS`, events via a hard-coded metro map, the carousel via its own scope, headings via two different fallback chains). That produced "Explore picks in Austin" above Chicago events.

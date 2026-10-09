@@ -48,6 +48,11 @@ export function hubSlotToCard(slot: ExploreSlot, index: number): ExploreSlotCard
     badgeVariant: badgeVariantFor(slot),
     summary: normalizeCardSummary(slot.title, slot.summary),
     reason: slot.reason,
+    listingKind: slot.exploreListingKind,
+    placeAddress: slot.placeAddress ?? null,
+    venue: slot.venue,
+    dateLabel: slot.dateLabel,
+    priceKnown: slot.priceKnown,
     overlayTitle: Boolean(media.imageUrl && slot.price === "Free"),
   };
 }
@@ -119,6 +124,8 @@ export function filterHubSlotsByChips(
 }
 
 export { exploreSlotMatchesChip, isCategoryStatChipLabel } from "./explore-hub-chip-match";
+
+export { orderExploreSlotCardsForMasonry } from "./explore-card-display";
 
 export function buildMasonryFeed(liveSlots: ExploreSlotCard[]): ExploreFeedItem[] {
   const queue = [...liveSlots];

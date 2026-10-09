@@ -9,6 +9,7 @@ import {
   hubSlotToCard,
   hubSlotToDetail,
   hubSlotsToRanking,
+  orderExploreSlotCardsForMasonry,
   rankingAvailabilityLabel,
   slotsToWayraPlans,
 } from "../explore-hub-v6-map";
@@ -103,6 +104,16 @@ describe("explore-hub-v6-map", () => {
     const feed = buildMasonryFeed([hubSlotToCard(sampleSlot(), 0)]);
     expect(feed.some((item) => item.kind === "slot")).toBe(true);
     expect(feed.some((item) => item.kind === "ask")).toBe(true);
+  });
+
+  it("interleaves photo and text slot cards before masonry templates", () => {
+    const photo = hubSlotToCard(
+      sampleSlot({ id: "photo", imageUrl: "https://cdn.example/a.jpg" }),
+      0,
+    );
+    const text = hubSlotToCard(sampleSlot({ id: "text", imageUrl: null }), 1);
+    const ordered = orderExploreSlotCardsForMasonry([photo, photo, text, text, photo]);
+    expect(ordered.map((c) => c.id)).toEqual(["photo", "text", "photo", "text", "photo"]);
   });
 
   it("builds Wayra plans from prompt matches", () => {
