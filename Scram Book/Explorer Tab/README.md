@@ -2,6 +2,21 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-09 — Scaper scheduler live (Cloud Run Job + hourly Cloud Scheduler)
+
+- Done (owner created the `TICKETMASTER_API_KEY` secret and enabled the Cloud Scheduler API):
+  - Cloud Run Job `scaper-run-due` (us-west1, next to Supabase us-west-2). It's deployed from a clean checkout of `65b6a60`, built into a new us-west1 Artifact Registry repo `cloud-run-source-deploy` (~$0.05/month, which avoids ~$10–20/month of cross-region image pulls).
+  - Hourly Cloud Scheduler trigger `scaper-run-due-hourly` (`5 * * * *` UTC), using the dedicated invoker service account `scaper-scheduler`.
+- Verification:
+  - First execution: **8/8 sources succeeded**; Ticketmaster 1,455 events and Eventbrite 93, refreshed 2026-10-09 09:57 UTC (stale since 2026-09-27); 285 Ticketmaster events more than 7 days past their end were purged.
+  - A forced trigger run at 10:12 UTC started a new execution (scheduler → job permission works).
+  - Production CI/CD runs for `cdf2d1e` and `6b45c59` passed both test and deploy, so the backend deploys again after the duckdb fix.
+- Fixes: `deploy-scaper-job.ps1` (`4fa6466`) — `--args=` form, and PowerShell 5.1 stderr handling.
+- Notes/risks:
+  - The job image is pinned to its deploy; a future Scaper code change needs a redeploy (or a CI step that updates the job).
+  - Local deploys must run from a clean checkout (local `.next`/`node_modules` break the upload).
+  - The local dev backend froze (async `explore_events` makes blocking DB calls on the event loop); the owner is to restart it, and a stack dump is to be captured if it recurs.
+
 ## 2026-10-09 — Explore feed card design (Milwaukee review; no location logic)
 
 - **Context:** Owner screenshot (East Side Milwaukee); architecture spec paused (§9).
