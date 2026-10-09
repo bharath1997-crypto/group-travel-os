@@ -6,7 +6,8 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 
 - Context: G12 map crops (`0c4581b`, `73775a8`) rendered a full MapLibre map per card and snapshotted it. Measured per card: style 43 KB plus tile index 19 KB plus ~4 vector tiles (~300 KB) plus fonts, then render and wait, about 1.5–3 s each. With 2 at a time, 96 map cards took 1–2+ minutes. The owner also hit a runtime crash, "Cannot read properties of null (reading 'removeChild')": React unmounts the map host while MapLibre is still rendering, then `map.remove()` runs on a detached node (suspected; no stack trace was captured).
 - **Owner decision (A):** feed cards without a real photo become compact text cards (no media area). The map stays only in the drawer (one map at a time). The card map crop is deferred to option B: pre-render the map image on the server once per place, store it in R2, and serve it as an image.
-- Assigned to Cursor: delete `ExploreMapCrop` and `explore-map-crop-snapshot.ts`; G12 → Partial.
+- **Result:** Deleted `ExploreMapCrop`, `explore-map-crop-snapshot.ts`, and tests; `ExploreSlotCard` compact text layout; `ExploreDrawerMap` unchanged; workbook **G12 → Partial/yellow**.
+- **Verification:** Explore Vitest (no map-crop tests); `tsc --noEmit` (2 pre-existing ProfileTravelMap errors only); owner browser — full Naperville feed scroll + Load more ×3, no MapLibre on cards / no removeChild crash.
 
 ## 2026-10-09 — Explore map crop WebGL snapshot (G12 feed cards)
 

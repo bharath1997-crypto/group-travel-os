@@ -1279,24 +1279,22 @@
   color: #666b64;
 }
 
-.slotMapLabel {
-  position: absolute;
-  left: 10px;
-  bottom: 10px;
-  z-index: 1;
-  font-family: var(--font-jetbrains), monospace;
-  font-size: 8px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(251, 250, 247, 0.92);
-  background: rgba(15, 22, 20, 0.72);
-  padding: 4px 8px;
-  border-radius: var(--radius-badge);
-}
-
 .providerBadge {
   position: absolute;
   top: 10px;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: var(--radius-badge);
+  opacity: 0.92;
+}
+
+.providerBadgeInline {
+  position: static;
+  display: inline-block;
   font-family: var(--font-jetbrains), monospace;
   font-size: 8px;
   font-weight: 500;
@@ -1428,6 +1426,54 @@
   font-size: 12px;
   color: var(--color-primary);
   margin-bottom: 8px;
+}
+
+.slotCardCompact {
+  background: var(--color-cream, #f8f6f0);
+}
+
+.slotBodyCompact {
+  position: relative;
+  padding: 14px 16px 15px;
+}
+
+.slotCompactProvider {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.slotCompactBadge {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.slotCompactArea {
+  display: block;
+  font-size: 12.5px;
+  color: var(--color-muted-3);
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.slotCompactDistance {
+  display: block;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 10.5px;
+  color: var(--color-muted);
+  margin-bottom: 6px;
+}
+
+.slotSavedMarkCompact {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(15, 22, 20, 0.72);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .slotFooter {
@@ -2476,70 +2522,6 @@ a.drawerPhotoCredit:hover {
   z-index: 0;
 }
 
-.slotMapCropHost {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 120px;
-  overflow: hidden;
-  contain: layout paint;
-}
-
-.slotMapCropHost :global(.maplibregl-map),
-.slotMapCropHost :global(.maplibregl-canvas-container) {
-  position: absolute !important;
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-.slotMapCropMapHost {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.slotMapCropSnapshot {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.slotMapCropPin {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  z-index: 1;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #0f6b5c;
-  border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-
-.slotMapAttribution {
-  position: absolute;
-  right: 4px;
-  bottom: 2px;
-  z-index: 2;
-  max-width: calc(100% - 8px);
-  padding: 1px 4px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.82);
-  font-family: var(--font-inter), system-ui, sans-serif;
-  font-size: 9px;
-  line-height: 1.2;
-  color: #3d4540;
-  pointer-events: none;
-}
-
 .drawerMapLive {
   position: relative;
   height: 170px;
@@ -3104,14 +3086,8 @@ a.drawerPhotoCredit:hover {
     columns: 1;
   }
 
-  .slotCardNoPhoto .slotMedia {
-    height: 64px !important;
-    background: var(--color-cream);
-  }
-
-  .slotCardNoPhoto .slotMediaLabel {
-    align-items: flex-end;
-    padding-bottom: 8px;
+  .slotCardCompact .slotBodyCompact {
+    padding: 12px 14px 13px;
   }
 
   .savedBarWrap {

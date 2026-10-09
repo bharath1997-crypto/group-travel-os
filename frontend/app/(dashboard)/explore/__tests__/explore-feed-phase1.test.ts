@@ -11,7 +11,7 @@ import {
   rankExploreHubSlots,
 } from "../explore-feed-quality";
 import type { ExploreSlot } from "../explore-hub-data";
-import { resolveExploreCardMedia, EXPLORE_MAP_PREVIEW_LABEL } from "../explore-listing-media";
+import { resolveExploreCardMedia } from "../explore-listing-media";
 import { exploreLocationScopeFromHero } from "../explore-hero-scope";
 import type { HeroResponse } from "@/lib/hero-location";
 
@@ -100,14 +100,12 @@ describe("explore feed phase 1", () => {
     expect(EXPLORE_DEMOTE_CHAIN_NAMES.length).toBeGreaterThan(4);
   });
 
-  it("uses MapLibre map crop when no photo but coordinates exist", () => {
+  it("uses compact text card media when no real photo (no feed map crop)", () => {
     const media = resolveExploreCardMedia(
       eventSlot({ id: "p1", source: "Overture", lat: 41.8781, lng: -87.6298, imageUrl: null }),
     );
     expect(media.imageUrl).toBeUndefined();
-    expect(media.useMapCrop).toBe(true);
-    expect(media.mapCropLat).toBeCloseTo(41.8781, 4);
-    expect(media.imageLabel).toBe(EXPLORE_MAP_PREVIEW_LABEL);
+    expect(media.imageLabel).toBe("");
   });
 
   it("reason labels trace to backing fields only", () => {

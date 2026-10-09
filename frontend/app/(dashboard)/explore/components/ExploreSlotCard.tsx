@@ -3,8 +3,6 @@
 import { useState } from "react";
 import type { ExploreSlotCard as ExploreSlotCardType } from "../explore-fixtures";
 import { cardRatingDisplay } from "../explore-card-copy";
-import { EXPLORE_MAP_PREVIEW_LABEL } from "../explore-listing-media";
-import { ExploreMapCrop } from "./ExploreMapCrop";
 import { ExploreProviderBadge } from "./ExploreProviderBadge";
 import { photoCreditText } from "../explore-photo-credit";
 import styles from "../explore.module.css";
@@ -19,74 +17,86 @@ export function ExploreSlotCard({ slot, onOpen, isSaved = false }: ExploreSlotCa
   const ratingLabel = cardRatingDisplay(slot.rating);
   const [photoFailed, setPhotoFailed] = useState(false);
   const showPhoto = Boolean(slot.imageUrl) && !photoFailed;
-  const showMapCrop =
-    !showPhoto &&
-    slot.useMapCrop &&
-    slot.mapCropLat != null &&
-    slot.mapCropLng != null;
-  const mediaLabel =
-    slot.imageLabel ||
-    (showMapCrop ? EXPLORE_MAP_PREVIEW_LABEL : "");
+  const compactText = !showPhoto && !slot.overlayTitle;
 
   return (
     <button
       type="button"
-      className={`${styles.slotCard} ${!showPhoto && !showMapCrop ? styles.slotCardNoPhoto : ""}`}
+      className={`${styles.slotCard} ${compactText ? styles.slotCardCompact : ""}`}
       onClick={() => onOpen(slot.id)}
     >
-      <span className={styles.slotMedia} style={{ height: slot.imageHeight }}>
-        {showPhoto ? (
-          // Provider image URLs are dynamic per listing.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={slot.imageUrl ?? undefined}
-            alt=""
-            className={styles.slotPhoto}
-            loading="lazy"
-            decoding="async"
-            onError={() => setPhotoFailed(true)}
-          />
-        ) : showMapCrop ? (
-          <>
-            <ExploreMapCrop
-              lat={slot.mapCropLat!}
-              lng={slot.mapCropLng!}
-              height={slot.imageHeight}
-              lazy
+      {!compactText ? (
+        <span className={styles.slotMedia} style={{ height: slot.imageHeight }}>
+          {showPhoto ? (
+            // Provider image URLs are dynamic per listing.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={slot.imageUrl ?? undefined}
+              alt=""
+              className={styles.slotPhoto}
+              loading="lazy"
+              decoding="async"
+              onError={() => setPhotoFailed(true)}
             />
-            <span className={styles.slotMapLabel}>{mediaLabel}</span>
-          </>
-        ) : mediaLabel ? (
-          <span className={styles.slotMediaLabel}>{mediaLabel}</span>
-        ) : null}
-        {showPhoto && slot.imageCredit ? (
-          <span className={styles.slotPhotoCredit}>{photoCreditText(slot.imageCredit)}</span>
-        ) : null}
-        {isSaved ? <span className={styles.slotSavedMark}>Saved</span> : null}
-        {!slot.overlayTitle ? <ExploreProviderBadge label={slot.source} variant="dark" /> : null}
-        {slot.badge ? (
-          <ExploreProviderBadge
-            label={slot.badge}
-            variant={slot.badgeVariant ?? "neutral"}
-            align={slot.overlayTitle ? "left" : "right"}
-          />
-        ) : null}
-        {slot.overlayTitle ? (
-          <span className={styles.slotOverlayTitle}>
-            <span className={styles.slotMeta}>{slot.meta}</span>
-            <span className={styles.slotOverlayHeading}>{slot.title}</span>
-          </span>
-        ) : null}
-      </span>
+          ) : slot.imageLabel ? (
+            <span className={styles.slotMediaLabel}>{slot.imageLabel}</span>
+          ) : null}
+          {showPhoto && slot.imageCredit ? (
+            <span className={styles.slotPhotoCredit}>{photoCreditText(slot.imageCredit)}</span>
+          ) : null}
+          {isSaved ? <span className={styles.slotSavedMark}>Saved</span> : null}
+          {!slot.overlayTitle ? <ExploreProviderBadge label={slot.source} variant="dark" /> : null}
+          {slot.badge ? (
+            <ExploreProviderBadge
+              label={slot.badge}
+              variant={slot.badgeVariant ?? "neutral"}
+              align={slot.overlayTitle ? "left" : "right"}
+            />
+          ) : null}
+          {slot.overlayTitle ? (
+            <span className={styles.slotOverlayTitle}>
+              <span className={styles.slotMeta}>{slot.meta}</span>
+              <span className={styles.slotOverlayHeading}>{slot.title}</span>
+            </span>
+          ) : null}
+        </span>
+      ) : null}
       {!slot.overlayTitle ? (
-        <span className={styles.slotBody}>
-          <span className={styles.slotMeta}>{slot.meta}</span>
-          <span className={styles.slotTitle}>{slot.title}</span>
-          {slot.summary ? <span className={styles.slotSummary}>{slot.summary}</span> : null}
-          {slot.reason ? <span className={styles.slotReason}>{slot.reason}</span> : null}
+        <span className={`${styles.slotBody} ${compactText ? styles.slotBodyCompact : ""}`}>
+          {compactText ? (
+            <>
+              <span className={styles.slotCompactProvider}>
+                <ExploreProviderBadge label={slot.source} variant="dark" layout="inline" />
+              </span>
+              {isSaved ? <span className={styles.slotSavedMarkCompact}>Saved</span> : null}
+              {slot.badge ? (
+                <span className={styles.slotCompactBadge}>
+                  <ExploreProviderBadge
+                    label={slot.badge}
+                    variant={slot.badgeVariant ?? "neutral"}
+                    layout="inline"
+                  />
+                </span>
+              ) : null}
+              <span className={styles.slotTitle}>{slot.title}</span>
+              {slot.meta ? <span className={styles.slotMeta}>{slot.meta}</span> : null}
+              {slot.area ? <span className={styles.slotCompactArea}>{slot.area}</span> : null}
+              {slot.distanceLabel ? (
+                <span className={styles.slotCompactDistance}>{slot.distanceLabel}</span>
+              ) : null}
+              {slot.reason ? <span className={styles.slotReason}>{slot.reason}</span> : null}
+            </>
+          ) : (
+            <>
+              <span className={styles.slotMeta}>{slot.meta}</span>
+              <span className={styles.slotTitle}>{slot.title}</span>
+              {slot.summary ? <span className={styles.slotSummary}>{slot.summary}</span> : null}
+              {slot.reason ? <span className={styles.slotReason}>{slot.reason}</span> : null}
+            </>
+          )}
           <span className={styles.slotFooter}>
             <span className={styles.slotPrice}>{slot.price}</span>
-            <span className={styles.slotNote}>{slot.note}</span>
+            {!compactText ? <span className={styles.slotNote}>{slot.note}</span> : null}
             {ratingLabel ? <span className={styles.slotRating}>{ratingLabel}</span> : null}
           </span>
         </span>

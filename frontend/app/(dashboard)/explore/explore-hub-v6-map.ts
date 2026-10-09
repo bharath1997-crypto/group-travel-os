@@ -42,13 +42,12 @@ export function hubSlotToCard(slot: ExploreSlot, index: number): ExploreSlotCard
     imageHeight: CARD_HEIGHTS[index % CARD_HEIGHTS.length],
     imageLabel: media.imageLabel,
     imageUrl: media.imageUrl ?? slot.imageUrl,
-    useMapCrop: media.useMapCrop,
-    mapCropLat: media.mapCropLat,
-    mapCropLng: media.mapCropLng,
+    distanceLabel: slot.distanceLabel,
     imageCredit: slot.imageCredit ?? null,
     badge: hubListingBadge(slot),
     badgeVariant: badgeVariantFor(slot),
     summary: normalizeCardSummary(slot.title, slot.summary),
+    reason: slot.reason,
     overlayTitle: Boolean(media.imageUrl && slot.price === "Free"),
   };
 }
