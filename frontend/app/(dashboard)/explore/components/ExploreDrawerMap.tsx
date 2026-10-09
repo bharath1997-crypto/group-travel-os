@@ -16,15 +16,20 @@ type ExploreDrawerMapProps = {
 /** Small static pin map for the listing drawer (same OpenFreeMap style as Live). */
 export function ExploreDrawerMap({ lat, lng, label, zoom = 15, className }: ExploreDrawerMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const mountGenerationRef = useRef(0);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    let cancelled = false;
+
+    const generation = mountGenerationRef.current + 1;
+    mountGenerationRef.current = generation;
+    const isActive = () => mountGenerationRef.current === generation;
+
     let teardown: (() => void) | null = null;
 
-    void mountExploreStaticMap(container, { lat, lng, zoom }).then((remove) => {
-      if (cancelled) {
+    void mountExploreStaticMap(container, { lat, lng, zoom }, isActive).then((remove) => {
+      if (!isActive()) {
         remove();
         return;
       }
@@ -32,8 +37,12 @@ export function ExploreDrawerMap({ lat, lng, label, zoom = 15, className }: Expl
     });
 
     return () => {
-      cancelled = true;
+      mountGenerationRef.current += 1;
       teardown?.();
+      teardown = null;
+      if (container.isConnected) {
+        container.replaceChildren();
+      }
     };
   }, [lat, lng, zoom]);
 

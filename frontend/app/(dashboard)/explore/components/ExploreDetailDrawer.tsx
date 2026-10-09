@@ -133,7 +133,7 @@ export function ExploreDetailDrawer({
               <span key={tag}>{tag}</span>
             ))}
           </div>
-          {hasPin ? (
+          {hasPin && !heroMapCrop ? (
             <ExploreDrawerMap lat={detail.lat as number} lng={detail.lng as number} label={detail.title} />
           ) : detail.area?.trim() ? (
             <div className={styles.drawerMap}>
