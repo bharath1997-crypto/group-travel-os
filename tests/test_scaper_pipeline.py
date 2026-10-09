@@ -16,6 +16,7 @@ from scaper.models import EventRecord, ExtractResult, RawItem, RunStats, RunStat
 from dataclasses import dataclass
 
 from scaper.pipeline import run_due, run_source
+from scaper.raw_purge import raw_payload_past
 from scaper.store import RunHandle, RunInProgress
 from tests.scaper_fixtures import eventbrite_event
 
@@ -64,9 +65,15 @@ class MemoryStore:
         key = (connector, item.external_id)
         row = self.raw.get(key)
         if row is None:
-            row = self.raw[key] = {"id": len(self.raw) + 1, "sha": item.sha256, "status": "pending"}
+            row = self.raw[key] = {
+                "id": len(self.raw) + 1,
+                "sha": item.sha256,
+                "status": "pending",
+                "payload": item.payload,
+                "source_id": source.id,
+            }
         elif row["sha"] != item.sha256 or row["status"] in ("pending", "failed"):
-            row.update(sha=item.sha256, status="pending")
+            row.update(sha=item.sha256, status="pending", payload=item.payload, source_id=source.id)
         return row["id"], row["status"] == "pending"
 
     def mark_raw(self, raw_id: int, status: Literal["extracted", "rejected", "failed"], error: str | None = None) -> None:
@@ -128,7 +135,18 @@ class MemoryStore:
         ]
         for k in past:
             del self.events[k]
-        return len(past)
+            self.raw.pop(k, None)
+        orphan_keys = [
+            key
+            for key, row in self.raw.items()
+            if row.get("source_id") == source.id
+            and key[0] == source.connector
+            and key not in self.events
+            and raw_payload_past(source.connector, row.get("payload") or {}, now=now)
+        ]
+        for key in orphan_keys:
+            del self.raw[key]
+        return len(past) + len(orphan_keys)
 
     def expire_unseen(self, source: Source, run: RunHandle) -> int:
         started = self.runs[run.id]["t"]

@@ -496,3 +496,44 @@ def test_remove_blocks_reingest(pg) -> None:
         text("SELECT COUNT(*) FROM events WHERE provider='eventbrite' AND external_id=:e"),
         {"e": ext_id},
     ).scalar() == 0
+
+
+def test_purge_deletes_orphan_past_raw_without_event(pg) -> None:
+    import json
+
+    store, conn = pg
+    source = store.add_source(
+        connector="eventbrite",
+        name=f"scaper-orphan-raw-{uuid.uuid4().hex[:8]}",
+        config={"kind": "organizer", "id": "5550001"},
+        city_slug="scaper-orphan",
+    )
+    past = {"utc": "2020-01-01T00:00:00Z", "timezone": "UTC"}
+    future = {"utc": "2099-06-01T00:00:00Z", "timezone": "UTC"}
+    past_payload = eventbrite_event(id="orphan-reject", start=past, end=past, online_event=True)
+    future_payload = eventbrite_event(id="orphan-future", start=future, end=future, online_event=True)
+    conn.execute(
+        text(
+            """
+            INSERT INTO ingest.raw_records
+              (connector, external_id, source_id, payload, payload_sha256, extraction_status)
+            VALUES ('eventbrite', 'orphan-reject', :sid, CAST(:payload AS jsonb), 'abc', 'rejected')
+            """
+        ),
+        {"sid": source.id, "payload": json.dumps(past_payload)},
+    )
+    conn.execute(
+        text(
+            """
+            INSERT INTO ingest.raw_records
+              (connector, external_id, source_id, payload, payload_sha256, extraction_status)
+            VALUES ('eventbrite', 'orphan-future', :sid, CAST(:payload AS jsonb), 'def', 'rejected')
+            """
+        ),
+        {"sid": source.id, "payload": json.dumps(future_payload)},
+    )
+
+    purged = store.purge_past_events(source)
+    assert purged >= 1
+    assert conn.execute(text("SELECT count(*) FROM ingest.raw_records WHERE external_id = 'orphan-reject'")).scalar_one() == 0
+    assert conn.execute(text("SELECT count(*) FROM ingest.raw_records WHERE external_id = 'orphan-future'")).scalar_one() == 1
