@@ -697,6 +697,21 @@
   color: var(--color-body-muted);
 }
 
+.drawerMapPreviewLabel {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 2;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(251, 250, 247, 0.92);
+  background: rgba(15, 22, 20, 0.72);
+  padding: 4px 9px;
+  border-radius: var(--radius-badge);
+}
+
 .drawerProviderNote {
   margin: 12px 0 0;
   font-size: 11.5px;
@@ -1262,15 +1277,32 @@
   color: #666b64;
 }
 
+.slotMapLabel {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 1;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(251, 250, 247, 0.92);
+  background: rgba(15, 22, 20, 0.72);
+  padding: 4px 8px;
+  border-radius: var(--radius-badge);
+}
+
 .providerBadge {
   position: absolute;
   top: 10px;
   font-family: var(--font-jetbrains), monospace;
-  font-size: 9px;
-  letter-spacing: 0.1em;
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 5px 9px;
+  padding: 4px 8px;
   border-radius: var(--radius-badge);
+  opacity: 0.92;
 }
 
 .providerBadgeLeft {
@@ -2294,12 +2326,13 @@
   left: 16px;
   z-index: 2;
   font-family: var(--font-jetbrains), monospace;
-  font-size: 9px;
-  letter-spacing: 0.1em;
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  background: rgba(15, 22, 20, 0.9);
-  color: var(--color-text-on-dark);
-  padding: 5px 10px;
+  background: rgba(15, 22, 20, 0.82);
+  color: rgba(251, 250, 247, 0.92);
+  padding: 4px 9px;
   border-radius: var(--radius-badge);
 }
 

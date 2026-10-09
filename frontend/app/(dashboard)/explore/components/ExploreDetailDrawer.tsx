@@ -16,6 +16,11 @@ import { openExploreListingUrl } from "../explore-open-listing";
 import styles from "../explore.module.css";
 import { ExploreDrawerMap } from "./ExploreDrawerMap";
 import { ExploreDrawerPhotoUpload } from "./ExploreDrawerPhotoUpload";
+import {
+  EXPLORE_MAP_PREVIEW_LABEL,
+  exploreListingHasRealPhoto,
+  exploreSlotMapCropStyle,
+} from "../explore-listing-media";
 import { photoCreditText } from "../explore-photo-credit";
 import { explorePhoneHref } from "../explore-place-actions";
 
@@ -66,9 +71,19 @@ export function ExploreDetailDrawer({
     : null;
   const phoneHref = explorePhoneHref(detail.phone);
   const ratingLine = exploreVerifiedRatingLine(detail.rating, undefined);
-  const heroStyle = detail.imageUrl
+  const mapCrop =
+    !exploreListingHasRealPhoto(detail.imageUrl) && detail.lat != null && detail.lng != null
+      ? exploreSlotMapCropStyle({ lat: detail.lat, lng: detail.lng })
+      : null;
+  const heroStyle = exploreListingHasRealPhoto(detail.imageUrl)
     ? { backgroundImage: `url(${detail.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
-    : undefined;
+    : mapCrop
+      ? {
+          backgroundImage: `url(${mapCrop.url})`,
+          backgroundSize: "cover",
+          backgroundPosition: mapCrop.backgroundPosition,
+        }
+      : undefined;
 
   return (
     <div className={styles.drawerOverlay} onClick={onClose} role="presentation">
@@ -80,8 +95,11 @@ export function ExploreDetailDrawer({
         aria-label={detail.title}
       >
         <div className={styles.drawerHero} style={heroStyle}>
-          {!detail.imageUrl ? (
+          {!detail.imageUrl && !mapCrop ? (
             <span className={styles.drawerHeroLabel}>{EXPLORE_PHOTO_UNAVAILABLE}</span>
+          ) : null}
+          {mapCrop && !exploreListingHasRealPhoto(detail.imageUrl) ? (
+            <span className={styles.drawerMapPreviewLabel}>{EXPLORE_MAP_PREVIEW_LABEL}</span>
           ) : null}
           <button type="button" className={styles.drawerClose} onClick={onClose} aria-label="Close">
             ×

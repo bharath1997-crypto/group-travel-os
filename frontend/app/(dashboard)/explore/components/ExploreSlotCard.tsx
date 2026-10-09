@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { ExploreSlotCard as ExploreSlotCardType } from "../explore-fixtures";
 import { cardRatingDisplay } from "../explore-card-copy";
-import { EXPLORE_PHOTO_UNAVAILABLE } from "../explore-listing-field-state";
+import { EXPLORE_MAP_PREVIEW_LABEL } from "../explore-listing-media";
 import { ExploreProviderBadge } from "./ExploreProviderBadge";
 import { photoCreditText } from "../explore-photo-credit";
 import styles from "../explore.module.css";
@@ -17,16 +17,31 @@ type ExploreSlotCardProps = {
 export function ExploreSlotCard({ slot, onOpen, isSaved = false }: ExploreSlotCardProps) {
   const ratingLabel = cardRatingDisplay(slot.rating);
   const [photoFailed, setPhotoFailed] = useState(false);
-  const photoLabel = slot.imageLabel || EXPLORE_PHOTO_UNAVAILABLE;
   const showPhoto = Boolean(slot.imageUrl) && !photoFailed;
+  const showMapCrop = !showPhoto && Boolean(slot.mapCropUrl);
+  const mediaLabel =
+    slot.imageLabel ||
+    (showMapCrop ? EXPLORE_MAP_PREVIEW_LABEL : "");
 
   return (
     <button
       type="button"
-      className={`${styles.slotCard} ${!showPhoto ? styles.slotCardNoPhoto : ""}`}
+      className={`${styles.slotCard} ${!showPhoto && !showMapCrop ? styles.slotCardNoPhoto : ""}`}
       onClick={() => onOpen(slot.id)}
     >
-      <span className={styles.slotMedia} style={{ height: slot.imageHeight }}>
+      <span
+        className={styles.slotMedia}
+        style={{
+          height: slot.imageHeight,
+          ...(showMapCrop
+            ? {
+                backgroundImage: `url(${slot.mapCropUrl})`,
+                backgroundSize: "cover",
+                backgroundPosition: slot.mapCropBackgroundPosition ?? "center",
+              }
+            : undefined),
+        }}
+      >
         {showPhoto ? (
           // Provider image URLs are dynamic per listing.
           // eslint-disable-next-line @next/next/no-img-element
@@ -38,9 +53,11 @@ export function ExploreSlotCard({ slot, onOpen, isSaved = false }: ExploreSlotCa
             decoding="async"
             onError={() => setPhotoFailed(true)}
           />
-        ) : (
-          <span className={styles.slotMediaLabel}>{photoLabel}</span>
-        )}
+        ) : showMapCrop ? (
+          <span className={styles.slotMapLabel}>{mediaLabel}</span>
+        ) : mediaLabel ? (
+          <span className={styles.slotMediaLabel}>{mediaLabel}</span>
+        ) : null}
         {showPhoto && slot.imageCredit ? (
           <span className={styles.slotPhotoCredit}>{photoCreditText(slot.imageCredit)}</span>
         ) : null}

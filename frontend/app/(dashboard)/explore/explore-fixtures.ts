@@ -37,6 +37,8 @@ export type ExploreSlotCard = ExploreSlotDetail & {
   imageHeight: number;
   imageLabel: string;
   imageUrl?: string | null;
+  mapCropUrl?: string;
+  mapCropBackgroundPosition?: string;
   badge?: string;
   badgeVariant?: "urgency" | "neutral" | "accent" | "light";
   summary?: string;
