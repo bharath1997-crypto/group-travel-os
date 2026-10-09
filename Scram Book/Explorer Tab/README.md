@@ -2,6 +2,13 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-09 — Explore map crop WebGL snapshot (G12 feed cards)
+
+- **Context:** Claude review of `8d1e87b`; each visible feed card kept a live MapLibre map after scroll (~16 WebGL context cap).
+- **Result:** `explore-map-crop-snapshot.ts` — `preserveDrawingBuffer`, first `idle` → PNG `img`, `map.remove()`; FIFO queue max 2 live maps; in-memory cache by lat/lng/zoom; compact OpenFreeMap/OSM attribution overlay; `ExploreMapCrop` toggles visibility via IntersectionObserver.
+- **Verification:** Explore Vitest **134 passed** (27 files); manual — scroll full Naperville feed, every map card shows image, ≤2 canvases in DevTools.
+- **Next action:** Owner browser sign-off on long feed scroll + mobile.
+
 ## 2026-10-09 — Explore feed Phase 1 approved (Perplexity proposal reviewed)
 
 - Context: the owner shared a Perplexity proposal for an Instagram-style Explore feed, plus mockups of the feed and a place page.
