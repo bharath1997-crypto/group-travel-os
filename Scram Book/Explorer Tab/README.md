@@ -2,6 +2,17 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-09 — Explore feed architecture spec (one location, one server pipeline)
+
+- Context: the owner asked to design the architecture before more UI patches. Explore is dynamic per person and location, but each section resolved its own location in the browser (hero via GPS/IP, places via `CITY_COORDS`, events via a hard-coded metro map, the carousel via its own scope, headings via two different fallback chains). That produced "Explore picks in Austin" above Chicago events.
+- Result: `Explore_Feed_Architecture_Spec.md`:
+  - One location per visit, in priority pick > GPS > IP > default.
+  - A single `GET /api/v1/explore/feed` endpoint built server-side: Overture KNN plus Scaper events by geometry within a radius, using the shared visibility CTE. Quality filter, photo-first, interleave, cursor and counts are all computed on the server.
+  - The server returns the label it used; the page only renders.
+  - No hard-coded city lists. Migration behind a flag.
+- Status: design only, nothing implemented. **Pause** the per-section location/heading patches; the Phase 1 ranking and label rules move server-side.
+- Open owner decisions: default radius (40 km for everything, or 15 km for places); whether a picked location is stored on the device.
+
 ## 2026-10-09 — Decision: no live map crops on feed cards (option A)
 
 - Context: G12 map crops (`0c4581b`, `73775a8`) rendered a full MapLibre map per card and snapshotted it. Measured per card: style 43 KB plus tile index 19 KB plus ~4 vector tiles (~300 KB) plus fonts, then render and wait, about 1.5–3 s each. With 2 at a time, 96 map cards took 1–2+ minutes. The owner also hit a runtime crash, "Cannot read properties of null (reading 'removeChild')": React unmounts the map host while MapLibre is still rendering, then `map.remove()` runs on a detached node (suspected; no stack trace was captured).
