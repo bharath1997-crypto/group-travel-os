@@ -5,6 +5,7 @@ import {
   regionFromGeocodeAddress,
 } from "./explore-hero-location";
 import type { ExploreSlot } from "./explore-hub-data";
+import { resolveScaperMetroCity } from "./explore-scaper-metro";
 
 export type ExploreLocationScope = {
   /** Human-readable active filter line */
@@ -39,9 +40,14 @@ export function scopeFromGeocode(result: LiveGeocodingSearchResult): ExploreLoca
 
   const labelParts = [city || title, state, country].filter(Boolean);
   const resolvedCity = city || title.split(",")[0]?.trim();
+  const metro = resolveScaperMetroCity({
+    lat: Number.isFinite(lat) ? lat : null,
+    lon: Number.isFinite(lon) ? lon : null,
+    fallbackCity: resolvedCity,
+  });
   return {
     label: labelParts.join(", "),
-    fetchCity: resolvedCity,
+    fetchCity: metro,
     city: resolvedCity,
     state: state ?? undefined,
     country: country ?? undefined,
@@ -73,6 +79,12 @@ function slotHaystack(slot: ExploreSlot): string {
 /** Client filter after API fetch — state-only keeps all listings tied to that state/region. */
 export function filterSlotsByLocationScope(slots: ExploreSlot[], scope: ExploreLocationScope | null): ExploreSlot[] {
   if (!scope) return slots;
+
+  const hasGeoAnchor =
+    scope.lat != null && scope.lon != null && Number.isFinite(scope.lat) && Number.isFinite(scope.lon);
+
+  // Events/places are already scoped by API (metro + radius from hero coords).
+  if (hasGeoAnchor) return slots;
 
   let filtered = slots;
 

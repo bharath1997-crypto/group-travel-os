@@ -256,7 +256,7 @@ describe("fetchExploreHub source outcomes", () => {
       .mockResolvedValueOnce({ places: [] });
 
     await fetchExploreHub({
-      city: "Chicago",
+      city: "Naperville",
       lat: 41.7508,
       lon: -88.1535,
       displayLabel: "Naperville, Illinois",
@@ -265,6 +265,8 @@ describe("fetchExploreHub source outcomes", () => {
     const calls = mockedFetch.mock.calls.map((c) => String(c[0]));
     const eventsCall = calls.find((u) => u.includes("/explore/events")) ?? "";
     const placesCall = calls.find((u) => u.includes("/explore/places")) ?? "";
+    expect(eventsCall).toMatch(/city=Chicago/i);
+    expect(eventsCall).not.toMatch(/city=Naperville/i);
     expect(eventsCall).not.toMatch(/lat=41\.7508/);
     expect(placesCall).toMatch(/lat=41\.7508/);
     expect(placesCall).toMatch(/lon=-88\.1535/);

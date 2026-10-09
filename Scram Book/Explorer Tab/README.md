@@ -13,6 +13,13 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 - Decision: **Phase 1 spec** `Explore_Feed_Phase1_Spec.md`, assigned to Cursor. It maps to existing rows (G18/F02 location, F27 mixed feed, F31/G12 photo-first + map crop, F03 quality filter, F05 smaller labels with required links, F24/F28 real-data reason labels). Phase 2 (action-based ranking) and Phase 3 (place pages and Rovvy moments) come later.
 - Pending separately: push of 4 local commits (CI duckdb fix), so production deploys at all.
 
+## 2026-10-09 — Explore Phase 1 browser-review fixes (map crop, Scaper metro, geo filter)
+
+- **Context:** Claude browser review of Phase 1 (`d8c3a1b..a97ffff`); blank `tiles.rovvy.app` crops, Naperville hero → 0 events, ~16 listings.
+- **Result:** MapLibre + `resolveOpenFreeMapCleanStyleUrlForLiveMap()` lazy crops (`ExploreMapCrop`); events/places `city` → nearest Scaper metro within 80 km (Naperville → Chicago) while places query keeps hero lat/lon; `filterSlotsByLocationScope` skips city-name filter when geo anchor set; workbook **F03 → Partial/yellow** (Wikidata label not wired).
+- **Verification:** Explore Vitest **129 passed** (25 files); browser `/explore` Naperville hero — 8 Events, `/explore/events?city=Chicago` 200, OpenFreeMap `styles/liberty` 200 on map crops; geo scope skips client city/state filter (API radius).
+- **Next action:** Owner push when ready; wire Wikidata display label for F03 Complete.
+
 ## 2026-10-09 — Explore Feed Phase 1 (items 1–6, spec `Explore_Feed_Phase1_Spec.md`)
 
 - **Context:** Owner-approved honest photo-first feed; F15 hide facts without backing data.

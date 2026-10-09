@@ -1,8 +1,3 @@
-import {
-  buildMapCropBackgroundPosition,
-  buildMapCropTileUrl,
-} from "@/app/(dashboard)/live/place-panel-map-tile";
-
 import type { ExploreSlot } from "./explore-hub-data";
 
 export const EXPLORE_MAP_PREVIEW_LABEL = "Map preview";
@@ -12,36 +7,30 @@ export function exploreListingHasRealPhoto(imageUrl?: string | null): boolean {
   return url.startsWith("http://") || url.startsWith("https://");
 }
 
-export function exploreSlotMapCropStyle(slot: Pick<ExploreSlot, "lat" | "lng">): {
-  url: string;
-  backgroundPosition: string;
-} | null {
+export function exploreSlotHasMapCropCoords(slot: Pick<ExploreSlot, "lat" | "lng">): boolean {
   const lat = slot.lat;
   const lng = slot.lng;
-  if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  return {
-    url: buildMapCropTileUrl(lat, lng),
-    backgroundPosition: buildMapCropBackgroundPosition(lat, lng),
-  };
+  return lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng);
 }
 
 export type ExploreCardMedia = {
   imageUrl?: string;
-  mapCropUrl?: string;
-  mapCropBackgroundPosition?: string;
+  useMapCrop?: boolean;
+  mapCropLat?: number;
+  mapCropLng?: number;
   imageLabel: string;
 };
 
-/** Real provider photo, else static OpenFreeMap tile crop — never stock art (G12). */
+/** Real provider photo, else MapLibre map crop at coordinates (G12) — never stock art. */
 export function resolveExploreCardMedia(slot: ExploreSlot): ExploreCardMedia {
   if (exploreListingHasRealPhoto(slot.imageUrl)) {
     return { imageUrl: slot.imageUrl!.trim(), imageLabel: "" };
   }
-  const crop = exploreSlotMapCropStyle(slot);
-  if (crop) {
+  if (exploreSlotHasMapCropCoords(slot)) {
     return {
-      mapCropUrl: crop.url,
-      mapCropBackgroundPosition: crop.backgroundPosition,
+      useMapCrop: true,
+      mapCropLat: slot.lat as number,
+      mapCropLng: slot.lng as number,
       imageLabel: EXPLORE_MAP_PREVIEW_LABEL,
     };
   }

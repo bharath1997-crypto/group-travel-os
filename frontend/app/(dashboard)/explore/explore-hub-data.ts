@@ -39,6 +39,7 @@ import { formatExploreDistanceFromMeters, formatExploreDistanceMiles } from "./e
 import { interleaveEventSlotsByDayAndProvider } from "./explore-event-interleave";
 import { rankExploreHubSlots } from "./explore-feed-quality";
 import { interleaveExploreListingSlots } from "./explore-hub-counts";
+import { resolveScaperMetroCity } from "./explore-scaper-metro";
 import {
   filterVerifiedExploreApiEventRows,
   isEditorialExploreListing,
@@ -435,6 +436,11 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
       ? { city: target.split(",")[0].trim() || "Chicago" }
       : target;
   const cityLabel = input.city.split(",")[0].trim() || "Chicago";
+  const scaperMetro = resolveScaperMetroCity({
+    lat: input.lat,
+    lon: input.lon,
+    fallbackCity: cityLabel,
+  });
   const placesCoords =
     input.lat != null && input.lon != null
       ? { lat: input.lat, lng: input.lon }
@@ -444,8 +450,8 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
     : null;
 
   const eventParams = new URLSearchParams({
-    city: cityLabel,
-    per_page: cityLabel === "Orlando" ? "300" : "100",
+    city: scaperMetro,
+    per_page: scaperMetro === "Orlando" ? "300" : "100",
   });
   if (input.dateFrom) eventParams.set("date_from", input.dateFrom);
   if (input.dateTo) eventParams.set("date_to", input.dateTo);
@@ -482,7 +488,7 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
         source_status?: ExplorePlacesSourceStatus;
         freshness?: ExploreFreshnessMeta;
       }>(
-        `/explore/places?${explorePlacesQuery(cityLabel, placesCoords)}&category=attractions`,
+        `/explore/places?${explorePlacesQuery(scaperMetro, placesCoords)}&category=attractions`,
         {},
         EXPLORE_FETCH_TIMEOUT_MS,
       ),
@@ -493,7 +499,7 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
         source_status?: ExplorePlacesSourceStatus;
         freshness?: ExploreFreshnessMeta;
       }>(
-        `/explore/places?${explorePlacesQuery(cityLabel, placesCoords)}&category=restaurants`,
+        `/explore/places?${explorePlacesQuery(scaperMetro, placesCoords)}&category=restaurants`,
         {},
         EXPLORE_FETCH_TIMEOUT_MS,
       ),

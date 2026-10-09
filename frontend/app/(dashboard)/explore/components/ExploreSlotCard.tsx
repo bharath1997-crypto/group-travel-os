@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { ExploreSlotCard as ExploreSlotCardType } from "../explore-fixtures";
 import { cardRatingDisplay } from "../explore-card-copy";
 import { EXPLORE_MAP_PREVIEW_LABEL } from "../explore-listing-media";
+import { ExploreMapCrop } from "./ExploreMapCrop";
 import { ExploreProviderBadge } from "./ExploreProviderBadge";
 import { photoCreditText } from "../explore-photo-credit";
 import styles from "../explore.module.css";
@@ -18,7 +19,11 @@ export function ExploreSlotCard({ slot, onOpen, isSaved = false }: ExploreSlotCa
   const ratingLabel = cardRatingDisplay(slot.rating);
   const [photoFailed, setPhotoFailed] = useState(false);
   const showPhoto = Boolean(slot.imageUrl) && !photoFailed;
-  const showMapCrop = !showPhoto && Boolean(slot.mapCropUrl);
+  const showMapCrop =
+    !showPhoto &&
+    slot.useMapCrop &&
+    slot.mapCropLat != null &&
+    slot.mapCropLng != null;
   const mediaLabel =
     slot.imageLabel ||
     (showMapCrop ? EXPLORE_MAP_PREVIEW_LABEL : "");
@@ -29,19 +34,7 @@ export function ExploreSlotCard({ slot, onOpen, isSaved = false }: ExploreSlotCa
       className={`${styles.slotCard} ${!showPhoto && !showMapCrop ? styles.slotCardNoPhoto : ""}`}
       onClick={() => onOpen(slot.id)}
     >
-      <span
-        className={styles.slotMedia}
-        style={{
-          height: slot.imageHeight,
-          ...(showMapCrop
-            ? {
-                backgroundImage: `url(${slot.mapCropUrl})`,
-                backgroundSize: "cover",
-                backgroundPosition: slot.mapCropBackgroundPosition ?? "center",
-              }
-            : undefined),
-        }}
-      >
+      <span className={styles.slotMedia} style={{ height: slot.imageHeight }}>
         {showPhoto ? (
           // Provider image URLs are dynamic per listing.
           // eslint-disable-next-line @next/next/no-img-element
@@ -54,7 +47,15 @@ export function ExploreSlotCard({ slot, onOpen, isSaved = false }: ExploreSlotCa
             onError={() => setPhotoFailed(true)}
           />
         ) : showMapCrop ? (
-          <span className={styles.slotMapLabel}>{mediaLabel}</span>
+          <>
+            <ExploreMapCrop
+              lat={slot.mapCropLat!}
+              lng={slot.mapCropLng!}
+              height={slot.imageHeight}
+              lazy
+            />
+            <span className={styles.slotMapLabel}>{mediaLabel}</span>
+          </>
         ) : mediaLabel ? (
           <span className={styles.slotMediaLabel}>{mediaLabel}</span>
         ) : null}

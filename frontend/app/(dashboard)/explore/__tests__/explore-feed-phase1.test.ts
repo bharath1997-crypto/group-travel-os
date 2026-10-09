@@ -100,12 +100,13 @@ describe("explore feed phase 1", () => {
     expect(EXPLORE_DEMOTE_CHAIN_NAMES.length).toBeGreaterThan(4);
   });
 
-  it("uses map crop when no photo but coordinates exist", () => {
+  it("uses MapLibre map crop when no photo but coordinates exist", () => {
     const media = resolveExploreCardMedia(
       eventSlot({ id: "p1", source: "Overture", lat: 41.8781, lng: -87.6298, imageUrl: null }),
     );
     expect(media.imageUrl).toBeUndefined();
-    expect(media.mapCropUrl).toMatch(/\/17\//);
+    expect(media.useMapCrop).toBe(true);
+    expect(media.mapCropLat).toBeCloseTo(41.8781, 4);
     expect(media.imageLabel).toBe(EXPLORE_MAP_PREVIEW_LABEL);
   });
 
@@ -162,5 +163,6 @@ describe("explore feed phase 1", () => {
     expect(scope.label).toContain("Naperville");
     expect(scope.lat).toBeCloseTo(41.7508, 3);
     expect(scope.fetchCity).toBe("Chicago");
+    expect(scope.city).toBe("Naperville");
   });
 });
