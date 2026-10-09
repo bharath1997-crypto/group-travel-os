@@ -876,7 +876,7 @@ export default function ExplorePage() {
           <section className={styles.note} aria-live="polite">
             <button
               type="button"
-              className={styles.broadcastBtn}
+              className={styles.hubLoadMoreBtn}
               onClick={() => setVisibleLimit((limit) => limit + EXPLORE_HUB_PAGE_SIZE)}
             >
               {formatLoadMoreButtonLabel(hubCounts.visibleCount, hubCounts.matchingCount)}

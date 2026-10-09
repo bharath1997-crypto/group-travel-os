@@ -19,6 +19,7 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 - **Owner decision (A):** feed cards without a real photo become compact text cards (no media area). The map stays only in the drawer (one map at a time). The card map crop is deferred to option B: pre-render the map image on the server once per place, store it in R2, and serve it as an image.
 - **Result:** Deleted `ExploreMapCrop`, `explore-map-crop-snapshot.ts`, and tests; `ExploreSlotCard` compact text layout; `ExploreDrawerMap` unchanged; workbook **G12 → Partial/yellow**.
 - **Verification:** Explore Vitest (no map-crop tests); `tsc --noEmit` (2 pre-existing ProfileTravelMap errors only); owner browser — full Naperville feed scroll + Load more ×3, no MapLibre on cards / no removeChild crash.
+- **Also:** hub pagination **Load 24 more** uses `hubLoadMoreBtn` (teal on white `.note`) — was `broadcastBtn` (light-on-dark) and failed contrast on the content band.
 
 ## 2026-10-09 — Explore map crop WebGL snapshot (G12 feed cards)
 
