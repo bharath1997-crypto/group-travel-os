@@ -2,6 +2,17 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-09 — Explore feed Phase 1 approved (Perplexity proposal reviewed)
+
+- Context: the owner shared a Perplexity proposal for an Instagram-style Explore feed, plus mockups of the feed and a place page.
+- Claude's review:
+  - Confirmed the "wrong area" bug: the hero showed Naperville while the request used downtown `CITY_COORDS`.
+  - Confirmed text-only cards (~5 of 96 nearest places have photos) and Overture's data-quality issues (chains, "Millienum Park").
+  - Flagged that the mockup's open hours, spots left, per-person prices, "Fits 6" and friend counts are placeholders, and F15 forbids showing them without data.
+  - Drawn category images would reverse G08; the owner chose the **G12 map crop** instead.
+- Decision: **Phase 1 spec** `Explore_Feed_Phase1_Spec.md`, assigned to Cursor. It maps to existing rows (G18/F02 location, F27 mixed feed, F31/G12 photo-first + map crop, F03 quality filter, F05 smaller labels with required links, F24/F28 real-data reason labels). Phase 2 (action-based ranking) and Phase 3 (place pages and Rovvy moments) come later.
+- Pending separately: push of 4 local commits (CI duckdb fix), so production deploys at all.
+
 ## 2026-10-08 — Scaper owner removal + `/legal/data` (spec item 9)
 
 - **Context:** SHIFT HANDOFF + Ticketmaster national spec item 9; removal requests need a published contact (`rovvy230@gmail.com` via `frontend/lib/contact-config.ts` until owner moves to support@).
