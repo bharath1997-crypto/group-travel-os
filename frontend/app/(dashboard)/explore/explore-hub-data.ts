@@ -33,6 +33,11 @@ import {
   type ExplorePlacesSourceStatus,
   type ExploreSourceStatusMap,
 } from "./explore-hub-fetch-state";
+import { haversineMiles } from "@/lib/hero-location";
+
+import { formatExploreDistanceFromMeters, formatExploreDistanceMiles } from "./explore-distance-label";
+import { interleaveEventSlotsByDayAndProvider } from "./explore-event-interleave";
+import { rankExploreHubSlots } from "./explore-feed-quality";
 import { interleaveExploreListingSlots } from "./explore-hub-counts";
 import {
   filterVerifiedExploreApiEventRows,
@@ -86,6 +91,7 @@ export type ExploreSlot = ExplorerDrawerItem & {
   exploreListingKind: "event" | "place";
   explorePlaceBucket?: "attractions" | "restaurants";
   eventDateIso?: string | null;
+  eventStartsAtMs?: number | null;
   /** Full street address from the provider (places only). */
   placeAddress?: string | null;
   phone?: string | null;
@@ -104,6 +110,8 @@ export type ExploreHubPayload = {
   sourceFreshness: ExploreSourceFreshness;
   sources: string[];
   locationScope?: ExploreLocationScope | null;
+  /** Coordinates used for places radius + distance labels (hero anchor). */
+  placesAnchor?: { lat: number; lng: number } | null;
   hubLoadState: ExploreHubLoadState;
   sourceStatus: ExploreSourceStatusMap;
 };
@@ -112,10 +120,29 @@ function isEditorialEvent(event: ExploreEvent): boolean {
   return isEditorialExploreListing(event.source, event.id);
 }
 
+type DistanceAnchor = { lat: number; lng: number };
+
 function formatDistanceFromMeters(distanceM: number | null | undefined): string {
-  if (distanceM == null || !Number.isFinite(distanceM)) return "—";
-  const miles = distanceM / 1609.344;
-  return formatDistanceKm(miles);
+  return formatExploreDistanceFromMeters(distanceM);
+}
+
+function eventDistanceMiles(
+  event: ExploreEvent,
+  anchor: DistanceAnchor | null,
+): number | null {
+  if (
+    anchor &&
+    event.venue_lat != null &&
+    event.venue_lon != null &&
+    Number.isFinite(event.venue_lat) &&
+    Number.isFinite(event.venue_lon)
+  ) {
+    return haversineMiles(anchor.lat, anchor.lng, event.venue_lat, event.venue_lon);
+  }
+  if (event.distance_miles != null && Number.isFinite(event.distance_miles)) {
+    return event.distance_miles;
+  }
+  return null;
 }
 
 type EventsAPIResponse = {
@@ -215,7 +242,15 @@ function themeForCategory(category: string, name: string): PhotoTheme {
   return "art";
 }
 
-function eventToSlot(event: ExploreEvent, index: number): ExploreSlot {
+function parseEventStartMs(event: ExploreEvent): number | null {
+  const day = (event.date || event.start_date || "").slice(0, 10);
+  if (!day || day.length < 10) return null;
+  const time = (event.time || "").trim() || "19:00";
+  const parsed = Date.parse(`${day}T${time}:00`);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function eventToSlot(event: ExploreEvent, index: number, anchor: DistanceAnchor | null): ExploreSlot {
   const editorial = isEditorialEvent(event);
   const category = normalizeCategory(event.category, event.name);
   const priceState = exploreEventPriceState(event);
@@ -288,8 +323,10 @@ function eventToSlot(event: ExploreEvent, index: number): ExploreSlot {
       countryLabel: event.country,
       venue: event.venue,
     }) ?? "",
-    distanceLabel: formatDistanceKm(event.distance_miles),
-    distanceMiles: event.distance_miles ?? null,
+    distanceLabel: formatExploreDistanceMiles(eventDistanceMiles(event, anchor)),
+    distanceMiles: eventDistanceMiles(event, anchor),
+    lat: event.venue_lat ?? null,
+    lng: event.venue_lon ?? null,
     availability,
     stateLabel: event.state ?? undefined,
     countryLabel: event.country ?? undefined,
@@ -297,6 +334,7 @@ function eventToSlot(event: ExploreEvent, index: number): ExploreSlot {
     priceKnown,
     exploreListingKind: "event",
     eventDateIso: (event.date || event.start_date || "").split("T")[0]?.slice(0, 10) || null,
+    eventStartsAtMs: parseEventStartMs(event),
   };
 }
 
@@ -397,18 +435,20 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
       ? { city: target.split(",")[0].trim() || "Chicago" }
       : target;
   const cityLabel = input.city.split(",")[0].trim() || "Chicago";
-  const coords =
+  const placesCoords =
     input.lat != null && input.lon != null
       ? { lat: input.lat, lng: input.lon }
       : CITY_COORDS[cityLabel];
-  const params = new URLSearchParams({ city: cityLabel, per_page: cityLabel === "Orlando" ? "300" : "100" });
-  if (input.dateFrom) params.set("date_from", input.dateFrom);
-  if (input.dateTo) params.set("date_to", input.dateTo);
-  if (coords) {
-    params.set("lat", String(coords.lat));
-    params.set("lon", String(coords.lng));
-    params.set("radius", "200");
-  }
+  const distanceAnchor = placesCoords
+    ? { lat: placesCoords.lat, lng: placesCoords.lng }
+    : null;
+
+  const eventParams = new URLSearchParams({
+    city: cityLabel,
+    per_page: cityLabel === "Orlando" ? "300" : "100",
+  });
+  if (input.dateFrom) eventParams.set("date_from", input.dateFrom);
+  if (input.dateTo) eventParams.set("date_to", input.dateTo);
   const scope: ExploreLocationScope | null =
     input.state || input.country || input.displayLabel
       ? {
@@ -434,7 +474,7 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
 
   const [eventsResult, attractionsResult, restaurantsResult] = await Promise.all([
     fetchExploreSource(() =>
-      apiFetch<EventsAPIResponse>(`/explore/events?${params.toString()}`, {}, EXPLORE_FETCH_TIMEOUT_MS),
+      apiFetch<EventsAPIResponse>(`/explore/events?${eventParams.toString()}`, {}, EXPLORE_FETCH_TIMEOUT_MS),
     ),
     fetchExploreSource(() =>
       apiFetch<{
@@ -442,7 +482,7 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
         source_status?: ExplorePlacesSourceStatus;
         freshness?: ExploreFreshnessMeta;
       }>(
-        `/explore/places?${explorePlacesQuery(cityLabel, coords)}&category=attractions`,
+        `/explore/places?${explorePlacesQuery(cityLabel, placesCoords)}&category=attractions`,
         {},
         EXPLORE_FETCH_TIMEOUT_MS,
       ),
@@ -453,7 +493,7 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
         source_status?: ExplorePlacesSourceStatus;
         freshness?: ExploreFreshnessMeta;
       }>(
-        `/explore/places?${explorePlacesQuery(cityLabel, coords)}&category=restaurants`,
+        `/explore/places?${explorePlacesQuery(cityLabel, placesCoords)}&category=restaurants`,
         {},
         EXPLORE_FETCH_TIMEOUT_MS,
       ),
@@ -511,7 +551,9 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
     ),
   };
 
-  const eventSlots = eventsResult.ok ? eventPool.map((ev, i) => eventToSlot(ev, i)) : [];
+  const eventSlots = eventsResult.ok
+    ? interleaveEventSlotsByDayAndProvider(eventPool.map((ev, i) => eventToSlot(ev, i, distanceAnchor)))
+    : [];
   const attractionSlots = attractionsResult.ok
     ? attractionPlaces.map((p, i) => placeToSlot(p, cityLabel, i, "attractions"))
     : [];
@@ -522,6 +564,7 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
   if (scope) {
     slots = filterSlotsByLocationScope(slots, scope);
   }
+  slots = rankExploreHubSlots(slots);
 
   const sources = new Set<string>();
   if (eventsResult.ok) {
@@ -549,6 +592,7 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
     },
     sources: Array.from(sources),
     locationScope: scope,
+    placesAnchor: distanceAnchor,
     hubLoadState,
     sourceStatus,
   };
