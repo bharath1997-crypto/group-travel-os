@@ -2,6 +2,58 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-09 — Explore feed architecture spec (one location, one server pipeline)
+
+- Context: the owner asked to design the architecture before more UI patches. Explore is dynamic per person and location, but each section resolved its own location in the browser (hero via GPS/IP, places via `CITY_COORDS`, events via a hard-coded metro map, the carousel via its own scope, headings via two different fallback chains). That produced "Explore picks in Austin" above Chicago events.
+- Result: `Explore_Feed_Architecture_Spec.md`:
+  - One location per visit, in priority pick > GPS > IP > default.
+  - A single `GET /api/v1/explore/feed` endpoint built server-side: Overture KNN plus Scaper events by geometry within a radius, using the shared visibility CTE. Quality filter, photo-first, interleave, cursor and counts are all computed on the server.
+  - The server returns the label it used; the page only renders.
+  - No hard-coded city lists. Migration behind a flag.
+- Status: design only, nothing implemented. **Pause** the per-section location/heading patches; the Phase 1 ranking and label rules move server-side.
+- Open owner decisions: default radius (40 km for everything, or 15 km for places); whether a picked location is stored on the device.
+
+## 2026-10-09 — Decision: no live map crops on feed cards (option A)
+
+- Context: G12 map crops (`0c4581b`, `73775a8`) rendered a full MapLibre map per card and snapshotted it. Measured per card: style 43 KB plus tile index 19 KB plus ~4 vector tiles (~300 KB) plus fonts, then render and wait, about 1.5–3 s each. With 2 at a time, 96 map cards took 1–2+ minutes. The owner also hit a runtime crash, "Cannot read properties of null (reading 'removeChild')": React unmounts the map host while MapLibre is still rendering, then `map.remove()` runs on a detached node (suspected; no stack trace was captured).
+- **Owner decision (A):** feed cards without a real photo become compact text cards (no media area). The map stays only in the drawer (one map at a time). The card map crop is deferred to option B: pre-render the map image on the server once per place, store it in R2, and serve it as an image.
+- **Result:** Deleted `ExploreMapCrop`, `explore-map-crop-snapshot.ts`, and tests; `ExploreSlotCard` compact text layout; `ExploreDrawerMap` unchanged; workbook **G12 → Partial/yellow**.
+- **Verification:** Explore Vitest (no map-crop tests); `tsc --noEmit` (2 pre-existing ProfileTravelMap errors only); owner browser — full Naperville feed scroll + Load more ×3, no MapLibre on cards / no removeChild crash.
+- **Also:** hub pagination **Load 24 more** uses `hubLoadMoreBtn` (teal on white `.note`) — was `broadcastBtn` (light-on-dark) and failed contrast on the content band.
+
+## 2026-10-09 — Explore map crop WebGL snapshot (G12 feed cards)
+
+- **Context:** Claude review of `8d1e87b`; each visible feed card kept a live MapLibre map after scroll (~16 WebGL context cap).
+- **Result:** `explore-map-crop-snapshot.ts` — `preserveDrawingBuffer`, first `idle` → PNG `img`, `map.remove()`; FIFO queue max 2 live maps; in-memory cache by lat/lng/zoom; compact OpenFreeMap/OSM attribution overlay; `ExploreMapCrop` toggles visibility via IntersectionObserver.
+- **Verification:** Explore Vitest **134 passed** (27 files); manual — scroll full Naperville feed, every map card shows image, ≤2 canvases in DevTools.
+- **Next action:** Owner browser sign-off on long feed scroll + mobile.
+
+## 2026-10-09 — Explore feed Phase 1 approved (Perplexity proposal reviewed)
+
+- Context: the owner shared a Perplexity proposal for an Instagram-style Explore feed, plus mockups of the feed and a place page.
+- Claude's review:
+  - Confirmed the "wrong area" bug: the hero showed Naperville while the request used downtown `CITY_COORDS`.
+  - Confirmed text-only cards (~5 of 96 nearest places have photos) and Overture's data-quality issues (chains, "Millienum Park").
+  - Flagged that the mockup's open hours, spots left, per-person prices, "Fits 6" and friend counts are placeholders, and F15 forbids showing them without data.
+  - Drawn category images would reverse G08; the owner chose the **G12 map crop** instead.
+- Decision: **Phase 1 spec** `Explore_Feed_Phase1_Spec.md`, assigned to Cursor. It maps to existing rows (G18/F02 location, F27 mixed feed, F31/G12 photo-first + map crop, F03 quality filter, F05 smaller labels with required links, F24/F28 real-data reason labels). Phase 2 (action-based ranking) and Phase 3 (place pages and Rovvy moments) come later.
+- Pending separately: push of 4 local commits (CI duckdb fix), so production deploys at all.
+
+## 2026-10-09 — Explore Phase 1 browser-review fixes (map crop, Scaper metro, geo filter)
+
+- **Context:** Claude browser review of Phase 1 (`d8c3a1b..a97ffff`); blank `tiles.rovvy.app` crops, Naperville hero → 0 events, ~16 listings.
+- **Result:** MapLibre + `resolveOpenFreeMapCleanStyleUrlForLiveMap()` lazy crops (`ExploreMapCrop`); events/places `city` → nearest Scaper metro within 80 km (Naperville → Chicago) while places query keeps hero lat/lon; `filterSlotsByLocationScope` skips city-name filter when geo anchor set; workbook **F03 → Partial/yellow** (Wikidata label not wired).
+- **Verification:** Explore Vitest **129 passed** (25 files); browser `/explore` Naperville hero — 8 Events, `/explore/events?city=Chicago` 200, OpenFreeMap `styles/liberty` 200 on map crops; geo scope skips client city/state filter (API radius).
+- **Next action:** Owner push when ready; wire Wikidata display label for F03 Complete.
+
+## 2026-10-09 — Explore Feed Phase 1 (items 1–6, spec `Explore_Feed_Phase1_Spec.md`)
+
+- **Context:** Owner-approved honest photo-first feed; F15 hide facts without backing data.
+- **Result:** Hero scope drives places API coords (events stay city-scoped); per-day TM/EB interleave; photo-first rank + z17 map crop (G12); chain/category demote; smaller provider labels; reason chips from real fields + Collection similarity.
+- **Verification:** Explore Vitest **126 passed** (23 files); `tsc --noEmit` 0 new errors (2 pre-existing ProfileTravelMap `zIndexOffset`); browser QA on `/explore` with Naperville-style scope (owner).
+- **Risks:** Wikidata display names not in API yet — chain/category demote only; F27 still client pool only (no backend pagination).
+- **Next action:** Phase 2 action-based ranking; owner browser sign-off on non-downtown location.
+
 ## 2026-10-08 — Scaper owner removal + `/legal/data` (spec item 9)
 
 - **Context:** SHIFT HANDOFF + Ticketmaster national spec item 9; removal requests need a published contact (`rovvy230@gmail.com` via `frontend/lib/contact-config.ts` until owner moves to support@).

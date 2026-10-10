@@ -1,11 +1,8 @@
 import { cardRatingDisplay, normalizeCardSummary } from "./explore-card-copy";
 import { formatSlotListingArea } from "./explore-listing-location";
 import { hubListingBadge, normalizeListingAvailability } from "./explore-availability-copy";
-import {
-  EXPLORE_PHOTO_UNAVAILABLE,
-  exploreSlotPriceLabel,
-  exploreVerifiedRatingLine,
-} from "./explore-listing-field-state";
+import { resolveExploreCardMedia } from "./explore-listing-media";
+import { exploreSlotPriceLabel, exploreVerifiedRatingLine } from "./explore-listing-field-state";
 import { filterSlotsByPrompt, type ExploreSlot } from "./explore-hub-data";
 import { filterHubSlotsByChips as filterHubSlotsByChipsWithWhen } from "./explore-hub-chip-match";
 import {
@@ -28,6 +25,7 @@ function badgeVariantFor(_slot: ExploreSlot): ExploreSlotCard["badgeVariant"] {
 
 export function hubSlotToCard(slot: ExploreSlot, index: number): ExploreSlotCard {
   const ratingRaw = exploreVerifiedRatingLine(slot.rating, slot.reviews);
+  const media = resolveExploreCardMedia(slot);
   return {
     kind: "slot",
     id: slot.id,
@@ -42,13 +40,15 @@ export function hubSlotToCard(slot: ExploreSlot, index: number): ExploreSlotCard
     tags: slot.tags,
     amount: slot.amount,
     imageHeight: CARD_HEIGHTS[index % CARD_HEIGHTS.length],
-    imageLabel: slot.imageUrl ? "" : EXPLORE_PHOTO_UNAVAILABLE,
-    imageUrl: slot.imageUrl,
+    imageLabel: media.imageLabel,
+    imageUrl: media.imageUrl ?? slot.imageUrl,
+    distanceLabel: slot.distanceLabel,
     imageCredit: slot.imageCredit ?? null,
     badge: hubListingBadge(slot),
     badgeVariant: badgeVariantFor(slot),
     summary: normalizeCardSummary(slot.title, slot.summary),
-    overlayTitle: Boolean(slot.imageUrl && slot.price === "Free"),
+    reason: slot.reason,
+    overlayTitle: Boolean(media.imageUrl && slot.price === "Free"),
   };
 }
 

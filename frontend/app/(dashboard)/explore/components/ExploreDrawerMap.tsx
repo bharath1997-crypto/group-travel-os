@@ -1,51 +1,57 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import "maplibre-gl/dist/maplibre-gl.css";
-import { OPENFREEMAP_PUBLIC_ORIGIN, resolveOpenFreeMapCleanStyleUrlForLiveMap } from "@/lib/map-providers";
+
+import { mountExploreStaticMap } from "../explore-static-map";
 import styles from "../explore.module.css";
 
 type ExploreDrawerMapProps = {
   lat: number;
   lng: number;
   label: string;
+  zoom?: number;
+  className?: string;
 };
 
 /** Small static pin map for the listing drawer (same OpenFreeMap style as Live). */
-export function ExploreDrawerMap({ lat, lng, label }: ExploreDrawerMapProps) {
+export function ExploreDrawerMap({ lat, lng, label, zoom = 15, className }: ExploreDrawerMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const mountGenerationRef = useRef(0);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    let map: import("maplibre-gl").Map | null = null;
-    let cancelled = false;
 
-    void import("maplibre-gl").then(({ default: maplibregl }) => {
-      if (cancelled) return;
-      map = new maplibregl.Map({
-        container,
-        style: resolveOpenFreeMapCleanStyleUrlForLiveMap(),
-        center: [lng, lat],
-        zoom: 15,
-        interactive: false,
-        attributionControl: { compact: true },
-      });
-      new maplibregl.Marker({ color: "#0f6b5c" }).setLngLat([lng, lat]).addTo(map);
-      // Self-hosted tiles may be unreachable (e.g. tiles.rovvy.app not provisioned): fall back once.
-      let usedFallback = false;
-      map.on("error", () => {
-        if (usedFallback || !map) return;
-        usedFallback = true;
-        map.setStyle(`${OPENFREEMAP_PUBLIC_ORIGIN}/styles/liberty`);
-      });
+    const generation = mountGenerationRef.current + 1;
+    mountGenerationRef.current = generation;
+    const isActive = () => mountGenerationRef.current === generation;
+
+    let teardown: (() => void) | null = null;
+
+    void mountExploreStaticMap(container, { lat, lng, zoom }, isActive).then((remove) => {
+      if (!isActive()) {
+        remove();
+        return;
+      }
+      teardown = remove;
     });
 
     return () => {
-      cancelled = true;
-      map?.remove();
+      mountGenerationRef.current += 1;
+      teardown?.();
+      teardown = null;
+      if (container.isConnected) {
+        container.replaceChildren();
+      }
     };
-  }, [lat, lng]);
+  }, [lat, lng, zoom]);
 
-  return <div ref={containerRef} className={styles.drawerMapLive} role="img" aria-label={`Map of ${label}`} />;
+  return (
+    <div
+      ref={containerRef}
+      className={className ?? styles.drawerMapLive}
+      role="img"
+      aria-label={`Map of ${label}`}
+    />
+  );
 }

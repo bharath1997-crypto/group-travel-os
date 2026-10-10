@@ -16,6 +16,7 @@ import { openExploreListingUrl } from "../explore-open-listing";
 import styles from "../explore.module.css";
 import { ExploreDrawerMap } from "./ExploreDrawerMap";
 import { ExploreDrawerPhotoUpload } from "./ExploreDrawerPhotoUpload";
+import { EXPLORE_MAP_PREVIEW_LABEL, exploreListingHasRealPhoto } from "../explore-listing-media";
 import { photoCreditText } from "../explore-photo-credit";
 import { explorePhoneHref } from "../explore-place-actions";
 
@@ -66,7 +67,9 @@ export function ExploreDetailDrawer({
     : null;
   const phoneHref = explorePhoneHref(detail.phone);
   const ratingLine = exploreVerifiedRatingLine(detail.rating, undefined);
-  const heroStyle = detail.imageUrl
+  const heroPhoto = exploreListingHasRealPhoto(detail.imageUrl);
+  const heroMapCrop = !heroPhoto && hasPin;
+  const heroStyle = heroPhoto
     ? { backgroundImage: `url(${detail.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
     : undefined;
 
@@ -80,8 +83,20 @@ export function ExploreDetailDrawer({
         aria-label={detail.title}
       >
         <div className={styles.drawerHero} style={heroStyle}>
-          {!detail.imageUrl ? (
+          {heroMapCrop ? (
+            <ExploreDrawerMap
+              lat={detail.lat as number}
+              lng={detail.lng as number}
+              label={detail.title}
+              zoom={17}
+              className={styles.drawerHeroMap}
+            />
+          ) : null}
+          {!heroPhoto && !heroMapCrop ? (
             <span className={styles.drawerHeroLabel}>{EXPLORE_PHOTO_UNAVAILABLE}</span>
+          ) : null}
+          {heroMapCrop ? (
+            <span className={styles.drawerMapPreviewLabel}>{EXPLORE_MAP_PREVIEW_LABEL}</span>
           ) : null}
           <button type="button" className={styles.drawerClose} onClick={onClose} aria-label="Close">
             ×
@@ -118,7 +133,7 @@ export function ExploreDetailDrawer({
               <span key={tag}>{tag}</span>
             ))}
           </div>
-          {hasPin ? (
+          {hasPin && !heroMapCrop ? (
             <ExploreDrawerMap lat={detail.lat as number} lng={detail.lng as number} label={detail.title} />
           ) : detail.area?.trim() ? (
             <div className={styles.drawerMap}>

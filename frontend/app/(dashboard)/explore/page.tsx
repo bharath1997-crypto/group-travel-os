@@ -29,6 +29,7 @@ import { useExploreHubSaves } from "./use-explore-hub-saves";
 
 import { ExploreWayraPlanCard } from "./components/ExploreWayraPlanCard";
 
+import { exploreCardReasonLabel } from "./explore-card-reason";
 import { HeroLocationWidget } from "./HeroLocationWidget";
 
 import {
@@ -181,7 +182,22 @@ export default function ExplorePage() {
   const hubSaves = useExploreHubSaves(displayCity);
 
   const hubLoadState = data?.hubLoadState;
-  const loadedScopeSlots = !loading && data != null ? data.slots : [];
+  const loadedScopeSlots = useMemo(() => {
+    if (loading || !data) return [];
+    const savedPlaceSlots = data.slots.filter(
+      (s) => s.exploreListingKind === "place" && hubSaves.savedSlotIds.includes(s.id),
+    );
+    return data.slots.map((slot) => ({
+      ...slot,
+      reason:
+        exploreCardReasonLabel(slot, {
+          when,
+          savedPlaceSlots,
+          anchorLat: data.placesAnchor?.lat ?? locationScope?.lat,
+          anchorLon: data.placesAnchor?.lng ?? locationScope?.lon,
+        }) ?? slot.reason,
+    }));
+  }, [loading, data, when, hubSaves.savedSlotIds, locationScope?.lat, locationScope?.lon]);
   const timeScopedSlots = useMemo(
     () => filterSlotsByTimeScope(loadedScopeSlots, when, calendarDayIso),
     [loadedScopeSlots, when, calendarDayIso],
@@ -382,7 +398,7 @@ export default function ExplorePage() {
             listingCountState={heroListingCountState}
 
             onCityChange={handleCityChange}
-
+            onLocationScope={handleLocationScope}
           />
 
           <div className={styles.heroContent}>
@@ -860,7 +876,7 @@ export default function ExplorePage() {
           <section className={styles.note} aria-live="polite">
             <button
               type="button"
-              className={styles.broadcastBtn}
+              className={styles.hubLoadMoreBtn}
               onClick={() => setVisibleLimit((limit) => limit + EXPLORE_HUB_PAGE_SIZE)}
             >
               {formatLoadMoreButtonLabel(hubCounts.visibleCount, hubCounts.matchingCount)}

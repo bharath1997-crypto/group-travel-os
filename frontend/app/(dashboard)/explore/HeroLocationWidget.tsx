@@ -1,7 +1,7 @@
 "use client";
 
 import { LocateFixed, MapPin, Search, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   liveGeocodingSearch,
@@ -19,6 +19,8 @@ import {
   formatExploreHeroListingCountLine,
   type ExploreHeroListingCountState,
 } from "./explore-hero-listing-count";
+import { exploreLocationScopeFromHero } from "./explore-hero-scope";
+import type { ExploreLocationScope } from "./explore-location-scope";
 import styles from "./explore.module.css";
 
 type HeroLocationWidgetProps = {
@@ -26,6 +28,7 @@ type HeroLocationWidgetProps = {
   signedIn: boolean;
   listingCountState: ExploreHeroListingCountState;
   onCityChange: (city: string) => void;
+  onLocationScope?: (scope: ExploreLocationScope) => void;
 };
 
 const CITY_COLOURS: Record<string, string> = {
@@ -56,8 +59,10 @@ export function HeroLocationWidget({
   signedIn,
   listingCountState,
   onCityChange,
+  onLocationScope,
 }: HeroLocationWidgetProps) {
   const [hero, setHero] = useState<HeroResponse | null>(null);
+  const lastCoordsRef = useRef<{ lat: number; lon: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [imageReady, setImageReady] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -68,17 +73,30 @@ export function HeroLocationWidget({
   const [autoLocated, setAutoLocated] = useState(false);
   const [searchBias, setSearchBias] = useState<{ lat: number; lng: number } | null>(null);
 
-  const applyHero = useCallback((value: HeroResponse) => {
-    setHero(value);
-  }, []);
+  const publishScope = useCallback(
+    (value: HeroResponse, coords?: { lat: number; lon: number } | null) => {
+      if (!onLocationScope) return;
+      onLocationScope(exploreLocationScopeFromHero(value, coords ?? lastCoordsRef.current));
+    },
+    [onLocationScope],
+  );
+
+  const applyHero = useCallback(
+    (value: HeroResponse, coords?: { lat: number; lon: number } | null) => {
+      setHero(value);
+      publishScope(value, coords);
+    },
+    [publishScope],
+  );
 
   const loadHeroAt = useCallback(
     async (coordinates?: { lat: number; lon: number }, signal?: AbortSignal) => {
       if (coordinates) {
+        lastCoordsRef.current = coordinates;
         setSearchBias({ lat: coordinates.lat, lng: coordinates.lon });
       }
       const value = await requestHero(coordinates, signal);
-      applyHero(value);
+      applyHero(value, coordinates ?? null);
       return value;
     },
     [applyHero],
@@ -196,12 +214,15 @@ export function HeroLocationWidget({
     requestHero({ lat, lon })
       .then((value) => {
         const city = value.city ?? cityFromGeocodeAddress(result.address) ?? formatGeocodeResultTitle(result);
-        applyHero({
-          ...value,
-          city,
-          placeLabel: value.placeLabel ?? formatGeocodeResultTitle(result),
-        });
-        onCityChange(city);
+        lastCoordsRef.current = { lat, lon };
+        applyHero(
+          {
+            ...value,
+            city,
+            placeLabel: value.placeLabel ?? formatGeocodeResultTitle(result),
+          },
+          { lat, lon },
+        );
         setSheetOpen(false);
       })
       .catch(() =>

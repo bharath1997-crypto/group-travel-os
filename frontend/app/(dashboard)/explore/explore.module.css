@@ -697,6 +697,21 @@
   color: var(--color-body-muted);
 }
 
+.drawerMapPreviewLabel {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 2;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(251, 250, 247, 0.92);
+  background: rgba(15, 22, 20, 0.72);
+  padding: 4px 9px;
+  border-radius: var(--radius-badge);
+}
+
 .drawerProviderNote {
   margin: 12px 0 0;
   font-size: 11.5px;
@@ -1240,6 +1255,8 @@
 .slotMedia {
   display: block;
   position: relative;
+  overflow: hidden;
+  isolation: isolate;
   background: repeating-linear-gradient(46deg, #dfded4 0 9px, #e9e7de 9px 18px);
 }
 
@@ -1266,11 +1283,26 @@
   position: absolute;
   top: 10px;
   font-family: var(--font-jetbrains), monospace;
-  font-size: 9px;
-  letter-spacing: 0.1em;
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 5px 9px;
+  padding: 4px 8px;
   border-radius: var(--radius-badge);
+  opacity: 0.92;
+}
+
+.providerBadgeInline {
+  position: static;
+  display: inline-block;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: var(--radius-badge);
+  opacity: 0.92;
 }
 
 .providerBadgeLeft {
@@ -1394,6 +1426,54 @@
   font-size: 12px;
   color: var(--color-primary);
   margin-bottom: 8px;
+}
+
+.slotCardCompact {
+  background: var(--color-cream, #f8f6f0);
+}
+
+.slotBodyCompact {
+  position: relative;
+  padding: 14px 16px 15px;
+}
+
+.slotCompactProvider {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.slotCompactBadge {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.slotCompactArea {
+  display: block;
+  font-size: 12.5px;
+  color: var(--color-muted-3);
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.slotCompactDistance {
+  display: block;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 10.5px;
+  color: var(--color-muted);
+  margin-bottom: 6px;
+}
+
+.slotSavedMarkCompact {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(15, 22, 20, 0.72);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .slotFooter {
@@ -1572,6 +1652,33 @@
   font-size: 12.5px;
   color: #5a615a;
   line-height: 1.55;
+}
+
+.hubLoadMoreBtn {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 8px;
+  padding: 10px 18px;
+  border: 1px solid #0c655e;
+  border-radius: var(--radius-pill);
+  background: #0f766e;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.hubLoadMoreBtn:hover {
+  background: #0c655e;
+  border-color: #0a524c;
+}
+
+.hubLoadMoreBtn:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 2px;
 }
 
 /* ── Ranking ── */
@@ -2294,12 +2401,13 @@
   left: 16px;
   z-index: 2;
   font-family: var(--font-jetbrains), monospace;
-  font-size: 9px;
-  letter-spacing: 0.1em;
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  background: rgba(15, 22, 20, 0.9);
-  color: var(--color-text-on-dark);
-  padding: 5px 10px;
+  background: rgba(15, 22, 20, 0.82);
+  color: rgba(251, 250, 247, 0.92);
+  padding: 4px 9px;
   border-radius: var(--radius-badge);
 }
 
@@ -2435,12 +2543,36 @@ a.drawerPhotoCredit:hover {
   cursor: default;
 }
 
+.drawerHeroMap {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
 .drawerMapLive {
+  position: relative;
   height: 170px;
   border-radius: 18px;
   overflow: hidden;
   margin-bottom: 16px;
   background: #e2e6e1;
+  isolation: isolate;
+}
+
+.drawerMapLive :global(.maplibregl-map),
+.drawerMapLive :global(.maplibregl-canvas-container) {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.drawerHeroMap :global(.maplibregl-map),
+.drawerHeroMap :global(.maplibregl-canvas-container) {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .drawerPlaceInfo {
@@ -2981,14 +3113,8 @@ a.drawerPhotoCredit:hover {
     columns: 1;
   }
 
-  .slotCardNoPhoto .slotMedia {
-    height: 64px !important;
-    background: var(--color-cream);
-  }
-
-  .slotCardNoPhoto .slotMediaLabel {
-    align-items: flex-end;
-    padding-bottom: 8px;
+  .slotCardCompact .slotBodyCompact {
+    padding: 12px 14px 13px;
   }
 
   .savedBarWrap {
