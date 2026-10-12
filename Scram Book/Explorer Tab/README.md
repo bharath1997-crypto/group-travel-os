@@ -13,6 +13,11 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 - **Bandsintown rejected**: artists-only, written approval for commercial use, session caching only, may not be mixed with other sources, and it forces its own ticket link. JamBase (paid) was suggested by Perplexity and is unchecked.
 - Next options for more events: city/tourism open-data feeds (terms check pending), the Ticketmaster 3-state pilot, curated Eventbrite organizers, venue-published iCal feeds, user-submitted events. The "claim your venue" spec (Instagram connect + manual event drafts) is optional and not started.
 
+## 2026-10-12 — Photo sources inventory (read-only audit)
+
+- **Artifact:** `Photo_Sources_Inventory.md` — no unused place photo DB found; `place_media` (465 rows) is the live store; legacy `explore_events` Unsplash + `unified_experiences` SeatGeek flagged; Supabase Storage empty; R2 list skipped (incomplete env); `enrich_photos.py` obsolete for Overture schema.
+- **F47:** Still **Partial** (inventory doc only; not a prod photo apply).
+
 ## 2026-10-12 — F47 place photos **applied** (Milwaukee + Orlando + TM backfill)
 
 - **Approved prod runs (verified on Supabase):**
