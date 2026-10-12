@@ -103,6 +103,17 @@ After verified work, in the same tab folder:
   - SeatGeek: **not used** (no systematic storage; logo required on every surface; no AI/ML
     use, which conflicts with Wayra).
   - Meetup: **not used** (API tied to paid Meetup Pro; aggregation rights unclear).
+  - Instagram (Perplexity 2026-10-12; Meta Developer Policies 2025-02-03, Platform Terms 2025-02-03):
+    **Only venues/promoters who connect their own professional account** (Graph API login,
+    permission `instagram_business_basic`, Advanced Access via App Review + Business
+    Verification). Use their posts to create **event drafts the venue approves**, never a feed
+    that just mirrors posts ("don't ... simply display User Content", Meta policy). Store with
+    an expiry; delete when the venue disconnects or the event ends; offer a delete button; never
+    sell/license the data. **Not used:** crawling, hashtag search (approved only for brand
+    campaigns; 30 hashtags/7 days), location search (no endpoint), Business Discovery polling of
+    venues that have not connected.
+  - Bandsintown: **not used** (artists-only API; commercial use needs written approval; session
+    caching only; may not be mixed with other sources; conflicts with multi-seller tickets).
   - Open-data feeds: per-feed approval only, after the license, endpoint and refresh are verified.
 - Infrastructure budget cap: USD 15–20/month (`data-spine.md` §8). Any new
   paid service or spend needs user approval with a cost estimate first.

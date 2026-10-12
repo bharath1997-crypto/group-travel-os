@@ -2,6 +2,26 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-12 — Instagram and Bandsintown research (Perplexity): decisions
+
+- Source: Perplexity answer pasted by the owner, quoting Meta Developer Policies and Platform Terms (2025-02-03), the Instagram Platform docs, and Bandsintown's Data Applications Terms (2019-02-25). The quotes were not re-fetched by Claude.
+- Owner's question: pull event data from Instagram? Decision: **no crawler** (data-spine.md §4/§10 stands), **yes to a later "Connect your Instagram" feature for venues and promoters.**
+  - Allowed route: the venue authorizes its own professional account. Rovvy reads its posts and turns them into **event drafts the venue approves**; stored with an expiry; deleted when the venue disconnects or the event ends.
+  - Needs App Review + Business Verification (Advanced Access) before it can serve other venues.
+  - Meta's policy forbids using the platform "to simply display User Content", so the pitch must be drafts + planning, not a mirrored feed.
+  - Not available or not allowed: hashtag search (brand-campaign use only), location search (no endpoint), Business Discovery polling of unconnected venues (technically possible by username; high policy risk, so not used).
+- **Bandsintown rejected**: artists-only, written approval for commercial use, session caching only, may not be mixed with other sources, and it forces its own ticket link. JamBase (paid) was suggested by Perplexity and is unchecked.
+- Next options for more events: city/tourism open-data feeds (terms check pending), the Ticketmaster 3-state pilot, curated Eventbrite organizers, venue-published iCal feeds, user-submitted events. The "claim your venue" spec (Instagram connect + manual event drafts) is optional and not started.
+
+## 2026-10-12 — F47 place photos **applied** (Milwaukee + Orlando + TM backfill)
+
+- **Approved prod runs (verified on Supabase):**
+  - `05_enrich_wikidata.py --metros milwaukee orlando` → **416** `wikidata_qid` rows (**317** Milwaukee, **99** Orlando).
+  - `07_enrich_wikimedia_photos.py --metros milwaukee orlando` → **416** places eligible; **197** QIDs with P18; **196** free-licence Commons files → **196** `place_media` (`open_license`, approved, attribution stored).
+  - `python -m scaper backfill-ticketmaster-venue-photos` → **52** candidates, **18** with venue images, **10** inserted (**8** skipped — Wikimedia/user already wins).
+- **Spot-check counts (`places.city_slug`):** Milwaukee **154** Wikimedia / **317** QIDs; Orlando **42** Wikimedia / **99** QIDs; Chicago **259** Wikimedia / **9** Ticketmaster partner images (unchanged baseline + backfill).
+- **Next:** Browser QA Milwaukee + Chicago Explore feeds — hero credits (`Author · Wikimedia Commons` or `Image: Ticketmaster`); F47 stays **Partial** until signed off.
+
 ## 2026-10-12 — F47 place photos (Milwaukee + Orlando Wikidata dry-run; Ticketmaster venue hot-links)
 
 - **Context:** AGENTS.md §4 photo rules; metros with Overture inventory but 0 Wikidata links (Milwaukee, Orlando).
