@@ -88,10 +88,13 @@ After verified work, in the same tab folder:
   link or route preview — not selling or comparing flights.
 - **Event/venue provider terms (Perplexity research 2026-10-05; details in
   Scram Book/Explorer Tab/README.md):**
-  - Ticketmaster: store only for "reasonable periods" (purge past/delisted events and their
-    raw payloads); remove owner-requested content within 24 hours; hot-link images, never
+  - Ticketmaster: store only for "reasonable periods": **purge at event end (+6 h when no end time),
+    owner decision 2026-10-12, with raw payloads**; delisted events expire; remove owner-requested content within 24 hours; hot-link images, never
     re-host; no revenue from the API without written approval; scheduled crawls not tied to
     user actions may be throttled. Label "Tickets via Ticketmaster".
+  - Ticketmaster national coverage: **no state-by-state search rollout.** Use the bulk Discovery Feed
+    connector (spec `Scram Book/Explorer Tab/Scaper_Ticketmaster_BulkFeed_Spec.md`); AK/TX/CA/city
+    sources stay until it is verified, then are disabled.
   - Eventbrite (API terms last updated 2025-05-30): store content **only for future events**;
     after an event has occurred delete its event row, raw payload and any venue data taken from
     it (no grace period stated). Every Eventbrite listing shows the event title and a **direct,

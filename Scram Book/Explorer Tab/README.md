@@ -2,6 +2,20 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-12 — Owner decisions after the pilot: bulk feed spec, purge at end, source registry
+
+- **0. Coordination (read-only, 09:16 UTC):** no runs in progress; all 5 Ticketmaster sources (chicago, orlando, state ak/tx/ca) enabled; the latest job executions completed; job timeout still 3,600 s. Another session has **uncommitted edits to the Ticketmaster purge** (`scaper/store.py`, `scaper/raw_purge.py`, two tests). That is owner decision 2 and was left alone to avoid conflicting edits. Claude added no sources, started no runs and changed no timeouts.
+- **1. Bulk Discovery Feed (spec only, Cursor builds it):** `Scaper_Ticketmaster_BulkFeed_Spec.md`.
+  - Verified with our key:
+    - The US JSON file is 82 MB gz and holds 105,051 events with its own schema (flat `venue` with `venueCity`, `venueStateCode`, `venueLatitude`…).
+    - It has **no prices**. It carries events far into the future (about half start after 60 days).
+    - **`eventId` equals the Discovery v2 id**: 68% (1,003 of 1,469) of sampled next-60-day events in states we already ingest already exist under the same id, and the rest are outside today's geographic reach. Cutover will not duplicate events.
+  - Design: one index call, a stream with incremental MD5 and no temp file, COPY into UNLOGGED staging, set-based upsert, a venue-matching batch for new venues only, expiry guarded at −30%, a dedup queue, and a single transaction committed only after the MD5 matches. There is a `--dry-run` and a supervised-run gate before the old sources are disabled.
+  - Open owner decisions: horizon (365 days proposed), prices cleared, first-load timeout.
+- **2. Ticketmaster purge at event end (+6 h without end time):** the code and tests are in another session's uncommitted work. Claude reviewed the diff: `raw_payload_past` and `purge_past_events` drop the 7-day grace, and the time-bomb fixtures in `test_scaper_ticketmaster.py` move to 2099. AGENTS.md §4 now states the rule.
+- **3. Source registry:** `ingest.provider_registry` is specified in the bulk-feed spec §5 (additive migration 012 with seed rows from AGENTS.md §4). The personal account owner is recorded as "owner (personal)" without an address.
+- **4. Before the owner pushes:** CI-equivalent suite and rolled-back Postgres suite results are in the entry below (to be added once run). After the push, both the test and deploy jobs are checked via the GitHub API.
+
 ## 2026-10-12 — Ticketmaster nightly sources + purge at event end (owner decision)
 
 - Owner decisions today: refresh Ticketmaster nightly, clear past events, add new ones; start with the 3-state pilot (AK, TX, CA).
