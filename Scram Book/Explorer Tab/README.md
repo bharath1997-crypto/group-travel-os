@@ -14,7 +14,11 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
   - Open owner decisions: horizon (365 days proposed), prices cleared, first-load timeout.
 - **2. Ticketmaster purge at event end (+6 h without end time):** the code and tests are in another session's uncommitted work. Claude reviewed the diff: `raw_payload_past` and `purge_past_events` drop the 7-day grace, and the time-bomb fixtures in `test_scaper_ticketmaster.py` move to 2099. AGENTS.md §4 now states the rule.
 - **3. Source registry:** `ingest.provider_registry` is specified in the bulk-feed spec §5 (additive migration 012 with seed rows from AGENTS.md §4). The personal account owner is recorded as "owner (personal)" without an address.
-- **4. Before the owner pushes:** CI-equivalent suite and rolled-back Postgres suite results are in the entry below (to be added once run). After the push, both the test and deploy jobs are checked via the GitHub API.
+- **4. Pre-push verification (clean checkout of `08983c9`, requirements-ci environment):**
+  - CI-equivalent suite (sqlite): **952 passed, 30 skipped, 0 failed, 0 errors.**
+  - Rolled-back Supabase suite (Scaper Postgres, venue media, raw purge, store): **25 passed**, including the purge-at-end and orphan-raw tests.
+  - **A CI blocker was found and fixed** (`08983c9`): the new `test_ticketmaster_venue_media.py` borrowed the `pg` fixture through `pytest_plugins`, which is ignored in a full run, so `test_upsert_skips_when_wikimedia_present` errored with "fixture 'pg' not found" and would have failed the CI test job (blocking deploy). It passed when run alone. The fix imports the fixture.
+  - After the owner's push, both the test and deploy jobs are checked through the GitHub API.
 
 ## 2026-10-12 — Ticketmaster nightly sources + purge at event end (owner decision)
 
