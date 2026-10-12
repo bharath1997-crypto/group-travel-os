@@ -2,6 +2,24 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-12 — Ticketmaster 3-state pilot (AK, TX, CA) run and verified — STOP before the other 47
+
+- Context: the owner approved the pilot ("A"). Cursor had already created the three state sources (`ticketmaster:state:ak|tx|ca`, 24 h interval, migration 010 applied); the hourly Cloud Scheduler job picked them up as due and ran them in the existing Cloud Run job (image from `65b6a60`, which contains state mode). Claude verified the results in Supabase.
+- **Runs (all succeeded, 0 failed):**
+  - AK: 16 fetched, 16 new, 0.1 min.
+  - TX: 3,128 fetched, 2,970 new, 4 updated, 154 rejected, 406 dedup groups, 10.7 min.
+  - CA: 5,649 fetched, 5,429 new, 4 updated, 216 rejected, 436 dedup groups, 18.4 min.
+  - The job execution lasted 29.5 min and completed. A second hourly trigger at 09:05 skipped the in-progress source and exited in 13 s (single-run protection works).
+- **Coverage (visible events after dedup, venue city from Ticketmaster):** CA 4,985 events in 130 cities (Los Angeles 870, San Francisco 752, San Diego 396); TX 2,563 in 66 cities (Houston 570, Dallas 423, Austin 374, San Antonio 305); AK 16 in 2 cities (Anchorage 13, Fairbanks 3).
+- **Hub check (`/api/v1/explore/events`):** Austin 371, Houston 556, Los Angeles 855, Anchorage 13, Fairbanks 3, Chicago 481. All return `scaper_city`; every returned event has an image. No Eventbrite outside Chicago and Orlando.
+- **Cost and limits:** database 1,441 MB → 1,477 MB (+36 MB for ~8,400 events, so a full 50-state refresh is estimated at ~250–300 MB). Events table 1,778 → 9,977 rows. Ticketmaster quota: 4,926 of 5,000 left after the runs, so roughly 75 calls used in total (including probes).
+- **Venues:** 527 new places were created from Ticketmaster venues and 310 matched Overture places. 0 events lack a place.
+- **Findings for the 47-state rollout:**
+  - Runtime: ~29 min for the two big states, while the job's task timeout is 60 min. Sequential runs of 47 states may not fit one execution. The hourly trigger would pick up the rest (the lease protects runs), but the timeout should be raised (e.g. 3 h) or the sources run in parallel before nightly all-state runs.
+  - Dedup groups per state run are high (406 and 436): the series rule collapses timed-entry slots as designed.
+  - Nightly cadence for all states is the "scheduled crawl" the Ticketmaster terms warn about; their written reply is still pending (owner emailed; no answer). Per the spec, **STOP here until the owner approves the other 47 states.**
+- Next action: owner decision on the other 47 states (and on purge at event end vs 7 days after); Claude to raise the job timeout if approved.
+
 ## 2026-10-12 — Instagram and Bandsintown research (Perplexity): decisions
 
 - Source: Perplexity answer pasted by the owner, quoting Meta Developer Policies and Platform Terms (2025-02-03), the Instagram Platform docs, and Bandsintown's Data Applications Terms (2019-02-25). The quotes were not re-fetched by Claude.
