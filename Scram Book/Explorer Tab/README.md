@@ -2,6 +2,18 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-12 — Ticketmaster nightly sources + purge at event end (owner decision)
+
+- Owner decisions today: refresh Ticketmaster nightly, clear past events, add new ones; start with the 3-state pilot (AK, TX, CA).
+- Done by Claude:
+  - Sources `ticketmaster:state:ak|tx|ca` registered with `interval_minutes=1440` (nightly). The hourly trigger runs them when due, about 08:38 UTC each day.
+  - First run results are in the pilot entry above: 9,977 events total, +50 MB in the database, and the hub shows events for Austin, Anchorage and San Diego.
+  - **Ticketmaster purge changed from event end + 7 days to event end** (`scaper/store.py`, `scaper/raw_purge.py` SQL and Python rule). It applies to events and to their raw payloads.
+- Tests: Ticketmaster raw-purge unit test added; Scaper fixtures moved to 2099 (a 2026-10-03 fixture was hidden by the 7-day grace and would now be purged as past). Supabase suite 15/15.
+- **Found (not mine, Cursor's F47 commit `9146ed3`, unpushed):** `tests/test_ticketmaster_venue_media.py` uses a `pg` fixture that exists only in `test_scaper_postgres.py`. In CI it errors ("fixture 'pg' not found"), which would block the deploy. Needs the fixture moved to `conftest.py`, or a skip when the Postgres URL is unset.
+- Not deployed yet: the Scaper job image needs the purge change. The F47 code from `9146ed3` is unreviewed and is **not** going into the job image until Claude reviews it.
+- Storage note: Supabase extra database storage is $0.125/GB per the docs as quoted by Perplexity (the owner said $1/GB; not verified by Claude). A full 50-state refresh is estimated at ~250–300 MB.
+
 ## 2026-10-12 — Ticketmaster 3-state pilot (AK, TX, CA) run and verified — STOP before the other 47
 
 - Context: the owner approved the pilot ("A"). Cursor had already created the three state sources (`ticketmaster:state:ak|tx|ca`, 24 h interval, migration 010 applied); the hourly Cloud Scheduler job picked them up as due and ran them in the existing Cloud Run job (image from `65b6a60`, which contains state mode). Claude verified the results in Supabase.

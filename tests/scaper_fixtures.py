@@ -83,7 +83,7 @@ _TM_EVENT: dict[str, Any] = {
         {"ratio": "16_9", "url": "https://s1.ticketm.net/fallback.jpg", "width": 2048, "fallback": True},
     ],
     "dates": {
-        "start": {"localDate": "2026-10-02", "localTime": "20:00:00", "dateTime": "2026-10-03T00:00:00Z"},
+        "start": {"localDate": "2099-10-02", "localTime": "20:00:00", "dateTime": "2099-10-03T00:00:00Z"},
         "end": {"approximate": False, "noSpecificTime": False},
         "timezone": "America/New_York",
         "status": {"code": "onsale"},

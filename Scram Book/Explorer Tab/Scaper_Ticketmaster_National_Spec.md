@@ -72,7 +72,7 @@ Source: developer.ticketmaster.com/support/terms-of-use (dated 2023-06-27, still
 - **Storage:** only "for reasonable periods in order to provide the service". Build these in:
   8. **Retention purge.** When an event is purged (past) or delisted, delete its
      `ingest.raw_records` payload too (today the payload is kept forever). Keep no Ticketmaster
-     content for events older than 7 days past their end.
+     content once the event has ended (owner decision 2026-10-12: cleared at event end, no 7-day grace).
   9. **Owner removal within 24 hours.** Add `python -m scaper remove --provider ticketmaster
      --external-id <id>` (or `--venue-id`) that deletes the event, its raw record and dedup
      links immediately, and blocks re-ingest of that id (blocklist table). Test it.

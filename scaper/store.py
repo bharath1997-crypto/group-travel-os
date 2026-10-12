@@ -536,11 +536,9 @@ class PostgresStore:
                 (end_time IS NOT NULL AND end_time < now())
                 OR (end_time IS NULL AND start_time + interval '6 hours' < now())
             """
-        elif source.connector == "ticketmaster":
-            past_sql = """
-                COALESCE(end_time, start_time + interval '6 hours') + interval '7 days' < now()
-            """
         else:
+            # Ticketmaster and others: cleared at event end (owner decision 2026-10-12;
+            # the spec's 7-day grace was dropped).
             past_sql = "COALESCE(end_time, start_time + interval '6 hours') < now()"
 
         with self.engine.begin() as conn:
