@@ -1,0 +1,171 @@
+reason,wikidata_qid,wikidata_name,overture_gers_id,overture_name,distance_m,score
+rejected,Q42422362,Sand Lake 7 Cinemas,c42d6499-4ca6-433b-afb1-bc3af7a9c3e8,La Hacienda Restaurant,135.6,46.7
+rejected,Q42422363,Cinema Pub International,66132cfe-3339-4dc8-a8f2-71c39a3e6b43,Ponderosa Steakhouse,29.4,40.9
+rejected,Q42422360,Regal UC 7 Cinemas,8459f34e-d724-4353-a7b2-dd081bbe86d3,Nature's Table (UCF),48.0,50.0
+rejected,Q42422366,UA Movies at Republic Square,630fc1e4-c452-4248-928d-a36dd3bf3ae2,Flippers Pizza,78.9,33.3
+rejected,Q42422370,Southchase 7,e23eea70-c5f1-46c8-90b7-df7e3a005238,Burger King,132.3,17.4
+rejected,Q42422354,Pine Hills I & II,0fbd29fa-0d17-42db-a929-62922ee287af,GG Korean BBQ,10.6,21.4
+rejected,Q42422358,Regal Pointe Orlando Stadium 20 & IMAX,c1e45f20-e690-4621-8021-59f1bb485a36,Regal Pointe Orlando,126.9,71.4
+rejected,Q42422356,Regal Cinemas Waterford Lakes 20,7a25197c-40a2-4d2e-ae64-adc84fbf000a,Ale House Waterford Lakes,89.4,63.2
+rejected,Q42422368,UA Movies at Florida Mall,caaf7a9b-be81-4e54-b416-89aeefb726a2,Lucciano's The Florida Mall,126.0,57.7
+rejected,Q42422379,Regal Oviedo Mall Stadium 22,172d7688-2c91-48fa-ad32-18f0e663ac74,Great American Cookies,79.0,44.0
+rejected,Q42422377,Mini Theater Booth Movies,2720fdcd-2b82-439b-a3f7-811322212599,Polochicken Cheese Steak And Grill,132.2,37.7
+rejected,Q42422795,Movieland Ride-In.,e7c92179-1080-4068-a399-afaed313be06,"Mac Sanford Od, Llc",143.2,40.0
+rejected,Q42423021,St. Cloud Twin Theater,5f859638-5476-4005-ad73-ed4e0bf869a9,St Cloud Twin,3.9,76.5
+rejected,Q42423615,Garden Theatre,8e4b3aa3-1ae7-4cc9-a05e-96614752cd53,Winter Garden Living,114.5,58.8
+rejected,Q42423619,Gem Theatre,5e128bfe-5a26-4b95-adfc-4fd64ca75cf0,Three Birds Cafe,45.7,45.5
+rejected,Q42423623,Lyric Theatre,6cae38b2-47d8-4d74-97fa-8e22edcc65b4,Keltar Inc,62.5,52.2
+rejected,Q66085108,Universal Epic Universe,64bf7aa7-3fbb-4dd0-b4dc-10f4534caa00,The Blue Dragon,104.8,29.4
+rejected,Q68320218,Briarpatch,a60f651a-2f26-4735-88d4-ceb26fe9d68a,Sonny's Franchise Company,115.7,28.6
+rejected,Q69833810,Umi,79fdfeb8-a40d-45e1-96e3-b30049f1c96e,La Rima Cafe,87.4,20.0
+rejected,Q73193075,Le Cellier Steakhouse,75c882c3-4c16-4478-a25e-b67fdbd4c5ac,Park Event Operations - Epcot,79.6,33.3
+rejected,Q77763961,Bill Frederick Park at Turkey Lake,79591b6c-f275-4d48-8388-64d907497f3b,Turkey Lake Park Playground,13.7,52.5
+rejected,Q78942214,Cobb Plaza Cinema Café 12,41be0c2c-8af5-4110-b4f5-ac3a7ec42fb5,Cucina Pizza & Bar,104.9,48.6
+rejected,Q85816202,World's Largest Entertainment McDonald's,f4215de8-3521-4715-af7a-1720902ec9e7,"Perkins at 6813 Sand Lake Rd Orlando, FL",100.8,38.0
+rejected,Q88072606,Orlando Science Center CineDome,4e5980c9-978b-48aa-baa8-df68e65372ce,Orlando Science Center,9.4,83.0
+rejected,Q88570403,Mediterranean Deli,f090b4b6-badb-4881-9a22-31b203b241fb,SMILE Ice Cream Company,146.8,29.3
+rejected,Q88583734,The Ravenous Pig,87dcb5fe-e2d3-4b82-9ab0-8a883bade818,643 N. Orange Ave Llc,101.0,37.5
+rejected,Q88683314,Tibby’s Winter Park,53ed2421-6948-42a0-97bf-c8329d2d4aa0,F&D Woodfired Italian Kitchen,117.8,40.0
+rejected,Q89439915,Lazy Moon Mills/50,2d2f4b45-7fb5-44ea-882b-7cc264ddc0d5,Pardon My Cheesesteak,82.9,30.8
+rejected,Q96035896,Swan City Bagels,240bc2dd-5a52-4734-9f26-fdc18a08556e,Jacob's Breakfast Nook,104.3,36.8
+ambiguous,Q116854005,Madame Tussauds Orlando,b233dc8e-d070-4dc1-899c-c8104ef0228b,Maddam Tussauds Orlando,60.9,95.7
+ambiguous,Q116854005,Madame Tussauds Orlando,8be6014e-7be8-4beb-aa4c-e72aeb7d9edb,Madame Tussauds Orlando,12.6,100.0
+rejected,Q121113877,Soseki,9ea6af2b-435e-40ed-b22c-983c318b6505,Soseki Modern Omakase,9.2,44.4
+rejected,Q124652827,Cinderella Castle,07d5c1c7-c2a4-4223-ba71-0300a055c0d1,Turkey Leg Cart,134.0,50.0
+rejected,Q140053218,Sorekara,18449d7f-1fc3-4ae1-96e3-85843039833d,Cork & Plate,135.7,44.4
+rejected,Q42419523,Movie Garden Drive-In,2e11f1d9-1af0-40e1-b674-307252251a7c,So Me Hibachi,137.0,35.3
+rejected,Q42419691,Kissimmee Drive-In,69c44c18-4fa3-4c16-8d5e-4fb0aca561ed,Oriental Square,119.9,42.4
+rejected,Q42419806,Orange Ave. Drive-in,efe2f60c-7e4b-43de-8be1-37097bca69cc,Sugar Divas Cakery,100.5,43.2
+rejected,Q42419805,Colonial Drive-In,c956fb26-b1d2-4116-8822-3ade18427f9b,La Terraza Restaurant,112.5,29.6
+rejected,Q206859,Walt Disney World Resort,b5cc7dee-88c1-47bb-b291-f580233448ff,Marketplace - Wine & Dine Studio,82.3,46.2
+rejected,Q689585,Gatorland,c9295171-61b8-4f79-8bce-a602b81c74ee,Breeding Marsh,112.3,26.1
+rejected,Q764186,Disney's Animal Kingdom,0ae6c1cc-c6a3-435b-ac08-31ab9c2383f0,Disney's Animal Kingdom Theme Park,82.5,80.7
+rejected,Q884556,Disney's Blizzard Beach,eed8316f-ec69-4c4a-bedd-bd9fd7843f43,I.C. Expeditions,63.9,31.6
+rejected,Q1052042,Epcot,c25e50ec-6d4c-4880-903e-31dd7d2db174,Epcot - Japan Pavilion,104.2,40.0
+rejected,Q1324340,Magic Kingdom,727a3e80-8b82-47e6-bc7d-82098c912411,Castle Forecourt Stage at Magic Kingdom,51.6,50.0
+rejected,Q1345090,Disney's Hollywood Studios,469a3c07-09be-4848-8d5f-3507b780d5b9,Citizens Of Hollywood,71.3,59.6
+rejected,Q1880820,Universal Studios Florida,6acde3dc-ba52-4027-9a34-1e5bd2f1ff85,Universal Front Gates,110.1,65.2
+rejected,Q42419808,Pine Hills Drive-In,63b99a58-ce9b-47e1-a04b-525c8aab134c,Hello Mia and More,126.0,48.6
+rejected,Q42419813,RiMar Drive-In,c2baab6b-2606-4e05-9acb-74fbf7241265,Papa John's Pizza,129.0,25.8
+rejected,Q42419817,Washington Shores Drive-In,e66b90ae-89b2-4eac-86a0-dc2f34ed84e2,Next Level Beauty Bar,26.8,27.9
+rejected,Q42419820,South Trail Drive-In,a723634c-1a7d-4b32-b984-d4f245bbbdd4,Dunkin',114.9,23.1
+rejected,Q42419824,University Twin Drive-In,357ea110-4162-460e-b7ed-f473cda39149,Rincon Latino,43.7,32.4
+rejected,Q42420142,Star-Lite Drive-In,4de514c3-6846-44a9-be23-ad72e3ca5228,Gelato Go Winter Garden Italian Cafe,36.8,40.8
+rejected,Q42420154,Altamonte Cinema I & II,89c46c79-54b7-4849-a4fc-e84475d5a9cb,Friendly Confines Altamonte,71.7,66.7
+rejected,Q42420152,Altamonte 8,4c2323d9-621f-4bf9-b92e-3eb2b7b4a4e9,Jason's Deli,133.0,34.8
+rejected,Q42420160,AMC Altamonte Mall 18,71e0610a-6927-49c9-b73f-7b051f55e7ed,Nature's Table,122.1,40.0
+rejected,Q42420164,Bijou Theatre,10beca89-3ebd-44eb-9e62-9aa10f7c8829,Breakfast Cuisine Llc,59.3,29.4
+rejected,Q3409012,Walt Disney World Dolphin,8f2948b3-00d9-459e-829e-fba7acfa151e,Dolphin Arcade,53.9,51.3
+rejected,Q3484003,Silver Spurs Arena,9ce8865b-4eb8-4707-817e-7fe14f90e120,"Heritage Park, Kissimmee Florida.U.S.",35.0,41.5
+rejected,Q3565647,Walt Disney World Railroad,68c5f25f-2664-44ff-aa20-54ba7c0dba1d,Walt Disney World® Resort,43.1,80.0
+rejected,Q3565653,Walt Disney World Swan,bc0d4794-04c6-41ce-8ab2-446f8f97f532,Walt Disney Animal Kingdom.,46.6,54.2
+rejected,Q4874013,Bay Hill Club and Lodge,dfc430ee-e72d-4527-88b3-e92da6f705c5,The Bay Window,94.1,36.4
+rejected,Q4875831,Beacham Theater,01126c00-78d0-401e-8ea6-66b875a7c295,The Beacham,35.7,63.6
+rejected,Q2777866,DisneyQuest,fa6f1890-cbaf-47f6-8e0c-096236460530,The Smokehouse,19.1,38.1
+rejected,Q2915574,Disney's Typhoon Lagoon,a47d19a3-e673-49e8-b537-e35d472bc881,Typhoon Tilly's,137.5,57.9
+rejected,Q2919960,Disney's Contemporary Resort,178df73f-238c-4949-be26-1ecb539c589a,Contemporary Grounds,76.1,66.7
+rejected,Q3030310,Disney's Coronado Springs Resort,e801dc2b-c67a-4800-8dbd-1d828e718517,New Balance Jogging Trail - Lago Dorado,133.2,43.5
+rejected,Q3030352,Disney's Yacht Club Resort,092b7cba-4b76-4428-9c5a-867de0ccf542,Yacht Club Bus Stop,134.3,57.8
+rejected,Q3038335,Pleasure Island,aa16b139-4f99-4eac-90ae-e0fc855ca18b,Paddlefish,149.1,40.0
+rejected,Q3248109,Wet 'n Wild Orlando,0550c298-a960-4794-82be-ba6d06b4d59d,Sand Bar,46.8,27.3
+rejected,Q3352593,Walt Disney Presents,4545a629-1f24-45e7-a3b0-badb02a8dd35,Walt Disney One Man's Dream,18.7,68.1
+rejected,Q42420186,Municipal Theatre,0188d3b6-bc55-482e-af06-4eda831d2b2e,Taqueria Los Dos Hermanos,58.4,33.3
+rejected,Q42420412,Lake Howell 8,6932f01b-0f93-4402-993c-5f199f7b773b,Calico Jack's,122.3,30.8
+rejected,Q42420421,AMC Celebration 2,ca2fa3d7-3825-4a25-9a6b-b2d73da4a121,"Tavern, Celebration FL",144.3,57.9
+rejected,Q42420486,Lake Theatre,50987cba-9e87-4d94-93ad-9c01eeb57a09,Teamont Boba,56.3,50.0
+rejected,Q42421218,Arcade Theatre,a82f47d4-7bb6-4626-a546-b980e441e38e,Nature's Table,51.9,50.0
+rejected,Q42421231,Osceola West,4f802609-c072-45bb-824d-bd07e38cba30,Red Lobster,87.7,43.5
+rejected,Q42421270,Lake Mary 8 Cinemas,088f15ec-5401-4934-b5ba-85135752d407,Memories of India,86.7,38.9
+rejected,Q42420769,State Theater,e9006fdd-8778-4f73-bedf-5a7c6c15e168,Harper's Alley,88.9,51.9
+rejected,Q42422116,Princess Theatre,44ac8459-9504-4146-9cc1-fe2ea22cadfd,Palm Tree Grille,126.9,50.0
+rejected,Q42422243,Mini Adult Theatre,4edb94f7-fe3e-4510-8cde-c6a262246123,Rodeo: All American Bar,137.8,50.0
+rejected,Q42422240,Astor Theatre,930e26da-f85b-4f4d-b1f2-531408067dda,Data Repair Now,79.2,50.0
+ambiguous,Q42422249,CMX Plaza Cinema Café 12,e4ebbbcb-3b3e-4394-a92a-686aef2c00cd,Cobb Plaza Cinema Café 12,15.5,89.8
+ambiguous,Q42422249,CMX Plaza Cinema Café 12,6abce5b9-7a9a-4c08-8259-7df40c3af0cb,Cmx Cinemas Plaza Café 12,44.4,98.0
+rejected,Q42422252,Rialto Theatre,e022bb0d-5f7b-48ec-a713-9f8535ff9a37,Artisan’sTable,67.4,50.0
+rejected,Q42422258,21st Century Theatre,37df5c5c-d941-406e-983c-1527c482926e,Boston Market,143.2,42.4
+rejected,Q42422256,Roxy Theatre,c2c056b1-0dc5-4f11-84ea-0d8b153d1977,Church Street Station,25.7,42.4
+rejected,Q42422261,Colonial Promenade 6,c008634b-70ff-41ce-a89d-f9ca287592b1,Long John Silvers Seafood®,142.9,40.0
+rejected,Q42422267,Premiere Cinema 14 at Fashion Square Mall,8ab04ef8-34b0-4d2f-a5ce-0c35a0317b74,Orlando Premiere 14 Fashion Square,92.7,74.7
+rejected,Q42422270,Vogue Theatre,37126d5e-3861-49c9-a0bc-6ddacc7cb5db,Veggie Garden,51.8,53.8
+rejected,Q42422271,Cinema 'N' Drafthouse - Conway,807eb877-0129-48cd-be7d-74c90055fb35,El Zarape Mexicano,70.9,36.4
+rejected,Q42422274,Theatre in the Lounge,7763b981-2be7-4769-bf95-649d4d926ebe,The Burger Den,139.4,25.0
+rejected,Q42422272,Conway 1 & 2,0a3a5c4c-7a0c-416a-b075-82c60457ed70,La Fiesta Mexican Grill,129.2,29.6
+rejected,Q42423637,Baby Grand Theatre,9f7c3a78-6d6d-42c8-87cb-07efaca534b0,The Perfect Blend,55.5,45.2
+rejected,Q42423643,Park 11 Theatre,08d623fe-594d-4b93-8e06-38560d74cc87,"Winter Park, FL - Orlando Ave.",55.8,43.9
+rejected,Q42423640,Colony Theater,43985b9c-872f-46d9-bd5a-bcffd9c0dce1,Luma on Park,73.2,46.2
+rejected,Q42423645,Regal Winter Park Village Stadium 20 & RPX,12f0b801-a75d-4f3a-8d48-a86c184859b7,Regal Winter Park Village,10.6,76.9
+rejected,Q23994724,Fun Spot,fa853b71-b2ab-4fcf-8ef7-50489ba250e9,Mine Blower - Fun Spot,38.9,57.1
+rejected,Q23994725,Fun Sport America-Kissimmee,c255686e-998c-41a1-a5fe-7b4e4a5ef52d,Fun Spot America Theme Parks - Kissimmee,98.9,80.0
+rejected,Q24192030,Dezerland Park Orlando,ac974b74-285c-48b4-970a-1a2e2e0f2904,The Pinball Palace At Dezerland Park,51.5,63.0
+rejected,Q24256820,Skeletons: Animals Unveiled,d1025769-8d1a-4ded-a8b8-13fe0b360ffd,Skeletons Museum of Osteology,10.4,43.6
+rejected,Q24566959,Pulse,44c60119-2505-4d96-9340-f4969ae5fbf5,Einstein Bros. Bagels,93.6,24.0
+rejected,Q42423652,University 8 Cinema,5e899c2e-c40f-4690-80de-9939c42d19d2,Lucky Wendy Inc,99.1,35.3
+rejected,Q48834772,Hannibal Square Heritage Center,8f48183b-95cc-4e5e-bce5-5bdbb4a086f9,Dexter's of Winter Park,80.3,40.7
+rejected,Q49483228,Dickson Azalea Park,fe90bcf2-4fad-4d4d-ad0f-b1617ec5b642,Elite Dental Laboratory,106.9,33.3
+rejected,Q49484380,Duckworth Park,eccb566a-26d8-462b-a151-2be8eb76950a,Delaney Park,50.4,46.2
+rejected,Q49488935,Festival Park,7e9e9b3a-c003-44c4-97d9-f37f7f3bf77e,"Voleyball Court At Festival Park, Orlando Fl",49.4,46.4
+rejected,Q42422333,Cameo Theatre,f4be9069-f3fa-414d-884a-ff979ae8496d,Matcha Cafe Maiko,144.8,53.3
+rejected,Q42422339,Parkwood Cinema,458eed3c-f830-45bf-a5d9-de17e1c7c292,I Tea,79.6,30.0
+rejected,Q42422347,Hoffner Centre,24b49858-00ca-4d7a-81d7-c37187c55759,Vital Flair,91.5,16.0
+rejected,Q42422312,Cinema 'N' Drafthouse - Village,4ab4c27f-a5ba-45c2-873e-a07d5617a84a,Antonio's House of Pizza,63.7,43.1
+rejected,Q42422316,Lucerne Theatre,4e985c54-738d-4fcd-ad54-e74f9ace7026,Mecatos Orange Llc,148.4,48.5
+rejected,Q42422326,Northgate 4,2e4ce3be-9f28-41b8-b2da-04b97dc03de6,Thai Cuisine Restaurant,95.8,34.8
+rejected,Q42422288,441 Premiere Cinema,deb1cc54-40d4-4e29-bca3-da1def5d1990,Charlie's Kitchen & Grill,82.6,35.7
+rejected,Q42422302,Lincoln Theatre,f4513821-3082-4891-bd53-af0f45be06da,Night Shade Lounge Orlando,34.7,43.9
+rejected,Q42422306,Luv Adult Theatre,331b79f8-e47c-45c0-9f63-2dc07c019656,Long John Silver's,57.7,34.3
+rejected,Q42422309,Orange Blossom Theatre,da4d2d9f-3cba-4b2c-b81b-4c695880e8fe,Waffle House,90.8,35.3
+rejected,Q42422286,Cinemark Artegon Marketplace,e0d5f478-0f92-428e-9091-4c11fe8526a9,Market at Artegon Orlando,71.4,67.9
+rejected,Q42422285,AMC Loews Universal Cineplex 20,cb676ec9-6965-49b3-8495-c12fca2b6751,Cold Stone Creamery®,109.4,36.0
+rejected,Q42422291,Carver Theatre,d0bf3d4e-42f5-4285-8222-8395dbc00d40,Cafe Express Homestyle,67.9,50.0
+rejected,Q28209862,Magnolia Park,27ca02cf-7fef-4f10-b575-9d90afa815cd,Parks & Recreation Dept,96.4,29.4
+rejected,Q30589699,Teppan Edo,f5b953b7-f726-47be-8528-df613880855d,Morocco Pavilion,148.9,38.5
+rejected,Q30589703,Rose & Crown Pub & Dining Room,93ff6c44-60b3-4d34-a52f-deec9923dd3d,Yorkshire County Fish Shop,32.1,46.2
+rejected,Q34809283,Alfond Swimming Pool,f703a262-d634-4bd7-8daf-3e454733e557,Dave's Boathouse,73.8,27.8
+rejected,Q34815423,Aquatica Sea World,b5ca6176-7630-4003-940e-06b2b26edf28,Mango Market,104.0,26.7
+rejected,Q34911431,Cahall Sandspur Field,671eb6a7-6624-4e26-a344-84859b25321c,Cafe De France,119.0,45.7
+rejected,Q49496404,Griffin Stormwater Park,e3fcb3c7-fb82-4553-a51b-7bf0e347f3c4,Griffin Park,27.3,68.6
+rejected,Q49497596,Hancock Recreation Area,a27b91c7-5ba8-44f8-a55b-6c2dce959aaa,Hancock Park,31.9,51.4
+rejected,Q49505766,Ivanhoe Park,fa2fceac-4833-4d45-90de-ccaf00c5d3ed,Ivanhoe Plaza Park,73.2,80.0
+rejected,Q49513345,Lake Jem Park & Boat Ramp,09c5ff53-41fb-4c57-b83d-22f87583ed3c,Lake Jem Park,59.2,72.2
+rejected,Q49577295,Washington Shores Park,ca0aa187-8403-498e-b490-84352d405dca,Hankins Park,89.9,29.4
+rejected,Q54864502,Aquatica Orlando,ed939b49-6d2f-495f-a97f-796ea0666316,Waterstone Grill,95.2,30.8
+rejected,Q8031719,WonderWorks,69e13dcf-64c9-4275-a212-e863566f677c,WonderWorks Orlando,15.3,73.3
+rejected,Q16903571,Maitland Telephone Museum,e2a33498-6bfa-4571-843c-97641a17ab27,Art & History Museums Of Maitland,49.7,60.7
+rejected,Q16947265,Pointe Orlando,c1e45f20-e690-4621-8021-59f1bb485a36,Regal Pointe Orlando,79.4,82.4
+rejected,Q16969370,Woman's Club of Ocoee,d2f27d4a-cc99-4386-aed0-d0b040cb703a,"Marion Park, Ocoee, Florida",111.6,39.1
+rejected,Q17060840,Zora Neale Hurston Museum of Fine Arts,ff2493df-586d-4197-b763-48699a1a6ce8,Dajen Eats,108.0,25.0
+rejected,Q19864584,Mama Melrose's Ristorante Italiano,198bbb94-8587-4de8-9f6c-56f4c9b912dd,BaseLine Tap House,127.7,42.3
+rejected,Q21016305,Victoria & Albert's,d004a994-c2dd-4134-83f1-003e808a3695,The Dining Room at Victoria & Albert’s,8.8,69.4
+rejected,Q6941069,Museum of the Apopkans,7af3136b-8949-4d63-b665-ffc8d4f3c35b,Apopka Historical Society Inc,60.8,43.1
+rejected,Q7085259,Old Town,3c7863d2-a544-45ba-855c-5a21753cae27,Old Town Karaoke,85.2,66.7
+rejected,Q7754604,The Oasis Exhibits,f8046de1-1799-4b82-8b49-a7e762267d7d,Discovery Island Area,132.3,34.3
+rejected,Q7863939,Addition Financial Arena,69b29ca8-6d8f-40be-a27f-da8c77c02a59,Barnes & Noble Café,81.0,34.1
+rejected,Q7976182,Wayne Densch Performing Arts Center,256f98df-a239-43a6-86c1-c9d4c1640037,"Pints n' Paws Craft Beer Fest Sanford, FL",140.7,40.5
+rejected,Q4929399,Blue Man Group Sharp Aquos Theatre,None,Hard Rock Live Orlando,78.8,35.7
+rejected,Q4929898,Blue Spring State Park,e05d999f-a52b-4127-8f66-420c4fdd9a45,藍泉州立公園,4.9,0.0
+rejected,Q4932021,Bob Carr Performing Arts Centre,ac18e3e0-70e8-43a8-a788-1bf146422455,Bob Carr Theater,24.1,55.3
+rejected,Q5079149,Charles Hosmer Morse Museum of American Art,c5269587-0fa9-42ec-ac2f-14ba55d79dd7,Morse Museum,9.6,43.6
+rejected,Q5171521,Rollins Museum of Art,7f8c2a4a-97ad-4169-a0ab-37e9cb64b61e,Bach Festival Society of Winter Park,147.7,38.6
+rejected,Q5304324,Dr. Phillips Center for the Performing Arts,3a399320-2aba-4680-809f-4a5b62927a96,Orland Performing Arts Center,65.5,70.4
+rejected,Q5381483,Enzian Theater,6c7f5124-c927-46f7-8160-c7109002b49a,Nascar Refuel,97.0,37.0
+rejected,Q5522339,Garden Theatre,8e4b3aa3-1ae7-4cc9-a05e-96614752cd53,Winter Garden Living,114.5,58.8
+rejected,Q6435803,Kraft Azalea Park,d4ebf6ba-eece-45ff-bd90-5f03986ad4a3,Kraft Azalea Garden,58.5,66.7
+rejected,Q49516316,Lewis W Mathews Memorial Sports Complex,dffab4d4-209a-475d-a787-2d1cd76d6caf,Yerix’s Cakes,90.5,34.6
+rejected,Q49518538,Lockhaven Park,e7a16586-65a3-4f6f-bacb-e28880180ba0,Loch Haven Park,72.8,69.0
+rejected,Q49520739,Magnolia Park,ce86d4de-f5ae-492b-b21c-c1474f02a3f4,Lake Apopka Loop Trail,120.6,40.0
+rejected,Q49524112,Mead Garden,beb8be4c-0455-475f-bfb1-59e9178e4403,Mead Botanical Garden,109.4,68.8
+rejected,Q49528733,Moss Park,b5b5a450-f116-4414-a1a2-212b6c3b9b1d,Split Oak Forest,85.4,40.0
+rejected,Q49537074,Palatlakaha Recreation Area,a13cc761-98d8-430a-9e44-f1a6eeb74074,Palatlakaha Recreation Park,106.6,81.5
+rejected,Q49541966,Pflug Hall,d86da3fc-387e-4e01-a89f-6dc6cd064e40,Paddle Board Orlando Beach,99.9,33.3
+rejected,Q49546202,Princeton Park,69f0fc33-a808-492d-b6fe-f7d015ac4f89,Fresh Made Kitchen Restaurant Group Llc,119.6,34.0
+rejected,Q49550089,Ridge Park,b9896cfb-d029-404d-ad1a-a221fb535723,Foxtail Coffee Co. - Tavares,96.5,22.9
+rejected,Q49567248,Summerall Park,0262d96b-1f83-4d12-8e68-f5af5fad1558,Dunkin',145.3,10.0
+rejected,Q49568065,Sunshine Park,05ac4c71-f6b9-413d-980f-2b2521757ecc,Luminary Green,72.7,37.0
+rejected,Q49569960,The Nature Park,5e23c29b-f407-43d6-9f8e-72bd99e8f73f,Park of the Americas,111.0,45.2
+rejected,Q49575690,Virginia S Nelson Rose Garden,2bdef1ed-50b6-4b7f-9eda-5d9f50d67574,Annie Russell Theatre,148.2,40.0
+rejected,Q6475803,Lake Eustis Museum of Art,7718b8a4-e80e-4113-a000-e04c18abffd2,Fountain Green Park - Eustis,143.7,43.1
+rejected,Q6920473,Mount Dora Center for the Arts,19a7da80-fab4-4930-b3b5-4ee7068e85f9,Artisans of Mount Dora Inc.,87.7,64.3
+rejected,Q8026222,Winter Garden Heritage Foundation,8925b169-835a-4d0e-bffe-b4467dedc23e,Winter Garden Food Tours,129.2,66.7
+rejected,Q8030642,Woman's Club of Winter Park,9c260ca8-b246-4359-b389-5fc647239d16,Grato of Winter Park,132.4,63.8
+rejected,Q11974286,"Hard Rock Café, Orlando",None,Hard Rock Live Orlando,71.7,77.3

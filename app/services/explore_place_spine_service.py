@@ -23,13 +23,25 @@ DEFAULT_PLACES_LIMIT = 48
 MAX_RADIUS_M = 100_000
 MIN_RADIUS_M = 100
 
+# Approved photo pick order: community upload > Wikimedia Commons > Ticketmaster hot-link.
+PLACE_MEDIA_PICK_ORDER_SQL = """
+  ORDER BY
+    CASE source
+      WHEN 'rovvy_user' THEN 0
+      WHEN 'open_license' THEN 1
+      WHEN 'licensed_partner' THEN 2
+      ELSE 3
+    END ASC,
+    created_at DESC
+"""
+
 _HTTP_URL = re.compile(r"^https?://", re.IGNORECASE)
 
 # Nearest-first via the GiST index (`<->` KNN) instead of sorting every row in the
 # radius: a 100 km Chicago query fell from ~5-30 s to <0.5 s with identical results.
 # `<->` ranks by sphere distance, ST_Distance by spheroid; the inner scan over-fetches
 # (:knn_lim) so the exact outer re-sort cannot drop a boundary row.
-SPATIAL_PLACES_SQL = """
+SPATIAL_PLACES_SQL = f"""
     SELECT * FROM (
       SELECT
         p.gers_id,
@@ -63,7 +75,7 @@ SPATIAL_PLACES_SQL = """
         SELECT thumbnail_url, attribution, license, caption, source
         FROM place_media
         WHERE place_key = 'gers:' || p.gers_id AND moderation_status = 'approved'
-        ORDER BY created_at DESC
+        {PLACE_MEDIA_PICK_ORDER_SQL}
         LIMIT 1
       ) m ON true
     ) nearest
@@ -75,7 +87,7 @@ SPATIAL_PLACES_SQL = """
     LIMIT :lim
 """
 
-CITY_PLACES_SQL = """
+CITY_PLACES_SQL = f"""
     SELECT
       p.gers_id,
       p.name,
@@ -98,7 +110,7 @@ CITY_PLACES_SQL = """
       SELECT thumbnail_url, attribution, license, caption, source
       FROM place_media
       WHERE place_key = 'gers:' || p.gers_id AND moderation_status = 'approved'
-      ORDER BY created_at DESC
+      {PLACE_MEDIA_PICK_ORDER_SQL}
       LIMIT 1
     ) m ON true
     WHERE p.gers_id IS NOT NULL

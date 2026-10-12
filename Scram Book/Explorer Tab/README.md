@@ -2,6 +2,17 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-12 — F47 place photos (Milwaukee + Orlando Wikidata dry-run; Ticketmaster venue hot-links)
+
+- **Context:** AGENTS.md §4 photo rules; metros with Overture inventory but 0 Wikidata links (Milwaukee, Orlando).
+- **Dry-run (no DB writes yet — operator approval pending):**
+  - `scripts/05_enrich_wikidata.py --dry-run --metros milwaukee orlando` → **317** + **99** QID match candidates (9,269 / 15,374 places scanned); dry-run prints **20 sample pairs** per metro for false-positive review.
+  - `scripts/07_enrich_wikimedia_photos.py --dry-run --metros milwaukee orlando` → **0** rows (expected until `wikidata_qid` is applied).
+  - `python -m scaper backfill-ticketmaster-venue-photos --dry-run` → **52** geo-linked Ticketmaster venues with `gers_id`, **18** with venue `images` in stored payloads.
+- **Code:** `scaper/venue_place_media.py` sync on venue resolve (geo_name / geo_name_wide / geo_address only); `remove-venue-link` + backfill CLI; Explore spine SQL prefers **user → Wikimedia → Ticketmaster** (`licensed_partner`, attribution `Image: Ticketmaster`, hot-link only).
+- **Verification:** `pytest tests/test_ticketmaster_venue_media.py tests/test_scaper_ticketmaster.py tests/test_explore_place_spine.py -q` → **44 passed**, 2 skipped (Postgres opt-in); browser QA after prod writes.
+- **Next action:** Owner approves prod runs: `05_enrich_wikidata` → `07_enrich_wikimedia_photos` → `backfill-ticketmaster-venue-photos` (no `--dry-run`); re-check Milwaukee + Chicago feed credits.
+
 ## 2026-10-09 — Scaper scheduler live (Cloud Run Job + hourly Cloud Scheduler)
 
 - Done (owner created the `TICKETMASTER_API_KEY` secret and enabled the Cloud Scheduler API):

@@ -12,6 +12,10 @@ from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from scaper.dedup import EventRow, norm_postcode, plan_duplicates, same_venue_address, same_venue_name
 from scaper.models import EventRecord, RawItem, RunStats, RunStatus, Source, VenueRecord
+from scaper.venue_place_media import (
+    purge_ticketmaster_media_on_link_removed,
+    sync_ticketmaster_venue_media_after_link,
+)
 from scaper.raw_purge import orphan_past_raw_delete_sql
 from scaper.ticketmaster_overlap import city_slugs_for_state
 
@@ -70,6 +74,7 @@ class Store(Protocol):
     def dedupe_city(self, city_slug: str) -> int: ...
     def blocked_ids(self, provider: str) -> set[str]: ...
     def is_provider_blocked(self, provider: str, external_id: str) -> bool: ...
+    def remove_provider_venue_link(self, connector: str, external_id: str) -> dict[str, Any]: ...
     def remove_provider_event(
         self, provider: str, external_id: str, *, reason: str | None = None
     ) -> dict[str, Any]: ...
@@ -302,6 +307,27 @@ class PostgresStore:
                 {"connector": connector, "external_id": venue.external_id},
             ).scalar()
             if linked:
+                if connector == "ticketmaster" and venue.image_url:
+                    row = conn.execute(
+                        text(
+                            """
+                            SELECT l.method, p.gers_id::text
+                            FROM ingest.place_links l
+                            JOIN places p ON p.id = l.place_id
+                            WHERE l.connector = :connector AND l.external_id = :external_id
+                            """
+                        ),
+                        {"connector": connector, "external_id": venue.external_id},
+                    ).mappings().one_or_none()
+                    if row:
+                        sync_ticketmaster_venue_media_after_link(
+                            conn,
+                            connector=connector,
+                            method=str(row["method"] or ""),
+                            gers_id=row["gers_id"],
+                            venue_external_id=venue.external_id,
+                            image_url=venue.image_url,
+                        )
                 return linked
 
             point = {"lat": venue.lat, "lng": venue.lng, "name": venue.name}
@@ -340,6 +366,18 @@ class PostgresStore:
                     "method": method,
                     "score": score,
                 },
+            )
+            gers_id = conn.execute(
+                text("SELECT gers_id::text FROM places WHERE id = :id"),
+                {"id": place_id},
+            ).scalar()
+            sync_ticketmaster_venue_media_after_link(
+                conn,
+                connector=connector,
+                method=method,
+                gers_id=gers_id,
+                venue_external_id=venue.external_id,
+                image_url=venue.image_url,
             )
         return place_id
 
@@ -571,6 +609,27 @@ class PostgresStore:
                 raise
         return found is not None
 
+    def remove_provider_venue_link(self, connector: str, external_id: str) -> dict[str, Any]:
+        """Delete ingest.place_links row and Ticketmaster place_media for that venue id."""
+        with self.engine.begin() as conn:
+            deleted = conn.execute(
+                text(
+                    """
+                    DELETE FROM ingest.place_links
+                    WHERE connector = :connector AND external_id = :external_id
+                    RETURNING 1
+                    """
+                ),
+                {"connector": connector, "external_id": external_id},
+            ).rowcount or 0
+            media_deleted = purge_ticketmaster_media_on_link_removed(conn, connector, external_id)
+        return {
+            "connector": connector,
+            "external_id": external_id,
+            "links_deleted": int(deleted),
+            "ticketmaster_media_deleted": media_deleted,
+        }
+
     def remove_provider_event(
         self, provider: str, external_id: str, *, reason: str | None = None
     ) -> dict[str, Any]:
@@ -751,11 +810,12 @@ def _purge_orphan_eventbrite_created_places(conn: Connection) -> None:
                     OR (e.end_time IS NOT NULL AND e.end_time >= now())
                   )
               )
-            RETURNING l.place_id
+            RETURNING l.connector, l.external_id, l.place_id
             """
         )
-    ).scalars().all()
-    if not removed_links:
+    ).mappings().all()
+    removed_place_ids = [row["place_id"] for row in removed_links]
+    if not removed_place_ids:
         return
     conn.execute(
         text(
@@ -766,7 +826,7 @@ def _purge_orphan_eventbrite_created_places(conn: Connection) -> None:
               AND NOT EXISTS (SELECT 1 FROM public.events WHERE venue_place_id = p.id)
             """
         ),
-        {"ids": list(removed_links)},
+        {"ids": removed_place_ids},
     )
 
 

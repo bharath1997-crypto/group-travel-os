@@ -751,6 +751,15 @@ def enrich_metro(
         print(f"rows_updated={written:,}")
     elif dry_run:
         print("dry_run=1 no_writes")
+        sample_n = min(20, len(matches))
+        if sample_n:
+            print(f"sample_matches={sample_n}")
+            for match in matches[:sample_n]:
+                print(
+                    f"  {match.entity.qid} | WD: {match.entity.name} | "
+                    f"Overture: {match.place.name} | {match.distance_m:.0f}m "
+                    f"score={match.score:.0f}"
+                )
 
     return stats
 

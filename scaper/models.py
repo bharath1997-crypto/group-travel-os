@@ -37,6 +37,7 @@ class VenueRecord(BaseModel):
     region: str | None = None
     postcode: str | None = None
     country: str | None = None
+    image_url: str | None = None
 
     def overture_address(self) -> dict[str, str]:
         """Same key shape as places.address rows loaded from Overture."""

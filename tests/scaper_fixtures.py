@@ -108,6 +108,14 @@ _TM_EVENT: dict[str, Any] = {
                 "state": {"name": "Florida", "stateCode": "FL"},
                 "postalCode": "32803",
                 "country": {"name": "United States Of America", "countryCode": "US"},
+                "images": [
+                    {
+                        "ratio": "16_9",
+                        "url": "https://s1.ticketm.net/venue-wide.jpg",
+                        "width": 1024,
+                        "fallback": False,
+                    }
+                ],
             }
         ]
     },
