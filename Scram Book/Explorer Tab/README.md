@@ -2,6 +2,13 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-12 — Push `edc5e59` deployed (verified via GitHub API and Cloud Run)
+
+- Owner pushed `0a02d26..edc5e59` (11 commits: Scaper pilot report, Instagram/Bandsintown decisions, F47 photo pipeline, purge at event end, bulk feed spec, CI fix).
+- Production CI/CD run 38230054413: **test = success, deploy = success**; the run concluded `success`. The jobs API listed only `test` and `deploy` (no separate `frontend-test` job).
+- Cloud Run `group-travel-os-api` revision `00311-fzr` was created 2026-10-12 09:36 UTC, serves 100% of traffic, and `/health` returns 200.
+- Not in this push: the frontend (rovvy.app deploys from `main` via the daily sync at 2 AM UTC or `scripts/sync-to-main.ps1`) and the Scaper Cloud Run **job** image, which is still `65b6a60` and does not yet contain the purge-at-end change or the Ticketmaster venue-photo pipeline; it needs a redeploy from a clean checkout.
+
 ## 2026-10-12 — Owner decisions after the pilot: bulk feed spec, purge at end, source registry
 
 - **0. Coordination (read-only, 09:16 UTC):** no runs in progress; all 5 Ticketmaster sources (chicago, orlando, state ak/tx/ca) enabled; the latest job executions completed; job timeout still 3,600 s. Another session has **uncommitted edits to the Ticketmaster purge** (`scaper/store.py`, `scaper/raw_purge.py`, two tests). That is owner decision 2 and was left alone to avoid conflicting edits. Claude added no sources, started no runs and changed no timeouts.
