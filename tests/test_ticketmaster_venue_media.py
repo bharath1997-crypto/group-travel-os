@@ -7,8 +7,8 @@ from sqlalchemy import text
 from scaper.connectors.ticketmaster import TicketmasterConnector, venue_image_from_embedded
 from scaper.venue_place_media import ticketmaster_venue_caption, upsert_ticketmaster_venue_media
 from tests.scaper_fixtures import ticketmaster_event
+from tests.test_scaper_postgres import pg  # noqa: F401  (fixture; pytest_plugins in a test module is ignored in a full run)
 
-pytest_plugins = ("tests.test_scaper_postgres",)
 
 
 def test_venue_image_from_embedded_prefers_venue_not_event() -> None:
