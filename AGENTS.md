@@ -88,10 +88,13 @@ After verified work, in the same tab folder:
   link or route preview — not selling or comparing flights.
 - **Event/venue provider terms (Perplexity research 2026-10-05; details in
   Scram Book/Explorer Tab/README.md):**
-  - Ticketmaster: store only for "reasonable periods" (purge past/delisted events and their
-    raw payloads); remove owner-requested content within 24 hours; hot-link images, never
+  - Ticketmaster: store only for "reasonable periods": **purge at event end (+6 h when no end time),
+    owner decision 2026-10-12, with raw payloads**; delisted events expire; remove owner-requested content within 24 hours; hot-link images, never
     re-host; no revenue from the API without written approval; scheduled crawls not tied to
     user actions may be throttled. Label "Tickets via Ticketmaster".
+  - Ticketmaster national coverage: **no state-by-state search rollout.** Use the bulk Discovery Feed
+    connector (spec `Scram Book/Explorer Tab/Scaper_Ticketmaster_BulkFeed_Spec.md`); AK/TX/CA/city
+    sources stay until it is verified, then are disabled.
   - Eventbrite (API terms last updated 2025-05-30): store content **only for future events**;
     after an event has occurred delete its event row, raw payload and any venue data taken from
     it (no grace period stated). Every Eventbrite listing shows the event title and a **direct,
@@ -103,6 +106,17 @@ After verified work, in the same tab folder:
   - SeatGeek: **not used** (no systematic storage; logo required on every surface; no AI/ML
     use, which conflicts with Wayra).
   - Meetup: **not used** (API tied to paid Meetup Pro; aggregation rights unclear).
+  - Instagram (Perplexity 2026-10-12; Meta Developer Policies 2025-02-03, Platform Terms 2025-02-03):
+    **Only venues/promoters who connect their own professional account** (Graph API login,
+    permission `instagram_business_basic`, Advanced Access via App Review + Business
+    Verification). Use their posts to create **event drafts the venue approves**, never a feed
+    that just mirrors posts ("don't ... simply display User Content", Meta policy). Store with
+    an expiry; delete when the venue disconnects or the event ends; offer a delete button; never
+    sell/license the data. **Not used:** crawling, hashtag search (approved only for brand
+    campaigns; 30 hashtags/7 days), location search (no endpoint), Business Discovery polling of
+    venues that have not connected.
+  - Bandsintown: **not used** (artists-only API; commercial use needs written approval; session
+    caching only; may not be mixed with other sources; conflicts with multi-seller tickets).
   - Open-data feeds: per-feed approval only, after the license, endpoint and refresh are verified.
 - Infrastructure budget cap: USD 15–20/month (`data-spine.md` §8). Any new
   paid service or spend needs user approval with a cost estimate first.

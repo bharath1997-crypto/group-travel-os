@@ -2,6 +2,111 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-12 — Owner decisions after the pilot: bulk feed spec, purge at end, source registry
+
+- **0. Coordination (read-only, 09:16 UTC):** no runs in progress; all 5 Ticketmaster sources (chicago, orlando, state ak/tx/ca) enabled; the latest job executions completed; job timeout still 3,600 s. Another session has **uncommitted edits to the Ticketmaster purge** (`scaper/store.py`, `scaper/raw_purge.py`, two tests). That is owner decision 2 and was left alone to avoid conflicting edits. Claude added no sources, started no runs and changed no timeouts.
+- **1. Bulk Discovery Feed (spec only, Cursor builds it):** `Scaper_Ticketmaster_BulkFeed_Spec.md`.
+  - Verified with our key:
+    - The US JSON file is 82 MB gz and holds 105,051 events with its own schema (flat `venue` with `venueCity`, `venueStateCode`, `venueLatitude`…).
+    - It has **no prices**. It carries events far into the future (about half start after 60 days).
+    - **`eventId` equals the Discovery v2 id**: 68% (1,003 of 1,469) of sampled next-60-day events in states we already ingest already exist under the same id, and the rest are outside today's geographic reach. Cutover will not duplicate events.
+  - Design: one index call, a stream with incremental MD5 and no temp file, COPY into UNLOGGED staging, set-based upsert, a venue-matching batch for new venues only, expiry guarded at −30%, a dedup queue, and a single transaction committed only after the MD5 matches. There is a `--dry-run` and a supervised-run gate before the old sources are disabled.
+  - Open owner decisions: horizon (365 days proposed), prices cleared, first-load timeout.
+- **2. Ticketmaster purge at event end (+6 h without end time):** the code and tests are in another session's uncommitted work. Claude reviewed the diff: `raw_payload_past` and `purge_past_events` drop the 7-day grace, and the time-bomb fixtures in `test_scaper_ticketmaster.py` move to 2099. AGENTS.md §4 now states the rule.
+- **3. Source registry:** `ingest.provider_registry` is specified in the bulk-feed spec §5 (additive migration 012 with seed rows from AGENTS.md §4). The personal account owner is recorded as "owner (personal)" without an address.
+- **4. Pre-push verification (clean checkout of `08983c9`, requirements-ci environment):**
+  - CI-equivalent suite (sqlite): **952 passed, 30 skipped, 0 failed, 0 errors.**
+  - Rolled-back Supabase suite (Scaper Postgres, venue media, raw purge, store): **25 passed**, including the purge-at-end and orphan-raw tests.
+  - **A CI blocker was found and fixed** (`08983c9`): the new `test_ticketmaster_venue_media.py` borrowed the `pg` fixture through `pytest_plugins`, which is ignored in a full run, so `test_upsert_skips_when_wikimedia_present` errored with "fixture 'pg' not found" and would have failed the CI test job (blocking deploy). It passed when run alone. The fix imports the fixture.
+  - After the owner's push, both the test and deploy jobs are checked through the GitHub API.
+
+## 2026-10-12 — Ticketmaster nightly sources + purge at event end (owner decision)
+
+- Owner decisions today: refresh Ticketmaster nightly, clear past events, add new ones; start with the 3-state pilot (AK, TX, CA).
+- Done by Claude:
+  - Sources `ticketmaster:state:ak|tx|ca` registered with `interval_minutes=1440` (nightly). The hourly trigger runs them when due, about 08:38 UTC each day.
+  - First run results are in the pilot entry above: 9,977 events total, +50 MB in the database, and the hub shows events for Austin, Anchorage and San Diego.
+  - **Ticketmaster purge changed from event end + 7 days to event end** (`scaper/store.py`, `scaper/raw_purge.py` SQL and Python rule). It applies to events and to their raw payloads.
+- Tests: Ticketmaster raw-purge unit test added; Scaper fixtures moved to 2099 (a 2026-10-03 fixture was hidden by the 7-day grace and would now be purged as past). Supabase suite 15/15.
+- **Found (not mine, Cursor's F47 commit `9146ed3`, unpushed):** `tests/test_ticketmaster_venue_media.py` uses a `pg` fixture that exists only in `test_scaper_postgres.py`. In CI it errors ("fixture 'pg' not found"), which would block the deploy. Needs the fixture moved to `conftest.py`, or a skip when the Postgres URL is unset.
+- Not deployed yet: the Scaper job image needs the purge change. The F47 code from `9146ed3` is unreviewed and is **not** going into the job image until Claude reviews it.
+- Storage note: Supabase extra database storage is $0.125/GB per the docs as quoted by Perplexity (the owner said $1/GB; not verified by Claude). A full 50-state refresh is estimated at ~250–300 MB.
+
+## 2026-10-12 — Ticketmaster 3-state pilot (AK, TX, CA) run and verified — STOP before the other 47
+
+- Context: the owner approved the pilot ("A"). Cursor had already created the three state sources (`ticketmaster:state:ak|tx|ca`, 24 h interval, migration 010 applied); the hourly Cloud Scheduler job picked them up as due and ran them in the existing Cloud Run job (image from `65b6a60`, which contains state mode). Claude verified the results in Supabase.
+- **Runs (all succeeded, 0 failed):**
+  - AK: 16 fetched, 16 new, 0.1 min.
+  - TX: 3,128 fetched, 2,970 new, 4 updated, 154 rejected, 406 dedup groups, 10.7 min.
+  - CA: 5,649 fetched, 5,429 new, 4 updated, 216 rejected, 436 dedup groups, 18.4 min.
+  - The job execution lasted 29.5 min and completed. A second hourly trigger at 09:05 skipped the in-progress source and exited in 13 s (single-run protection works).
+- **Coverage (visible events after dedup, venue city from Ticketmaster):** CA 4,985 events in 130 cities (Los Angeles 870, San Francisco 752, San Diego 396); TX 2,563 in 66 cities (Houston 570, Dallas 423, Austin 374, San Antonio 305); AK 16 in 2 cities (Anchorage 13, Fairbanks 3).
+- **Hub check (`/api/v1/explore/events`):** Austin 371, Houston 556, Los Angeles 855, Anchorage 13, Fairbanks 3, Chicago 481. All return `scaper_city`; every returned event has an image. No Eventbrite outside Chicago and Orlando.
+- **Cost and limits:** database 1,441 MB → 1,477 MB (+36 MB for ~8,400 events, so a full 50-state refresh is estimated at ~250–300 MB). Events table 1,778 → 9,977 rows. Ticketmaster quota: 4,926 of 5,000 left after the runs, so roughly 75 calls used in total (including probes).
+- **Venues:** 527 new places were created from Ticketmaster venues and 310 matched Overture places. 0 events lack a place.
+- **Findings for the 47-state rollout:**
+  - Runtime: ~29 min for the two big states, while the job's task timeout is 60 min. Sequential runs of 47 states may not fit one execution. The hourly trigger would pick up the rest (the lease protects runs), but the timeout should be raised (e.g. 3 h) or the sources run in parallel before nightly all-state runs.
+  - Dedup groups per state run are high (406 and 436): the series rule collapses timed-entry slots as designed.
+  - Nightly cadence for all states is the "scheduled crawl" the Ticketmaster terms warn about; their written reply is still pending (owner emailed; no answer). Per the spec, **STOP here until the owner approves the other 47 states.**
+- Next action: owner decision on the other 47 states (and on purge at event end vs 7 days after); Claude to raise the job timeout if approved.
+
+## 2026-10-12 — Instagram and Bandsintown research (Perplexity): decisions
+
+- Source: Perplexity answer pasted by the owner, quoting Meta Developer Policies and Platform Terms (2025-02-03), the Instagram Platform docs, and Bandsintown's Data Applications Terms (2019-02-25). The quotes were not re-fetched by Claude.
+- Owner's question: pull event data from Instagram? Decision: **no crawler** (data-spine.md §4/§10 stands), **yes to a later "Connect your Instagram" feature for venues and promoters.**
+  - Allowed route: the venue authorizes its own professional account. Rovvy reads its posts and turns them into **event drafts the venue approves**; stored with an expiry; deleted when the venue disconnects or the event ends.
+  - Needs App Review + Business Verification (Advanced Access) before it can serve other venues.
+  - Meta's policy forbids using the platform "to simply display User Content", so the pitch must be drafts + planning, not a mirrored feed.
+  - Not available or not allowed: hashtag search (brand-campaign use only), location search (no endpoint), Business Discovery polling of unconnected venues (technically possible by username; high policy risk, so not used).
+- **Bandsintown rejected**: artists-only, written approval for commercial use, session caching only, may not be mixed with other sources, and it forces its own ticket link. JamBase (paid) was suggested by Perplexity and is unchecked.
+- Next options for more events: city/tourism open-data feeds (terms check pending), the Ticketmaster 3-state pilot, curated Eventbrite organizers, venue-published iCal feeds, user-submitted events. The "claim your venue" spec (Instagram connect + manual event drafts) is optional and not started.
+
+## 2026-10-12 — Photo sources inventory (read-only audit)
+
+- **Artifact:** `Photo_Sources_Inventory.md` — no unused place photo DB found; `place_media` (465 rows) is the live store; legacy `explore_events` Unsplash + `unified_experiences` SeatGeek flagged; Supabase Storage empty; R2 list skipped (incomplete env); `enrich_photos.py` obsolete for Overture schema.
+- **F47:** Still **Partial** (inventory doc only; not a prod photo apply).
+
+## 2026-10-12 — F47 place photos **applied** (Milwaukee + Orlando + TM backfill)
+
+- **Approved prod runs (verified on Supabase):**
+  - `05_enrich_wikidata.py --metros milwaukee orlando` → **416** `wikidata_qid` rows (**317** Milwaukee, **99** Orlando).
+  - `07_enrich_wikimedia_photos.py --metros milwaukee orlando` → **416** places eligible; **197** QIDs with P18; **196** free-licence Commons files → **196** `place_media` (`open_license`, approved, attribution stored).
+  - `python -m scaper backfill-ticketmaster-venue-photos` → **52** candidates, **18** with venue images, **10** inserted (**8** skipped — Wikimedia/user already wins).
+- **Spot-check counts (`places.city_slug`):** Milwaukee **154** Wikimedia / **317** QIDs; Orlando **42** Wikimedia / **99** QIDs; Chicago **259** Wikimedia / **9** Ticketmaster partner images (unchanged baseline + backfill).
+- **Next:** Browser QA Milwaukee + Chicago Explore feeds — hero credits (`Author · Wikimedia Commons` or `Image: Ticketmaster`); F47 stays **Partial** until signed off.
+
+## 2026-10-12 — F47 place photos (Milwaukee + Orlando Wikidata dry-run; Ticketmaster venue hot-links)
+
+- **Context:** AGENTS.md §4 photo rules; metros with Overture inventory but 0 Wikidata links (Milwaukee, Orlando).
+- **Dry-run (no DB writes yet — operator approval pending):**
+  - `scripts/05_enrich_wikidata.py --dry-run --metros milwaukee orlando` → **317** + **99** QID match candidates (9,269 / 15,374 places scanned); dry-run prints **20 sample pairs** per metro for false-positive review.
+  - `scripts/07_enrich_wikimedia_photos.py --dry-run --metros milwaukee orlando` → **0** rows (expected until `wikidata_qid` is applied).
+  - `python -m scaper backfill-ticketmaster-venue-photos --dry-run` → **52** geo-linked Ticketmaster venues with `gers_id`, **18** with venue `images` in stored payloads.
+- **Code:** `scaper/venue_place_media.py` sync on venue resolve (geo_name / geo_name_wide / geo_address only); `remove-venue-link` + backfill CLI; Explore spine SQL prefers **user → Wikimedia → Ticketmaster** (`licensed_partner`, attribution `Image: Ticketmaster`, hot-link only).
+- **Verification:** `pytest tests/test_ticketmaster_venue_media.py tests/test_scaper_ticketmaster.py tests/test_explore_place_spine.py -q` → **44 passed**, 2 skipped (Postgres opt-in); browser QA after prod writes.
+- **Next action:** Owner approves prod runs: `05_enrich_wikidata` → `07_enrich_wikimedia_photos` → `backfill-ticketmaster-venue-photos` (no `--dry-run`); re-check Milwaukee + Chicago feed credits.
+
+## 2026-10-09 — Scaper scheduler live (Cloud Run Job + hourly Cloud Scheduler)
+
+- Done (owner created the `TICKETMASTER_API_KEY` secret and enabled the Cloud Scheduler API):
+  - Cloud Run Job `scaper-run-due` (us-west1, next to Supabase us-west-2). It's deployed from a clean checkout of `65b6a60`, built into a new us-west1 Artifact Registry repo `cloud-run-source-deploy` (~$0.05/month, which avoids ~$10–20/month of cross-region image pulls).
+  - Hourly Cloud Scheduler trigger `scaper-run-due-hourly` (`5 * * * *` UTC), using the dedicated invoker service account `scaper-scheduler`.
+- Verification:
+  - First execution: **8/8 sources succeeded**; Ticketmaster 1,455 events and Eventbrite 93, refreshed 2026-10-09 09:57 UTC (stale since 2026-09-27); 285 Ticketmaster events more than 7 days past their end were purged.
+  - A forced trigger run at 10:12 UTC started a new execution (scheduler → job permission works).
+  - Production CI/CD runs for `cdf2d1e` and `6b45c59` passed both test and deploy, so the backend deploys again after the duckdb fix.
+- Fixes: `deploy-scaper-job.ps1` (`4fa6466`) — `--args=` form, and PowerShell 5.1 stderr handling.
+- Notes/risks:
+  - The job image is pinned to its deploy; a future Scaper code change needs a redeploy (or a CI step that updates the job).
+  - Local deploys must run from a clean checkout (local `.next`/`node_modules` break the upload).
+  - The local dev backend froze (async `explore_events` makes blocking DB calls on the event loop); the owner is to restart it, and a stack dump is to be captured if it recurs.
+
+## 2026-10-09 — Explore feed card design (Milwaukee review; no location logic)
+
+- **Context:** Owner screenshot (East Side Milwaukee); architecture spec paused (§9).
+- **Result:** Place cards — category + street only, no price line, no Overture provider badge; event cards — `Price on provider site` / `From $X + fees` (TM), date then venue; masonry interleaves photo + text cards; hide Explore picks table when all prices unknown; Lounge dock bottom-right on `/explore` (no feed overlap).
+- **Verification:** Explore Vitest **137 passed** (27 files); `tsc --noEmit` (2 pre-existing ProfileTravelMap); owner browser Milwaukee + Chicago.
+
 ## 2026-10-09 — Explore feed architecture spec (one location, one server pipeline)
 
 - Context: the owner asked to design the architecture before more UI patches. Explore is dynamic per person and location, but each section resolved its own location in the browser (hero via GPS/IP, places via `CITY_COORDS`, events via a hard-coded metro map, the carousel via its own scope, headings via two different fallback chains). That produced "Explore picks in Austin" above Chicago events.

@@ -37,6 +37,7 @@ import { LIVE_MAP_FLOAT_BTN } from "@/app/(dashboard)/live/live-layout";
 import { SpaceIcon } from "@/components/map/SpaceIcon";
 import { apiFetch } from "@/lib/api";
 import { initFirebase } from "@/lib/firebase-client";
+import { ensureLiveFirebaseSession } from "@/app/(dashboard)/live/live-firebase-auth";
 import { ref, onValue, push, set, off, remove, get, update, type Database } from "firebase/database";
 import {
   AdvancedScheduledCallModal,
@@ -163,6 +164,8 @@ export function LoungeDock() {
   const pathname = usePathname();
   const router = useRouter();
   const isLiveMapPage = pathname === "/live" || pathname.startsWith("/live/");
+  const isProfilePage = pathname === "/profile" || pathname.startsWith("/profile/");
+  const isExploreHubPage = pathname === "/explore";
   const [isOpen, setIsOpen] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -208,6 +211,7 @@ export function LoungeDock() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recordingSecondsRef = useRef(0);
 
   const docInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -305,10 +309,18 @@ export function LoungeDock() {
     setScheduledCalls(readJsonLs<ScheduledCallData[]>(GT_SCHEDULED_CALLS, []));
     setBuddyFavourites(readBuddyFavourites());
 
-    // Initialize Firebase Client
+    // Initialize Firebase Client, then sign in with the backend custom token so
+    // RTDB rules can scope chats/calls to auth.uid. Expose the db only after the
+    // attempt so listeners don't subscribe unauthenticated.
     const fb = initFirebase();
     firebaseInstance.current = fb;
-    if (fb.ok && fb.db) setFirebaseDb(fb.db);
+    if (fb.ok && fb.db) {
+      void ensureLiveFirebaseSession()
+        .then((session) => {
+          if (session.ok && session.db) setFirebaseDb(session.db);
+        })
+        .catch(() => {});
+    }
 
     // Toggle and open events
     const handleToggle = () => {
@@ -389,9 +401,8 @@ export function LoungeDock() {
 
   // Subscribe to Firebase user_chats to keep chats list in real-time sync with main page
   useEffect(() => {
-    const fb = firebaseInstance.current;
-    if (!fb || !fb.ok || !fb.db || !currentUser) return;
-    const db = fb.db;
+    const db = firebaseDb;
+    if (!db || !currentUser) return;
 
     const userChatsRef = ref(db, `user_chats/${currentUser.id}`);
     
@@ -480,7 +491,7 @@ export function LoungeDock() {
       off(userChatsRef, "value", unsubscribeUserChats);
       infoUnsubs.forEach((unsub) => unsub());
     };
-  }, [currentUser, contacts, firebaseInstance.current]);
+  }, [currentUser, contacts, firebaseDb]);
 
   const toggleWayra = async (chatId: string) => {
     const currentStatus = wayraStatus[chatId];
@@ -1165,7 +1176,7 @@ export function LoungeDock() {
           const base64Data = reader.result as string;
           void sendAttachmentMessage(chatId, "audio", "", {
             url: base64Data,
-            duration: recordingDuration,
+            duration: recordingSecondsRef.current,
           });
         };
         reader.readAsDataURL(audioBlob);
@@ -1174,8 +1185,10 @@ export function LoungeDock() {
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingDuration(0);
+      recordingSecondsRef.current = 0;
       recordingTimerRef.current = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1);
+        recordingSecondsRef.current += 1;
+        setRecordingDuration(recordingSecondsRef.current);
       }, 1000);
     } catch {
       showToast("Could not access microphone. Check browser permissions.");
@@ -1191,8 +1204,9 @@ export function LoungeDock() {
     setRecordingChatId(null);
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       if (cancel) {
-        // Discard
-        mediaRecorderRef.current.onstop = null;
+        // Discard the clip but still release the microphone.
+        const recorder = mediaRecorderRef.current;
+        recorder.onstop = () => recorder.stream.getTracks().forEach((track) => track.stop());
       }
       mediaRecorderRef.current.stop();
     }
@@ -1350,7 +1364,7 @@ export function LoungeDock() {
     showSettingsOverlay && settingsScreen === "settings";
   const showDockWidget = true;
   /** Live map keeps Lounge pinned bottom-right (not the full-width mobile top strip). */
-  const loungeBottomDock = isLiveMapPage;
+  const loungeBottomDock = isLiveMapPage || isProfilePage || isExploreHubPage;
   const loungeAvatarUrl =
     currentUser?.avatar_url?.trim() ||
     currentUser?.google_picture?.trim() ||

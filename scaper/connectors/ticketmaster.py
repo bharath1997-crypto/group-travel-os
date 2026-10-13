@@ -310,7 +310,19 @@ def _venue(value: Any) -> VenueRecord | None:
         region=(value.get("state") or {}).get("stateCode") or None,
         postcode=value.get("postalCode") or None,
         country=(value.get("country") or {}).get("countryCode") or None,
+        image_url=_image(value.get("images")),
     )
+
+
+def venue_image_from_embedded(payload: dict[str, Any], venue_external_id: str) -> str | None:
+    """Best venue image URL from a Discovery event payload."""
+    for venue in (payload.get("_embedded") or {}).get("venues") or []:
+        if not isinstance(venue, dict):
+            continue
+        if str(venue.get("id") or "") != str(venue_external_id):
+            continue
+        return _image(venue.get("images"))
+    return None
 
 
 def _prices(ranges: Any) -> tuple[float | None, float | None, str | None]:

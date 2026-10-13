@@ -44,7 +44,7 @@ WHERE r.source_id = :sid
     COALESCE(
       NULLIF(r.payload->'dates'->'end'->>'dateTime', '')::timestamptz,
       (r.payload->'dates'->'start'->>'dateTime')::timestamptz + interval '6 hours'
-    ) + interval '7 days'
+    )
   ) < now()
 """
 
@@ -91,5 +91,5 @@ def raw_payload_past(connector: str, payload: dict[str, Any], *, now: datetime) 
         if start is None:
             return False
         effective_end = end if end is not None else start + timedelta(hours=6)
-        return effective_end + timedelta(days=7) < now
+        return effective_end < now
     return False

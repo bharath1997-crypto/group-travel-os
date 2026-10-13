@@ -38,3 +38,20 @@ def test_memory_store_purge_drops_orphan_rejected_raw() -> None:
     }
     assert store.purge_past_events(source) == 1
     assert key not in store.raw
+
+
+def test_raw_payload_past_ticketmaster_clears_at_event_end() -> None:
+    """Owner decision 2026-10-12: Ticketmaster content goes at event end (no 7-day grace)."""
+    now = datetime(2026, 10, 12, 12, 0, tzinfo=timezone.utc)
+
+    def tm(start: str, end: str | None = None) -> dict:
+        dates: dict = {"start": {"dateTime": start}}
+        if end:
+            dates["end"] = {"dateTime": end}
+        return {"id": "tm1", "dates": dates}
+
+    assert raw_payload_past("ticketmaster", tm("2026-10-11T00:00:00Z", "2026-10-11T03:00:00Z"), now=now)  # ended yesterday
+    assert raw_payload_past("ticketmaster", tm("2026-10-12T00:00:00Z"), now=now)  # started 12 h ago, no end: +6 h passed
+    assert not raw_payload_past("ticketmaster", tm("2026-10-12T10:00:00Z"), now=now)  # in progress
+    assert not raw_payload_past("ticketmaster", tm("2026-10-13T00:00:00Z"), now=now)  # future
+    assert not raw_payload_past("ticketmaster", {"dates": {"start": {}}}, now=now)  # no start time: keep

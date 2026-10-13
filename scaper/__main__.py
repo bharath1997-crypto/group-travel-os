@@ -91,6 +91,19 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--external-id", required=True)
     p.add_argument("--reason", help="optional note stored on the blocklist row")
 
+    p = sub.add_parser(
+        "remove-venue-link",
+        help="delete venue place_links row and Ticketmaster hot-link photos for that venue id",
+    )
+    p.add_argument("--connector", choices=CONNECTOR_NAMES, default="ticketmaster")
+    p.add_argument("--external-id", required=True)
+
+    p = sub.add_parser(
+        "backfill-ticketmaster-venue-photos",
+        help="insert Ticketmaster venue images for geo-linked Overture places (hot-link only)",
+    )
+    p.add_argument("--dry-run", action="store_true")
+
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     # httpx logs full request URLs at INFO; Ticketmaster carries its API key in the query string.
@@ -135,6 +148,27 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "remove":
         print(json.dumps(store.remove_provider_event(args.provider, args.external_id, reason=args.reason)))
+        return 0
+    if args.command == "remove-venue-link":
+        print(json.dumps(store.remove_provider_venue_link(args.connector, args.external_id)))
+        return 0
+    if args.command == "backfill-ticketmaster-venue-photos":
+        from scaper.ticketmaster_venue_backfill import backfill_ticketmaster_venue_photos
+
+        stats = backfill_ticketmaster_venue_photos(
+            store.engine,
+            dry_run=bool(args.dry_run),
+        )
+        print(
+            json.dumps(
+                {
+                    "dry_run": bool(args.dry_run),
+                    "candidates": stats.candidates,
+                    "with_image": stats.with_image,
+                    "inserted": stats.inserted,
+                }
+            )
+        )
         return 0
     if args.command == "run-due":
         reports = run_due(store, lambda name: build_connector(name, settings), city_slug=args.city_slug)

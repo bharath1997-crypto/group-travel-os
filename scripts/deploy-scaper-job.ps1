@@ -26,7 +26,9 @@ param(
     [string]$SchedulerServiceAccount = "scaper-scheduler"
 )
 
-$ErrorActionPreference = "Stop"
+# "Continue": gcloud writes progress to stderr, which Windows PowerShell 5.1 turns into a
+# terminating error under "Stop". Failures are caught via $LASTEXITCODE in Invoke-Gcloud.
+$ErrorActionPreference = "Continue"
 
 function Invoke-Gcloud([string[]]$GcloudArgs) {
     & gcloud @GcloudArgs
@@ -51,7 +53,7 @@ Invoke-Gcloud @(
     "--region", $Region,
     "--source", ".",
     "--command", "python",
-    "--args", "-m,scaper,run-due",
+    "--args=-m,scaper,run-due",  # '=' form: a value starting with '-' is otherwise read as a flag
     "--memory", "512Mi",
     "--cpu", "1",
     "--task-timeout", "3600s",

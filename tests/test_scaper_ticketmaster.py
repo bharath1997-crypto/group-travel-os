@@ -42,7 +42,7 @@ def test_extract_maps_onsale_event() -> None:
     assert event.title == "Indie Night Live"
     assert event.description == "All ages."
     assert event.category == "music"  # primary classification wins
-    assert event.starts_at == datetime(2026, 10, 3, 0, 0, tzinfo=timezone.utc)
+    assert event.starts_at == datetime(2099, 10, 3, 0, 0, tzinfo=timezone.utc)
     assert event.ends_at is None
     assert event.timezone == "America/New_York"
     assert event.status == "scheduled"
@@ -77,9 +77,9 @@ def test_extract_status_mapping(code, status) -> None:
 
 
 def test_extract_end_time_and_missing_prices() -> None:
-    dates = ticketmaster_event()["dates"] | {"end": {"dateTime": "2026-10-03T03:00:00Z"}}
+    dates = ticketmaster_event()["dates"] | {"end": {"dateTime": "2099-10-03T03:00:00Z"}}
     event = _event(dates=dates, priceRanges=None)
-    assert event.ends_at == datetime(2026, 10, 3, 3, 0, tzinfo=timezone.utc)
+    assert event.ends_at == datetime(2099, 10, 3, 3, 0, tzinfo=timezone.utc)
     assert (event.price_min, event.price_max, event.currency, event.is_free) == (None, None, None, None)
 
 
@@ -92,7 +92,7 @@ def test_extract_end_time_and_missing_prices() -> None:
             {"dates": {"status": {"code": "onsale"}, "start": {"localDate": "2026-10-02", "timeTBA": True}}},
             "missing start time",
         ),
-        ({"dates": {"status": {"code": "weird"}, "start": {"dateTime": "2026-10-03T00:00:00Z"}}}, "status weird"),
+        ({"dates": {"status": {"code": "weird"}, "start": {"dateTime": "2099-10-03T00:00:00Z"}}}, "status weird"),
         ({"_embedded": {}}, "no venue coordinates"),
         ({"_embedded": {"venues": [{"id": "v", "name": "No Geo"}]}}, "no venue coordinates"),
     ],

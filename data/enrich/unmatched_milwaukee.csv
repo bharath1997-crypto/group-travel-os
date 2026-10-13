@@ -1,0 +1,360 @@
+reason,wikidata_qid,wikidata_name,overture_gers_id,overture_name,distance_m,score
+rejected,Q43336526,Atlas Theatre,303094ec-2489-4d59-b635-ebfb2a848545,Lincoln Field,141.0,15.4
+rejected,Q43336568,Avalon Theater,75f088ab-0969-480b-927b-bc0a9d29e638,Avalon Atmospheric Theater,21.6,70.0
+rejected,Q43336585,Bay Theatre,fa51cdfd-4195-43e3-b4bf-a7e13f2a9794,No Instructions Gallery,11.8,29.4
+rejected,Q43336603,Bell Theatre,3d969546-b30d-4ec7-aca1-f731f32aa314,Good Bites Cafe,83.8,27.3
+rejected,Q43336622,Bijou Theatre,f1894e86-fa54-4e17-a452-71612b1c2590,Grand Warner Theatre - Milwaukee,109.3,46.5
+rejected,Q43336643,Brookfield Square Cinemas,ac87f32f-a5d6-471a-9c0b-4b2ad3003aed,Shri Foods,39.6,40.0
+rejected,Q43336185,North Shore Cinemas,7f63e97d-477b-4b54-a887-0e61d94773cf,Take 5 Lounge,136.3,24.0
+rejected,Q43336265,Academy of Music,e9e671a0-b5ef-4fe7-bbb9-66a305b1f7a6,Madame Macaron Mke,127.9,41.2
+rejected,Q43336285,Airdome,ea39aac5-f66e-4333-b425-ee73f4a19dcc,Garibaldis Milwaukees Bar,112.7,35.7
+rejected,Q43336305,Airdome (2),f30f308e-9f4e-4ae4-8b57-e3113058e842,Zad's,90.4,42.9
+rejected,Q43336322,Airway Theatre,d477c6ad-cf57-40b7-aec6-8bc8a8cfee3d,Pat's Niche Pub and Grub,108.8,36.8
+rejected,Q43336341,Alamo Theatre,15ce3ca4-f626-4ae8-bae4-75a7615a55cf,Taqueria Jalisco,11.7,48.3
+rejected,Q43336362,Alhambra Theater,ba80fd50-7878-44cc-a721-f3d2d8453295,Kawa3rdstreet,113.0,41.4
+rejected,Q43336389,Allis Theatre,f55bfa52-8c00-47c9-b265-164e8e341a18,Swaye Tea,101.6,45.5
+rejected,Q43336407,American Theatre,04152859-7f61-4c43-8b02-59b18c9ffd49,Paper Plane Pizza,130.9,48.5
+rejected,Q43336106,Marcus Cinemas,d43ff23a-7918-4178-8187-f9b3cb6ea1a5,Ninja Hibachi Sushi Steakhouse,96.1,40.9
+rejected,Q43336127,Menomonee Falls Cinemas,c7cb693e-51fd-4a7d-a331-cacf1a8cc9ec,Marcus Menomonee Falls Cinema,13.2,84.6
+rejected,Q43336424,Apollo Theatre,18991921-39b0-4088-9365-b0fd37fc5dd4,Coffee Makes You Black,127.6,27.8
+rejected,Q43336701,Butterfly Theatre,f1894e86-fa54-4e17-a452-71612b1c2590,Grand Warner Theatre - Milwaukee,16.2,42.6
+rejected,Q43336719,Capitol Court Cinema I & II,de1aaa79-d58d-4f60-9766-31247503349e,IHOP,14.4,13.8
+rejected,Q43336735,Chopin Theatre,ac6b43de-06b4-4f6f-8b30-c1ab033f3c71,Bob-e-lanes,21.5,40.0
+rejected,Q43336753,Climax Theater,d8a202c0-ea0d-40fa-a8e7-78ba733a1a85,Clarence & Cleopatra Johnson Park,137.8,35.6
+rejected,Q43336834,Comfort Theater,481ac21e-76bd-4a2f-8c36-b322996ead4b,Murray's bar,76.2,26.1
+rejected,Q43336856,Comique Theatre,6cf0473a-b1ef-46e0-a48d-25915699f357,Boulevard Theatre,18.4,68.8
+rejected,Q43336874,Crown Theatre,b3bf1831-7349-4338-bbba-d5ee0b484735,Club Thirty,148.6,41.7
+rejected,Q43336913,Daniel M. Soref National Geographic Dome Theater & Planetarium,2795dcf8-010a-48cf-bc32-d84590e4d92b,The Daniel M. Soref Dome Theater and Planetarium,90.7,76.5
+rejected,Q43336935,Davidson Theatre,ba80fd50-7878-44cc-a721-f3d2d8453295,Kawa3rdstreet,107.7,41.4
+rejected,Q43336776,"Colonial Theatre, Greenfield Avenue",5615ae84-f29d-4972-b82c-2d54dbacec92,Cooks Cake and Candy,114.1,33.3
+rejected,Q43337013,Egyptian Theater,8ce84614-72d8-4210-997d-31a295f99a89,Catfish Lounge,110.4,26.1
+rejected,Q43337031,Eight Street Theater,084af852-a3c7-472f-a481-fa7afa9b3c12,Mitchell Street Arts,73.3,45.0
+rejected,Q43337049,Embassy Theatre,52b173c0-8dcc-49e3-a4b0-ef9a896e7487,The Riverside Theater,110.3,56.2
+rejected,Q43337068,Emporium Theatre,084af852-a3c7-472f-a481-fa7afa9b3c12,Mitchell Street Arts,69.8,44.4
+rejected,Q43337089,Empress Theater,1139eb57-7d23-4c72-839d-4fbaf8669c18,Panda Express,102.8,57.1
+rejected,Q43337114,Esquire Theatre,3d2994db-b4ca-42c7-9ae2-9cb936245f1b,Creta Mediterranean Grill,133.3,41.2
+rejected,Q43337138,Fern Theater,8d190849-72b6-4727-8251-45fefea99ce5,Victory Over Violence Park,101.1,31.6
+rejected,Q43337196,Gallery Cinema,fa51cdfd-4195-43e3-b4bf-a7e13f2a9794,No Instructions Gallery,13.7,37.8
+rejected,Q43337216,Garden Theatre,7e593981-8dc7-4517-94e7-cd1ba85df426,Grecian Garden,72.4,64.3
+rejected,Q43337565,Layton Park Theatre,4912b467-b11a-44c2-97be-ead0ad5b410a,Carnitas De Rafa Restaurante,149.3,38.3
+rejected,Q43337585,Liberty Theatre,f02fb575-e35a-496f-9841-d28f86923e71,Asia food Market AB,143.9,29.4
+rejected,Q43337600,Lincoln Theater,959a39f3-2548-41bb-aabc-860178522a4e,Lincoln Panaderia Bakery,58.2,56.4
+rejected,Q43337646,Loomis Theatres,f354611e-3fb2-4794-bef2-404f9900a09a,Tropical Smoothie Cafe,115.2,43.8
+rejected,Q43337688,Lubar Auditorium,6a807e3b-59da-4a2c-a8ae-9d77b1b8b941,Milwaukee Art Museum,29.1,33.3
+rejected,Q43337705,"Lyric Theater, Washington Park",02611267-ed82-4fe0-a4e0-a4a8576a6894,Lisa Kaye Catering,64.0,34.0
+rejected,Q43337721,"Lyric Theatre, West Wisconsin Avenue",6fbb9299-2871-4a8c-8b3b-ab54fb40ea06,Milwaukee Symphony Orchestra,146.2,44.4
+rejected,Q43337741,Majestic Theatre,f1894e86-fa54-4e17-a452-71612b1c2590,Grand Warner Theatre - Milwaukee,86.8,47.8
+rejected,Q43338316,Peerless Theatre,0c3e4ecc-2487-4707-8f80-fb2bd7fb605b,Cream City Social Eatery,18.0,35.0
+rejected,Q43338335,Pix Theatre,6cf0473a-b1ef-46e0-a48d-25915699f357,Boulevard Theatre,119.3,57.1
+rejected,Q43338357,Plaza Theatre,79876f64-c7ee-41fa-89a2-ac244d3927b9,La Lunchera Restaurante & Taqueria,113.2,40.0
+rejected,Q43338372,"Princess Theater, Kilbourn Town",1139eb57-7d23-4c72-839d-4fbaf8669c18,Panda Express,102.7,37.2
+rejected,Q43338392,"Princess Theatre, Old North Milwaukee",82611de9-3370-4ce7-ad0a-d13b80ff16e3,Quasimondo Physical Theatre,135.0,44.4
+rejected,Q43338414,Prospect Mall Cinemas,4055c233-835c-4ea4-a00f-86d2bc7dc46f,Sip & Purr Cat Caf,53.6,48.6
+rejected,Q43338431,Puerto Rico Theatre,817842f6-d71d-42d2-a0d9-89073cac9d05,Gluon Gallery,114.8,25.0
+rejected,Q43338449,Pulaski Theatre,2c409b1b-acd5-47cb-9ac6-384096f4eddd,Wu-Tang Park,74.2,44.4
+rejected,Q43338508,Regal Theatre,2ceabf0c-1613-4b83-bb48-b7a7daa6e6a7,Somers Street Park,127.6,38.7
+rejected,Q43338530,Regent Theater,399b8a5c-5a05-4617-a0ad-7d0184ed9eaa,Premier Sports Lounge,12.1,35.7
+rejected,Q43338545,Rialto Theatre,1416f831-79e0-4fe5-9a07-13229a74e5aa,The Capital Grille,47.2,42.9
+rejected,Q43338264,Pastime Theatre,4568cc05-8f08-43d6-a162-a3eae8f77964,Tony’s on North,65.0,20.0
+rejected,Q43338283,Pearl Theatre,53bc3411-6d7c-4247-95ce-2c7fe99fe5c2,Taqueria el Cabrito,143.5,43.8
+rejected,Q43338300,Peck Pavilion,adb4773d-4fd7-4e95-9ac0-fc871a90de2b,Uihlein Hall,42.6,40.0
+rejected,Q43337236,Garfield Theatre,b39bc47c-dd02-4d89-a231-8bdc0e9319e3,Capitol Oasis,121.1,34.5
+rejected,Q43337253,Gem Theatre,3f63fec3-3a6e-48cd-9afa-03886ac985b2,Grove Gallery,80.3,41.7
+rejected,Q43337272,Globe Theatre,f076245a-6309-4436-9d06-bb202a755a0f,Speed Queen Bar-B-Q,94.0,31.2
+rejected,Q43337291,Goldstein Theatre,f1894e86-fa54-4e17-a452-71612b1c2590,Grand Warner Theatre - Milwaukee,71.3,46.8
+rejected,Q43337407,Happy Hour Theatre,2dc6a002-24de-45c7-9c3e-e82652f8e809,Starlite Foods,105.1,37.5
+rejected,Q43337426,Hippodrome Theatre,764bbc76-e85f-4b2b-8133-0732219a10d1,Stella's,113.5,30.8
+rejected,Q43337462,Iola Electric Theater,dcaf8490-5f39-4316-b5ed-deef187fe839,Primary Care Clinic Of Sinai,93.9,36.7
+rejected,Q43337306,Grace Theatre,3dbb0bad-86bb-47cc-83de-e6cd5d3b371e,Thai Bar-B-Que Restaurant,132.3,44.4
+rejected,Q43337325,Granada Theatre,ec272891-63b7-4b42-8033-4a4f9cc7baca,Grindhouse Lounge,71.7,48.0
+rejected,Q43337504,Jackson Theatre,5a06d374-d112-4a2c-b675-2a9244f86567,Eastpointe,116.0,48.0
+rejected,Q43337525,Juneau Theatre,084af852-a3c7-472f-a481-fa7afa9b3c12,Mitchell Street Arts,114.2,47.1
+rejected,Q43337545,Kosciuszko Theatre,e2be94a4-c3f8-44a0-a144-01c51a9e8be7,Tres Hermanos Restaurant,37.4,38.7
+rejected,Q43338643,Silver City Gem Theatre,f6547b06-8ce6-4462-8a19-f415ea752a1e,Bamboo in Silver City | Authentic Laotian & Thai Cuisines,85.2,44.7
+rejected,Q43338661,Skyway Cinemas 6,de923324-6023-405c-a18b-711e41736dd4,Rocky Rococo Pizza and Pasta,24.9,27.3
+rejected,Q43338678,Southgate Cinema,3389a467-6d85-48a8-bd9e-4bbc16715041,Marcus Southgate Cinema,125.8,82.1
+rejected,Q43338701,Southgate Theatre,703b5da2-ee29-4a14-881f-3af0b9ddeb5f,Honest Milwaukee ( Franchise ),148.0,32.6
+rejected,Q43338566,Riviera Theater,020347d3-d50a-4abd-868b-8cd067e81a18,Neveria La Flor De Mayo,125.9,36.8
+rejected,Q43332864,Idle Hour,80d43b56-c614-43f4-99ad-78282a11c55e,Square Roots,49.4,38.1
+rejected,Q43332889,Troy Theater,5e2d96f0-6982-46e4-8b74-968ff6b16c0a,East Troy House,129.4,66.7
+rejected,Q43333604,River Point Theatre,3513245f-3e5d-4f97-b4ec-8641aa0415bf,North Shore Bistro,98.3,43.2
+rejected,Q43333660,Showtime Cinema,ab5b55f8-20ca-4222-b89b-08c7393e9e1e,Marcus Showtime Cinema,45.5,81.1
+rejected,Q43333814,Grafton Theatre,95ed6407-efd5-4c7b-92f2-f3ad57298039,The Stillery - Grafton,92.4,71.0
+rejected,Q43332104,Tower Cinema,4f7d853b-74b0-4805-a8be-e7392d70fb65,Yokoso,48.2,11.1
+rejected,Q43332124,West Point Cinemas,a1745d22-e42e-4285-88c2-6b8b5efae578,Monster Mac,95.9,48.3
+rejected,Q43332554,Cudahy Theatre,0b19db8e-ff5d-4d88-8466-f8e70e11dbc2,Cudahy's Pancake House,16.2,61.1
+rejected,Q43332578,Majestic Theatre,ec7138ff-e3df-4c6b-a4e7-c7eaffc7fc71,Hibachi Chinese Restaurant,36.2,32.3
+rejected,Q43332698,Hillside Cinemas,eda33026-8a61-49d7-8450-2b71d536a123,Marcus Hillside Cinema,43.6,78.9
+rejected,Q43332841,Grand Theatre,5e2d96f0-6982-46e4-8b74-968ff6b16c0a,East Troy House,94.6,42.9
+rejected,Q43334065,Hartford Theatre,62bc00e3-7a5b-4eea-9d11-8ba2788cf18a,"Masters Enterprises Of Hartford, Inc",124.0,47.1
+rejected,Q43334081,Hartford Theatre,ee10575a-5b67-47f9-a77c-d91492e73fa6,Schubert's Hartford Theatre,28.4,74.4
+rejected,Q43334127,Victor Theatre,ebcb367e-7964-41cf-b379-67484f75696f,The Inn - Hartland,121.6,38.5
+rejected,Q43337818,Merrill Theatre,f1894e86-fa54-4e17-a452-71612b1c2590,Grand Warner Theatre - Milwaukee,86.8,48.9
+rejected,Q43337835,Mill Road Theatres,b3f36513-25c4-4c1b-b744-a8f374292b08,Burger King,42.6,20.7
+rejected,Q43337857,"Milwaukee Theatre, Juneau Town",d375529b-2532-4cd8-9ea4-0e4e5ebc5ac5,Tua Pasta Milwaukee,29.1,58.3
+rejected,Q43337879,"Milwaukee Theatre, North Division",18991921-39b0-4088-9365-b0fd37fc5dd4,Coffee Makes You Black,126.1,29.6
+rejected,Q43337766,Margaret Rahill Great Hall,535f6f13-ec98-47c2-8c1e-7c420b31aa50,Charles Allis Art Museum,34.0,40.0
+rejected,Q43337801,Merrill Park Theatre,22618879-71a1-41fd-8e0e-f2e6b7798195,Merrill Park Neighborhood,61.0,53.3
+rejected,Q43333999,Greendale Theatre,3a4c5ca4-cff0-4449-990a-e68ee06e2b9e,Galleria Greendale,70.6,51.4
+rejected,Q43334016,Marcus Bistroplex,20fceb2d-4bb9-4131-ab0b-4222b979d170,Marcus BistroPlex Southridge,116.7,75.6
+rejected,Q43337917,Mirth Theatre,e7a87b34-63dc-4885-b0a1-f3a38eac27bf,Burnhearts,126.6,43.5
+rejected,Q43337947,Mozart Theater,ca191b0c-8a47-4ba0-ab5b-409907bc7244,Las Reynas Bakery & Ice Cream,57.8,34.1
+rejected,Q43337963,Murray Theatre,15c8190a-3340-4b19-b7f8-6c2bb0f0d211,Oriental Theatre,114.1,66.7
+rejected,Q43337985,"National Theatre, 2616 West National Avenue",8230b715-96df-4db1-8644-1036f30b76dc,"Skco, Llc - National",71.1,40.7
+rejected,Q43338151,Olympic Theatre,2ceabf0c-1613-4b83-bb48-b7a7daa6e6a7,Somers Street Park,135.8,36.4
+rejected,Q43338169,Owl Theatre,8e200fa1-c1e6-47bc-9edd-df1a505a7dc5,Johnsons Park,104.4,33.3
+rejected,Q43338189,Palace Theatre,7533e215-8241-41e6-87e7-909dbdcc7b5a,Avenue Bar & Grill,88.4,41.7
+rejected,Q43338209,Paris Theatre,4b20527c-caeb-46b0-a2c6-3d3ee9813d8f,23rd Center,101.3,41.7
+rejected,Q43338227,Park Theatre,084af852-a3c7-472f-a481-fa7afa9b3c12,Mitchell Street Arts,12.7,56.2
+rejected,Q43338004,"National Theatre, 1610 West National Avenue",2a0c1aa3-38bf-4625-a6f5-cf7caa4dd788,El Caporal | Authentic Mexican Grill,81.5,42.9
+rejected,Q43338026,"National Theatre, Walker's Point",b0146de4-ade7-4354-9bd5-95fe112f3ceb,Style Pop Cafe,85.6,35.0
+rejected,Q43338110,Oasis Theatre,f28111fd-6739-4664-91e9-69f83f430529,Her Stixx,144.4,27.3
+rejected,Q43338130,Ogden Theatre,988459e1-f5c0-46bf-a536-9f966ad1445a,Y-Not II Tavern,145.9,35.7
+rejected,Q7147873,Patrick and Beatrice Haggerty Museum of Art,79646e07-b7b8-48af-a139-cb55079d32c7,Haggerty Museum of Art,14.5,67.7
+rejected,Q43329822,Victory Drive-In,f3759518-c55d-490f-8f17-233e17099c25,Slim McGinn's West,96.0,29.4
+rejected,Q43330080,Starlite Drive-In,c402ee48-8110-46b0-9b2b-d6599452dee2,Kohl's,145.7,17.4
+rejected,Q7234767,Potawatomi Casino Hotel,d7240b14-a661-4f59-86fb-92ea47e70bb0,Locavore – Potawatomi Hotel and Restaurant,104.4,73.1
+rejected,Q7263862,Pythian Castle Lodge,7868d966-4d71-4e4b-8a9e-a6ef3582fd6f,National Oil Llc,81.7,38.9
+rejected,Q7279656,"Racine Elks Club, Lodge No. 252",85f993bd-ce24-46c8-a559-14c98b904d9c,Racine Airshow,122.8,41.9
+rejected,Q43338245,Parkway Theatre,1c4abbc5-f03d-433d-a2fb-20ee6adaf9f2,Amaranth Bakery & Cafe,63.5,46.7
+rejected,Q6757991,Marcus Amphitheater,caf199f8-51cf-43b3-9a4a-201842ce484b,American Family Insurance Amphitheater,9.0,56.1
+rejected,Q6861802,Nature & Culture Museum of Wisconsin,5c8fbfe2-2594-48fa-9ab2-9745e93eb225,Milwaukee Public Museum,56.2,49.1
+rejected,Q6861840,Miller High Life Theatre,89e8cf7f-82c5-4ea1-a5fb-d7d84af95960,High Life Theatre,104.1,82.9
+rejected,Q6881221,Mitchell Gallery of Flight,6990838b-6c16-4b6c-a9b1-1bc51da3498d,Mitchell Gallery of Flight | Southeastern Wisconsin’s Flight Heritage & Aviation Museum,76.1,47.7
+rejected,Q7356002,Rocky Rococo,dbed1210-3e47-4d7c-9d52-2e32485612e0,"Pizza Rococo, Inc.",17.4,57.1
+rejected,Q7759493,The Rave,95e7c39d-bc85-4a1a-9e77-c459dcdaf0a2,The Rave / Eagles Club,35.6,40.0
+rejected,Q7786877,Thomas A. Greene Memorial Museum,dfcf926c-db3c-47fe-bf75-13e96390e26a,UWM Greene Museum,19.0,62.5
+rejected,Q7855930,Turner Hall,cd4533c4-fd1a-492e-a149-c7e1498038c4,Turner Hall Ballroom,30.6,71.0
+rejected,Q43332083,Ruby Isle Theatre,d1adaffc-d9a1-4148-9298-247056389898,Scratch Ice Cream,138.3,35.3
+rejected,Q7975240,Wauwatosa Woman's Club Clubhouse,fef2c6ce-45ed-458d-8a76-a7158bb6737a,Ward Irish Music Archives,83.9,38.6
+rejected,Q8008786,William F. Eisner Museum of Advertising & Design,cbcd75b9-e172-462a-9c24-49d3fb9c5fc1,Townsville Art & Gifts,95.8,43.1
+rejected,Q8058295,Young Men's Christian Association Building,99d1dd8b-b951-4086-8821-bdb9cb5298fd,Asiana Asian Cuisine Restaurant,115.1,48.4
+rejected,Q11781326,Milwaukee County Zoo,bba58b33-e22b-414b-a3e4-fade692fae10,Kohls Wild Theater,73.0,26.3
+rejected,Q14714466,Hubbard Park,83777ba6-c185-4fed-8b02-ad895ad8b20b,Hubbard Park Lodge,121.1,80.0
+rejected,Q14714505,Kilbourn Masonic Temple,212dc0f1-f7ff-45a7-8b5f-bdf0fa17a85d,Chudnow Museum Of Yesteryear,57.9,39.2
+rejected,Q14714541,Memorial Hall,62519c4e-3c76-4768-9c6f-e0b30ea6ae7a,Racine Heritage Museum,128.6,45.7
+rejected,Q16879523,Golden Rondelle Theater,41dc2a43-7205-49fc-8736-d51c965869b1,The Golden Rondelle,4.2,78.9
+rejected,Q17021224,MECCA Great Hall,267915eb-90d4-477f-b7ab-f5c6a5b35855,Levy at WCD,117.4,44.4
+rejected,Q19604588,Three Brothers Serbian Restaurant,37d042da-eddb-416b-bf0c-294555665f15,Three Brothers,6.0,77.8
+rejected,Q19881634,Uptown Theater,eb6a8d0a-6909-4883-82b8-08fca277412b,Rong Hua,86.5,45.5
+rejected,Q25212578,Uptown Theatre,1c81f3ae-324f-4d89-9623-563a40a57327,Bittercube,74.8,33.3
+rejected,Q43329792,Bluemound Drive-In,5c305643-8dbe-4c81-8444-92c8e25d69b0,Qdoba Mexican Grill,70.5,25.8
+rejected,Q22033592,Burns Commons,7ba33d3f-7a84-4e5e-bc0e-a1db93917a3d,Burns Commons Park,30.4,83.9
+rejected,Q43338738,Star Theatre,f0dfa3ab-f8e3-446d-b8e8-96969b008add,AYZHA FINE ARTS Gallery & Boutique,126.3,31.8
+rejected,Q43338754,State Theater,40cc80ba-f3bf-4550-bc0e-d2f0da1a04fe,The New State,18.2,54.5
+rejected,Q43338777,Strand Theatre,1416f831-79e0-4fe5-9a07-13229a74e5aa,The Capital Grille,146.8,35.7
+rejected,Q43338813,Theater Delight,f1894e86-fa54-4e17-a452-71612b1c2590,Grand Warner Theatre - Milwaukee,54.0,44.4
+rejected,Q43338831,Theatorium,c2a043db-3bf6-40e2-86cb-900058bb20bb,Greenhouse Mke,114.0,33.3
+rejected,Q43338865,Tower Theatre,b1acf1b8-230f-4b4a-a87d-201334965ec8,China Taste,73.2,41.7
+rejected,Q43338883,Towne Theatre,69c3c2c0-6ebf-4325-8faa-f456350d41b4,Zeidler Union Square,56.3,42.4
+rejected,Q43338904,Toy Theater,7c7bd0c1-6e40-4d6a-92a3-90a564b09b81,Stone Creek Coffee,89.2,41.4
+rejected,Q43338925,Trinz Electric Theater,637b9a51-7759-43f8-bf88-8b6c2a9c9a7b,Restaurante Puerto Escondido,95.8,40.0
+rejected,Q43338962,Union Electric Theatre,4900b586-58a7-4968-b91a-db011f17890d,Lost Whale,59.4,37.5
+rejected,Q43338982,Unique Electric Theatre,637b9a51-7759-43f8-bf88-8b6c2a9c9a7b,Restaurante Puerto Escondido,145.0,43.1
+rejected,Q43339119,Venetian Theatre,aa0de386-4738-4099-9d25-78540fd18d9f,Dream Foods,109.9,22.2
+rejected,Q43339140,Venus Theater,c0a64eab-1e27-4a2e-9a81-8eef473ba6fc,Q F & H Diner,65.4,25.0
+rejected,Q43339159,Victoria Theatre,30785022-809a-4a85-9044-27304d64fd20,Boiler House Cafe,143.9,28.6
+rejected,Q43339180,Villa Theater,a8d10f43-9161-4171-8e67-74cf7f9f9a8d,Tomato Patch,136.1,32.0
+rejected,Q43339023,University of Wisconsin - Milwaukee Union Theatre,fb5d7778-8a5b-4875-a945-433c3905b030,UWM Union Theater,56.8,46.9
+rejected,Q43339057,"Vaudette Theatre, 735 North 3rd Street",efc1679f-f735-4afb-becd-a9d7b1b462f1,Anytime Arepa (3rd ST. MARKET HALL),62.3,49.3
+rejected,Q43339095,"Vaudette Theatre, East Brady Street",171dfdeb-8107-4d2e-9dd2-fee30336b867,Southside Historic District,100.9,42.6
+rejected,Q43340635,Badger Theatre,027e7d74-6e08-442b-a683-c54c6c7560a5,Main Street Bakery,134.2,56.2
+rejected,Q43340658,Bijou Theatre,6ae0069d-7a78-4b71-a4f7-8f8edd3a1b01,Divino Gelato Cafe,8.9,46.2
+rejected,Q43340678,College Avenue Orpheum,584e26fd-6488-4d5f-b93e-eccd2b2cee37,A Little R & R Cafe,128.5,41.2
+rejected,Q43340694,Crown Theatre,fc43bccf-d9e6-4d4b-8274-237296b5b648,Johnson Wax Administration Building,147.6,25.0
+rejected,Q43340713,Douglas Theatre,bc2fbc84-48c1-45e8-ae26-b6cfe417b973,Tropical Paradise,82.8,31.2
+rejected,Q43340008,Strand Theatre,35c171e8-1a59-4d79-a9c0-e52db2866712,Great Harvest Bread,52.8,54.5
+rejected,Q43340505,Ozaukee Theatre,8ed76a9e-30fc-4a98-aba1-3dd7eb8e31ac,Ozaukee Planning & Parks,60.5,54.1
+rejected,Q43339302,Wisconsin Cinemas I & II,49c2de6c-d26b-4a87-a984-9ae1941d044b,Fitzgerald’s Restaurant & Lounge,143.2,31.1
+rejected,Q43339322,Wonderland Scenic Theatre,3d2994db-b4ca-42c7-9ae2-9cb936245f1b,Creta Mediterranean Grill,138.1,45.5
+rejected,Q43339341,World Theatre,059c62bc-2811-4da0-b776-daacfbddf352,Taqueria el Toro,126.9,41.4
+rejected,Q43339382,Zenith Theatre,e7f34f58-8153-4bde-8e08-c57834dc1151,Karol`s Kitchen And Catering,97.3,38.1
+rejected,Q43339617,Chief Theatre,91740d33-ae95-4a2c-9536-44bf4dca72d6,Espresso Love Coffee,142.2,36.4
+rejected,Q43339760,Marcus Ridge Cinemas,2c199408-ff3b-4b4c-ba1b-bf8d3ba47340,Caribou Coffee,74.4,35.3
+rejected,Q43339261,Washington Theatre,dabd5488-7b39-4d57-be75-984737294d6f,Kehr's Kandy Kitchen,30.4,26.7
+rejected,Q43339281,Whitehouse Theatre,c2a043db-3bf6-40e2-86cb-900058bb20bb,Greenhouse Mke,131.7,50.0
+rejected,Q43339936,Value Cinemas,e47aa1d7-a919-41e6-a4e1-7156091d84d9,Marcus Value Cinema,19.6,81.2
+rejected,Q43339958,Crystal Theater,c010a342-196d-4cd9-a4c5-6f38c26bf6bb,Violet Table,90.7,44.4
+rejected,Q43339973,La Belle Theatre,35c171e8-1a59-4d79-a9c0-e52db2866712,Great Harvest Bread,112.9,51.4
+rejected,Q43339994,Scotsland Theatres,a38b42a5-ca21-449d-801e-3de7898736ab,Club Indigo,11.8,27.6
+rejected,Q43339223,Vogel Hall,adb4773d-4fd7-4e95-9ac0-fc871a90de2b,Uihlein Hall,42.6,54.5
+rejected,Q43340752,Grand Theatre,9451243a-46c4-4d12-85c0-321df87f6801,Kabab And Grill,119.3,45.5
+rejected,Q43343050,Westown UltraScreen Cinemas,239f2414-44b6-45cb-a50a-0418cbcc41d1,Oscars Frozen Custard,146.7,37.5
+rejected,Q43343272,Mayfair Theatre,5edcffe9-404a-4e78-9bbd-c02bd7f3e183,"AMCinema Mayfair, Milwaukee",75.1,48.8
+rejected,Q43343293,Rosebud Cinema Drafthouse,3b47e7d0-deb0-44ce-998b-744c4f6e8b46,Rosebud Cinema,35.5,71.8
+rejected,Q43343315,Capitol Theatre,f55bfa52-8c00-47c9-b265-164e8e341a18,Swaye Tea,29.0,41.7
+rejected,Q43343335,Paradise Theatre,0c04a9fe-d1d9-4cf5-b888-9fe23540d38d,Lola's Empanadas,29.4,43.8
+rejected,Q43343355,Southtown 5 & 6,bcf34073-17c6-4b92-b517-e51ad3273454,"Skco, Llc - Allis",69.2,29.6
+rejected,Q43343396,West Bend Cinema Brewhaus,b21c3b9d-ce9b-40ee-b4b6-f311fb5e3f4a,West Bend Cinema Memories,23.9,64.0
+rejected,Q43343457,Fox-Bay Cinema Grill,4040f260-c7c3-46e5-9c34-ab3c45db4814,Sonflower Llc Dba Moxie,147.7,48.6
+rejected,Q48977147,Seminary Woods St. Francis,d7b429f4-635e-4c03-9ef7-4161dd1c11c8,Seminary Woods,38.3,71.8
+rejected,Q49471883,Adams Play Field,ad9a0606-855e-444a-9662-c990059d8ea0,Emigh Playfield,13.9,45.2
+rejected,Q49472152,Alfred C Clas Park,4cbf7579-84ae-4460-93c2-5539ec982061,Clas Park | Managed by Milwaukee County Facilities Management,20.8,33.8
+rejected,Q43342965,Avon Theatre,2318b45a-43d3-411e-a6ff-96468dd8c74f,Jackson Tea Bar,118.6,60.9
+rejected,Q43342988,Park Theatre,b27ba316-6b8c-4c58-aa3c-a93a9f5340d3,People's Park,143.2,56.0
+rejected,Q43343009,Unique Theater,17065b5f-4014-4416-8f60-4d35d3c7bfe4,Waukesha Civic Theatre,136.0,50.0
+rejected,Q5703915,Helene Zelazo Center for the Performing Arts,43dd0f8f-c90a-4dc5-9f51-462b9fcb74d9,UWM Helen Bader Concert Hall,18.3,44.4
+rejected,Q5725381,Henry Maier Festival Park,7189063b-5e2f-478a-9d5c-54e1e2be763f,Maier Festival Park Lot H,133.4,84.0
+rejected,Q6421408,Klotsche Center,e5b25f78-29fa-4b68-969d-7b31c45074dd,Center for Celtic Studies,145.9,50.0
+rejected,Q6421900,Kneeland-Walker House,f55c3d24-2329-4058-a852-7420a7948ffe,Wauwatosa Historical Society,13.1,32.7
+rejected,Q43340808,Regency Value Cinemas,e8217cbe-f844-468d-b2d9-4b394e920943,Auntie Anne's,136.3,35.3
+rejected,Q43340834,Rex Theatre,7f7c4a4e-c161-45bd-85d0-f270d98285f3,Butcher and Barrel Gastropub,90.8,46.2
+rejected,Q43340855,Rialto Theatre,584e26fd-6488-4d5f-b93e-eccd2b2cee37,A Little R & R Cafe,131.4,46.2
+rejected,Q43340873,RKO Main Street Theatre,ebf031fc-3b5a-419f-be78-c5e46ca43a5c,Taejavu's on Main,114.9,60.0
+rejected,Q43340899,Star Theatre,fc43bccf-d9e6-4d4b-8274-237296b5b648,Johnson Wax Administration Building,130.3,25.5
+rejected,Q43340919,Venetian Theatre,4f4e9f77-f0f0-40ac-9d56-437bf9b77f40,Eave,70.6,40.0
+rejected,Q49481280,Cudahy Woods State Natural Area,f85aaeac-800a-402b-9103-659155b0674c,Cudahy Nature Preserve,77.5,56.6
+rejected,Q49481326,Culver Park,9d7341ac-ec2f-4e92-b47b-b8d2f9ee9e53,Carver Park,21.5,81.8
+rejected,Q49483789,Dopp Park,76f6bcd8-8a2e-4b9f-98fc-744a7e33c8c1,"Perkins Park, Waukesha, Wisconsin",142.7,25.0
+rejected,Q49485250,East Park,ec798d57-689f-4ecc-9394-d6f73f7ffad0,Rusty's Pub and Grille,139.3,25.8
+rejected,Q49485571,Echo Veterans Memorial Park,9ec8e219-7204-4fd0-8e8e-7afc423360bf,Adrian's Frozen Custard,124.4,40.0
+rejected,Q49487468,Estabrook Park,a9219b0c-7713-4a98-b359-028bd747b970,Estabrook Beer Garden,131.2,68.6
+rejected,Q49487625,Euclid Park,f90bab8e-e51d-448a-9521-3fd70692b5e8,"Euclid Park, Milwaukee, Wisconsin",17.8,52.4
+rejected,Q49489009,Fifth Ward Playground,b877766e-5e27-4259-9c8a-8608467d3b25,Van Bier Salon,125.8,40.0
+rejected,Q49489232,Firemen's Park,3a5516b4-9213-4788-9e1c-7e3ec06c738a,Cedarburg Firemen's Park,113.2,73.7
+rejected,Q49491200,Frame Park,ada07f28-73a8-4fcc-9e9a-0702e6ad8ea8,Formal Gardens,56.5,50.0
+rejected,Q49491574,Franklin Wirth Park,ea5ce889-64f6-48cc-8130-fb363e8ab76b,Wirth Park,129.0,69.0
+rejected,Q43340772,Palace Theatre,3eaa48bf-6796-49be-90bf-a5e7c48d44a5,The Maple Table,86.3,56.0
+rejected,Q1142428,Wisconsin State Fair Park,9f14f1b8-fff7-4b45-ad77-86d28775a359,Wineberry at Wisconsin State Fair,128.8,69.0
+rejected,Q4837184,Baasen House-German YMCA,58711e03-e96a-47d2-98a5-edef34db7602,Dead Bird Brewing Company,139.8,40.8
+rejected,Q5254587,Wisconsin Center,267915eb-90d4-477f-b7ab-f5c6a5b35855,Levy at WCD,30.7,37.0
+rejected,Q43340959,Westgate Outdoor Theater,1b2d4baa-defb-4135-9535-122f333dc73b,Charleys Cheesesteaks,81.3,40.0
+rejected,Q43341576,Shorewood Theatre,2b9ea6eb-d772-43a0-a985-da2bc4b48642,C-viche Shorewood,41.7,70.6
+rejected,Q43341635,Strand Theatre,0b98798d-0885-4b7f-bbfa-495de5d5652f,Edward H. Wolf Schleisingerville To Slinger Historical Museum,77.4,24.3
+rejected,Q43341691,Bergman Theatre,2b4dd6f2-855d-46cf-b93b-d53bda01c287,East Side Tavern,50.1,38.7
+rejected,Q43341709,Colonial Theatre,4f9abb98-45e5-4816-b374-da8138cd8076,South Milwaukee Downtown Market,88.0,34.0
+rejected,Q43341727,Electric Joy Theatre,334366d6-2e27-4260-8923-e33d100688b5,Skyline Catering,145.3,38.9
+rejected,Q43341746,Grand Theater,487f2317-d645-487c-9a15-ef1a0b98fce5,Bucyrus Club and Event Center,148.0,38.1
+rejected,Q43341765,Lyric Theatre,f2578aac-d0d2-46a4-8793-7d318bf8f15a,Pot Liquor Southern Style Food,108.2,37.2
+rejected,Q43341784,Mojuvate Theater,649dcb5d-5295-4b79-a3e7-9c5b3670a701,Overdraft Note,93.8,46.7
+rejected,Q43341800,Peerless Theatre,2b4dd6f2-855d-46cf-b93b-d53bda01c287,East Side Tavern,108.7,43.8
+rejected,Q43341824,Rialto Theater,df326f14-291a-47ab-8707-d7bee11f9ee7,MKE City Sippers,105.4,40.0
+rejected,Q43342672,Parkway Theatre,ef26a972-2d10-4e49-ba4f-02c3bbc4feda,Pine Acres General Store,116.6,41.0
+rejected,Q43342841,Strand Theatre,f7a606d5-0f0c-4bc7-9268-cd3c37133c2d,Thai/Italina Inc,12.5,46.7
+rejected,Q49510684,Kilbourn Park,c433179d-3a69-44dd-b2c0-270e2b976d36,Kilbourn Reservoir Park by Milwaukee Water Works,60.4,42.6
+rejected,Q49512215,Kurth Park,99e47559-bd0f-4891-9287-baf34d03445c,Kurth Park Playground,66.7,64.5
+rejected,Q49513569,Lake Park,88f31636-1961-4f6b-945d-2756575c7215,Possibility Playground,104.7,25.8
+rejected,Q49513767,Lakeview Park,20a0c169-1c78-49ca-8881-705c5b0ee466,Lake View Park,57.8,66.7
+rejected,Q49514561,Joeck’s Park,e5a6258c-fb59-488e-886f-5c212f3f4d0e,Lannon Village Park,19.0,45.2
+rejected,Q49516743,Lime Kiln Park,5129093d-0cd9-44a9-8f3f-d7ede9bdef24,Player's Pub,141.0,30.8
+rejected,Q49475930,Brown Deer Park,afc02541-72fa-4a8e-892f-ee7465f6491a,Brown Deer Park Golf Course,121.4,71.4
+rejected,Q49476078,Buckley Park,c29671cb-06ec-4311-95e4-57ee9ca5e29d,Big Bay Beach,78.5,32.0
+rejected,Q49476260,Burnham Park,295288a4-24a4-4355-8f9b-0f17784b3578,Burnham Park Neighborhood,121.8,64.9
+rejected,Q49476375,Butterfly Park,2112f580-3bcd-4f90-bd72-4bf51c3574fb,Kennedy Events,124.6,21.4
+rejected,Q49476509,Caesar's Park,00cb2ef8-7437-48ac-afbf-5d0e30e8ea02,Dp Dough,100.1,19.0
+rejected,Q49476549,Caledonia-Mount Pleasant Park,2af3e35d-46a2-48e4-a7ef-f19797414579,Caledonia-Mt Pleasant Memorial Park,61.3,84.4
+rejected,Q49477446,Centennial Park,724e4015-81d4-4135-984b-fb3a94f6217c,Classic Lanes Greenfield,147.5,41.0
+rejected,Q49477681,Champion Field,3c5c8f73-f48f-49fb-9308-033aac6fcdc9,Champion field park,119.5,84.8
+rejected,Q49478258,City Hall Square,35bbc986-5e7e-4560-beff-e5ccef9a036f,China Gourmet,98.9,48.3
+rejected,Q49478453,Clarke Park,8f0935f7-c95f-4278-becb-6ad130e0cbf8,Clarke Square Park,28.9,75.9
+rejected,Q49479688,Concordia Park,62b9b58f-34f8-47fb-8fe1-d4b8b73e27a1,Kops Park,46.0,52.2
+rejected,Q49480679,Covered Bridge Park,3b18b01f-ba58-4cd7-b461-e8dbfe092749,Covered Bridge County Park,25.9,84.4
+rejected,Q49472994,Art Keller Field,662d1e3f-0a21-46e8-ab42-913eb2167342,Carthage College Theatre,142.2,45.0
+rejected,Q49473553,Balmer Park,5d0b3718-4278-4158-babb-78093a7ff9a0,Pewaukee Balmer Park,28.5,71.0
+rejected,Q49474075,Beaumont Park,de23fb0c-6ff9-4487-b1ab-236fd2b903e1,Dover Inn,61.0,18.2
+rejected,Q49474072,Beaumont Field,18dad3b0-8549-4d4b-b6fa-e5752ce6e03b,Beaumont Congress Fields,62.2,73.7
+rejected,Q49474568,Bethesda Spring Park,6faf27b5-0528-4966-a8fd-1ee964c57d56,Bethesda Park,28.2,78.8
+rejected,Q49474586,Beulah Brinton Park,018470f2-50a0-4751-8c77-d9d33fc9d47c,The Newport,145.5,23.1
+rejected,Q49501174,Harley Park,e79efda3-e820-4deb-8ee3-a4cde6be89dd,Jacob Leinenkugel Brewing,108.6,27.8
+rejected,Q49503087,Horn Park,390f1365-ffcf-4b4c-9390-2a95dc751dce,Muskego Horn Park,66.6,69.2
+rejected,Q49508609,Johnson Park,8ef8ca79-d5c5-4a71-86e2-4ac740ef90cb,Johnson Park Golf Course,114.7,66.7
+rejected,Q49520049,Lucas Park,4b04b02c-de05-4c05-8564-387614796438,Uncas Park,46.4,40.0
+rejected,Q49520425,MacArthur Square,3bbc8181-e663-4bce-a1b2-4a53c88d65b8,Streets of Old Milwaukee,83.4,35.0
+rejected,Q49523828,McKinley Park,6e01a3a0-749c-4f85-bfd3-338c750858f5,Lakefront Bike Path,145.1,37.5
+rejected,Q49524531,Meinhardt Park,5115fa00-a392-46e2-9e04-f890990b189d,Malt House Theatre,130.3,37.5
+rejected,Q49492794,Garden Homes Park,8c39db87-3a8e-429d-ad62-ca839c55ecfa,Garden Homes Lutheran School,136.9,62.2
+rejected,Q49495341,Grant Park,4d8d278e-b4e5-4ca3-917d-87c42a2397d0,South Milwaukee Grant Park,15.0,55.6
+rejected,Q49525488,Merrill Park,22618879-71a1-41fd-8e0e-f2e6b7798195,Merrill Park Neighborhood,79.2,64.9
+rejected,Q49525548,Merton Fireman's Park,9d944d53-40da-40f0-8984-01b5e3026c6e,Wisco Joe Coffee Company,88.6,40.0
+rejected,Q49527281,Mitchell Park,d76efd21-be48-4c8f-9829-165b72e5a20f,Greenhouse No. 7,114.1,21.4
+rejected,Q49528040,Moody Park,1a6d3229-2b2c-4c8b-9fd1-117148bf23db,Milwaukee Recreation Department,69.6,24.4
+rejected,Q49528330,Morgan Park,20722d82-037b-4d5a-9e8e-061ccfb8556e,Morgan Triangle Park,54.1,71.0
+rejected,Q49535256,Old Settlers Park,96556975-dcf0-44d4-b84d-0e4a2485a419,Old Settlers County Park,91.3,82.9
+rejected,Q49541870,Petrifying Springs Park,b5bd12b2-59f1-4243-8dda-8ba29bf33a6d,Petrifying Springs Biergarten,135.4,80.8
+rejected,Q49542437,Pierce Grove Park,64d57dd7-4b01-40b0-be31-d42bc1d5993f,Pierce Woods Park,59.4,64.7
+rejected,Q49546790,Pulaski Park,ab867220-ba16-4155-9294-26802d980f43,Pulaski Park - Cudahy,3.2,77.4
+rejected,Q49546792,Pulaski Park,8eaf2518-a137-4abc-98b6-226f2e23b9e0,Pulaski Park - Milwaukee,110.2,70.6
+rejected,Q49577257,Washington Park,dedec440-8f7d-4c1b-8c06-16149c79c6be,Stan's Place,128.8,44.4
+rejected,Q117383534,Liberty Park,eba7f531-141c-4c96-8928-42cd999b8ee7,Milwaukee Street Traders,96.9,38.9
+rejected,Q117384048,Hawks Inn & Delafield History Center,bab4a7c5-41d2-4645-b4cb-0c70c414e38c,Delafield History Center,24.7,82.8
+rejected,Q117400145,Sussex Lisbon Area Museum,0c53a1fc-4708-4fe5-8994-a2eb3f50c22e,Sussex Lisbon Area Historial Society,12.3,68.9
+rejected,Q117416696,Richfield Historical Park,29d65fa0-2c8d-4e8f-810d-2bb8ec0810bc,Richfield Historical Society,34.7,75.5
+rejected,Q117424021,Mukwonago Historical Society - Red Brick Museum,fb13fb17-107c-4236-86e9-4b7d4d280a9f,Mukwonago Red Brick Museum,3.4,73.2
+rejected,Q117430770,"Mini Park, 58th and Beloit",828effe1-e510-477d-ad5e-f185571a1bf7,Cataro's Italian Villa,113.6,38.3
+rejected,Q117430840,"Mini Park, 60th and National",d9af6e51-83a6-4ee8-8c93-e4c4da259cbf,"Still & Oak, A Great Lakes Distillery Tasting Room",105.2,32.4
+rejected,Q117430903,"Mini Park, 64th and Greenfield",494029a5-aa22-470a-8a82-488f3994eb71,Lenny's,145.2,22.2
+rejected,Q117430975,Railroad Park,68650252-8b8e-4521-a4c6-9d3436a30507,Jack Rabbit Slim's,134.6,45.2
+rejected,Q117431038,Burnham Pointe Park,b65d4920-12b6-40a4-bdfa-9c7eced63c57,Burnham Bowl,58.1,45.2
+rejected,Q117431853,Joyce Radtke Skatepark,308f1047-9cb9-4906-8dbf-5a98f9c2e2ef,West Allis Skate Park,20.1,41.9
+rejected,Q117442282,Pocket Park,c0ea522b-8f32-4ca2-a440-9fc0f173076f,Aloha Poke Co.,74.5,50.0
+ambiguous,Q117448327,Eagle Village Park,94a29ba7-4a6a-40e3-b868-0503b59f5a33,Eagle Village Park,84.5,100.0
+ambiguous,Q117448327,Eagle Village Park,a4b851ca-0f9b-42ba-a0a4-179a0f779c6e,Eagle Village Park,36.0,100.0
+rejected,Q117451126,Lamerand Park,badc2af1-4f85-44c5-a084-534ef9b783db,Castle Park,3.7,58.3
+rejected,Q117454421,Monches Recreation Park,e0f4d300-a5cc-4de0-b1f5-053364f6f28e,Monches Ball Park,75.2,60.0
+rejected,Q117456427,Jane Stadler Memorial Park,230bd4f6-a73c-4f68-9a62-b6d676af501e,Lisbon Town Hall,67.7,23.8
+rejected,Q117460575,Lake Country Playhouse,07aa02e7-9f22-47b3-83fc-4e61b497b1f4,Birch & Banyan Coffee,125.9,34.1
+rejected,Q60750070,Washington Park Clubhouse,c1abf1d4-112a-4e9b-bc35-ca233f2fb87b,Charlie's 10th Hole,136.3,31.8
+rejected,Q80344512,Emil Blatz Temple of Music,9eeb6252-65d4-49f4-8db9-74b31e63362e,Washington Park Bandshell,11.6,31.4
+rejected,Q113696876,Dretzka Park,b217bd71-7c4c-438d-acfe-3a9f9e5ad356,Dretzka Park Golf Course,37.4,66.7
+rejected,Q117285397,Stone Bank Lions and Firemen's Community Park,a04c7d61-68db-4f04-b6f6-34a7879934da,Stone Bank Community Park,111.2,71.4
+rejected,Q117285847,Oconomowoc Area Historical Society and Museum,d4eaa2d8-5b07-48db-b116-13a069ee5f6e,Oconomowoc Historical Museum,6.5,76.7
+rejected,Q117285876,Genesee Lake Road Park,aabc7135-5b8e-4f70-a0d6-5e07bd78165e,Summit Park,68.1,30.3
+rejected,Q117383418,St. John’s Park,92494f1e-80ca-4d1d-821c-88e23f930773,Here's The Scoop,112.9,46.7
+rejected,Q49549251,Reiske Park,a3d00be4-8988-4c61-a717-d275aa140eae,City of Milwaukee Parks: Reiske Park,74.6,47.8
+rejected,Q49551484,Riverside Park,f2a3b943-4d73-4d11-8053-4ac11a44d4c7,Milwaukee Recreation,79.0,41.2
+rejected,Q49551554,Riverton Meadows Neighborhood Park,5e510bfd-ba98-43c9-8a3c-2b2469cacc93,Riverton Meadows Park | Leased by the City of Oak Creek,132.3,55.2
+rejected,Q49553416,Roosevelt Park,89a4279b-35d6-449c-bf47-fdad18be3ecf,Roosevelt Field,124.4,69.0
+rejected,Q49554285,Rotary Park,e39d905d-da4a-4758-b860-5c4a53040af8,Walter Diehnelt Rotary Park,141.9,57.9
+rejected,Q49558547,Schoenlaufen Park,42fc6be2-205d-4a1e-98b8-ab5ffc1d8a1a,Schoen Laufen Park,133.4,62.9
+rejected,Q49559854,Settlers Park,9728853c-9b20-4c2a-9f1e-552a7c283df3,Mequon Community Pool,149.2,17.6
+rejected,Q49564276,Spassland Park,c8296403-ac40-4d37-b896-f03ffae4af4a,Spassland Park Disc Golf Course,89.5,62.2
+rejected,Q49566733,Stormouth City Park,5e976298-ffc9-4d58-8976-690e9cd8df22,Longacre Soccer Park,137.6,51.3
+rejected,Q49572039,Trimborn Farm Park,f12a90ed-58cb-499a-b1df-631f92cf2f3a,Trimborn Farm,55.9,83.9
+rejected,Q49580372,Wick Playground,6fd8ac43-f3de-4a1c-973b-2c80579e7484,Wick Field,53.2,56.0
+rejected,Q49580762,Wildwood Park,da971aeb-20bd-46d4-b7f9-66c114761537,Saukville Marcus Theaters,105.8,26.3
+rejected,Q49581116,William R McGovern Park,22f2cf39-3113-4847-b7dc-3c49eee9a363,McGovern Park,46.9,72.2
+rejected,Q49583381,Wyrick Park,b614cae5-86c2-4a09-b736-5bf2ba0c1a70,New Entertainers,127.0,29.6
+rejected,Q49578933,West Side Park,ee0202bc-9920-4ec0-8411-f659a9583697,West Park,110.7,78.3
+rejected,Q130232429,Greenway Terrace Park,8e016c44-1671-4fde-9b5e-13a521367d00,"Highland Park, Waukesha, Wisconsin",70.3,41.5
+rejected,Q130236527,"John Mindiola, Sr. Community Park",1b836915-1be4-45e0-b3f2-239bb0cbd43b,Mindiola Park,140.1,59.1
+rejected,Q117602903,Sunnyslope Park,b10c11a6-2664-46dc-a561-c2e9da6a30f4,Falbo Bros Pizzeria,106.5,35.3
+rejected,Q117766658,Oakwood Community Park,b1518a8b-ac53-4342-b8a9-d124e6b49844,Oakwood Community Park Disc Golf Course,37.8,72.1
+rejected,Q117769302,Veteran's Park,e8beb45f-9d25-444a-930a-45a1224f3a5e,North Prairie Veterans Park,28.1,63.4
+rejected,Q117794092,Village Hall Park,27b042cf-709f-436b-a19c-c3dff462b121,Big Bend-Vernon Recreation,62.1,23.3
+rejected,Q117800195,Hansen Park,c7b1dc91-d34e-40e2-ba0b-da3c202779fb,Hansen Park Golf Course,98.1,64.7
+rejected,Q130242604,Saratoga Park,18b04f01-39d9-4cd8-9bb4-df1fdc7e2d26,Saratoga Field,14.5,66.7
+rejected,Q130242880,Youmans Park,b2b8f716-4299-4e6f-91f4-da48ec675b79,Dady-Ohs Restaurant,99.3,40.0
+rejected,Q130261712,Freedom Square,a32101e5-2e48-4d36-97ec-175e0c09fbe9,Milk Can Hamburgers and Frozen Custard,92.9,26.9
+rejected,Q130262670,Historic Muskego Centre Park,06f6e5df-c3e5-45c1-a0d1-3e7cba035453,Pop's Pub on Pioneer,29.0,37.5
+rejected,Q130266393,Moorland Park,0b0c6b03-c871-4e44-b47e-8c77cfe8b6d8,Moorland Park playground,77.7,70.3
+rejected,Q130266489,Muskego Public Library Conservation Area,a32101e5-2e48-4d36-97ec-175e0c09fbe9,Milk Can Hamburgers and Frozen Custard,134.0,38.5
+rejected,Q130266508,Old Muskego Settlement Centre,5dfb7e5d-4a0e-4187-8937-ff2fa687f1ac,Muskego Historical Society,30.0,50.9
+rejected,Q130266869,New Berlin History Museum,39a4f972-0f82-49e6-bcb4-edd8147cb74e,New Berlin Historical Society,10.6,63.0
+rejected,Q130267774,Veteran's Memorial Park,b76cae15-ac59-4582-8c1d-2289ca69d318,Armeli's Restaurant & Pizzeria,127.6,47.1
+rejected,Q130268511,City Center Plaza,a6db6b04-e315-4c47-9c49-49459b30bdb2,Dickeys Barbecue Pit,138.1,37.8
+ambiguous,Q130268531,Biwer Park,00936379-8a69-4e9f-991e-6a2b9f43ccb2,Biwer Park,143.6,100.0
+ambiguous,Q130268531,Biwer Park,7fa2d8df-6e46-4c2e-991c-1b6641f6ec66,Biwer Park,37.3,100.0
+rejected,Q130287589,Indianhead Park,19fa004d-8b61-4140-8e45-9a3af2fd7966,Indian Head Park,74.1,71.0
+rejected,Q130299970,Town Park,b6a5a5f2-96b9-41b2-b966-b44dc8a5ccb9,Mukwonago Town Park,98.0,64.3
+rejected,Q131448732,Walker's Point Center for the Arts,f1c5accc-8def-4de6-a173-b801f0486d9d,Walker's Point Music Hall,142.4,61.0
+rejected,Q117466692,Dousman Stagecoach Inn Museum,d9389c32-5d72-4559-8811-835140967364,Elmbrook Historical Society,7.4,28.6
+rejected,Q117467669,Memorial Park East,aaab7197-7f44-427e-975d-1dfe754a23bc,Memorial Park,86.7,83.9
+rejected,Q117467711,Oerding Park,3dc67ee4-9d0c-472f-a53c-3813f65f955d,Riverside Park,108.0,30.8
+rejected,Q117507252,Village Green Park,8a067504-abc3-4196-bdb2-51cf10ee356f,Village Green Beer Garden,7.4,65.1
+rejected,Q117552810,Simmons Woods,f78f1964-dc74-4ef6-826a-7814bda12eda,Simmons Woods Park,117.0,83.9
+rejected,Q117600024,Clark House Museum,0d6f77ef-a19a-4a90-8fe6-72c084d20e42,Pewaukee Area Historical Society Clark House Museum,4.5,52.2
+rejected,Q117600081,H.J. Koepp Riverside Parkway,7cc09ea9-ce2b-41b1-ada8-5819001bda08,Koepp Park,92.0,54.1
+rejected,Q117602133,Lakefront Park,b0ed8f2f-44c1-4de6-ab45-04aad6b89c7f,Lakefront Park - Pewaukee,28.6,75.7
+rejected,Q7121824,Pabst Brewery Complex,9c8ea699-499b-41f2-9d11-4f9adeefc765,Pabst MKE Brewery,101.5,84.2
+rejected,Q29096689,Excelsior Masonic Temple,11afac19-c501-4444-ba63-b6b825dbf1d4,Gloria's Cake Shop & Cafe,145.9,42.9
+rejected,Q134731577,Schauer Arts Center,b2d6061f-83e9-4b31-9fba-584f1e09842d,Hartford Players,23.5,45.7
+rejected,Q133504926,Endicott Park,999eb4e9-6aea-4241-83e7-f2aa4624ee28,Endicott Park playground,54.8,70.3
+rejected,Q134610034,Firefly Grove Park,04cf2715-46b5-4bb7-b3e2-c6e781c5c8c4,Friends of Firefly Grove Park,49.3,76.6
+rejected,Q134729930,Centennial Park,2623c243-e949-4415-991d-7cc6aa3037d4,Pearl of Canton II,66.0,54.5
+rejected,Q134731191,Jordan Park,b2d6061f-83e9-4b31-9fba-584f1e09842d,Hartford Players,145.3,51.9
+rejected,Q134731379,Veterans Memorial Park,726c3c2c-572f-4515-bf66-3f9580a23de3,Hartford Skate Park,99.3,48.8
+rejected,Q134905454,84th and Grange Park,dabe670e-648c-4896-8692-10980252f18c,Grange Field,118.2,50.0
+rejected,Q134907900,Greendale Lions Park,ab18bfed-71e7-41c3-a332-dd27326a5527,Lions Park,12.5,66.7
+rejected,Q141310933,Woman's Club of Wisconsin,93b22601-44bb-4331-b4c5-e2acea9c88d5,Landform Images Gallery,77.7,29.2
+rejected,Q141497278,Village Park Bandstand,170f8f13-4d5e-4a2b-a281-811bb92cdcc1,Village Park,102.5,70.6
+rejected,Q141497301,Menomonee Golf Club,e5e2ae74-3f3e-4dd2-8152-deb811137282,Three Cellars,142.1,37.5

@@ -38,6 +38,10 @@ export type ExploreSlotCard = ExploreSlotDetail & {
   imageLabel: string;
   imageUrl?: string | null;
   distanceLabel?: string;
+  placeAddress?: string | null;
+  venue?: string;
+  dateLabel?: string;
+  priceKnown?: boolean;
   badge?: string;
   badgeVariant?: "urgency" | "neutral" | "accent" | "light";
   summary?: string;

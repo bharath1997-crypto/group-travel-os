@@ -186,6 +186,9 @@ def test_search_places_spatial_path() -> None:
     assert params["radius_m"] == 5000
     assert "ORDER BY" in sql_text and "ST_Distance" in sql_text
     assert "place_media" in sql_text and "moderation_status = 'approved'" in sql_text
+    assert "WHEN 'rovvy_user' THEN 0" in sql_text
+    assert "WHEN 'open_license' THEN 1" in sql_text
+    assert "WHEN 'licensed_partner' THEN 2" in sql_text
     assert "gers_id ASC" in sql_text
     assert "ROW_NUMBER" not in sql_text
 
