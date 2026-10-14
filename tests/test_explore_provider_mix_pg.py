@@ -1,10 +1,13 @@
 """
-F27 — provider mix in the Explore events feed (server-side, before paging).
+F27b — window-wide provider mix in the Explore events feed (server-side, before paging).
 
-Opt-in Postgres suite (SCAPER_PG_TEST_URL); every test runs inside the rolled-back
-`pg` transaction from test_scaper_postgres. Rows are seeded straight into
-public.events with a Scaper source id, so the reader's `source_id IS NOT NULL`
-filter applies and no connector or external API is touched.
+Postgres-only (not sqlite CI). Run inside a rolled-back transaction:
+
+  SCAPER_PG_TEST_URL=postgresql://USER:PASS@HOST:5432/db \\
+    pytest tests/test_explore_provider_mix_pg.py -v
+
+Uses the `pg` fixture from tests/test_scaper_postgres.py (migrations 008–011 applied,
+then rolled back). No HTTP; rows are inserted into public.events directly.
 """
 from __future__ import annotations
 
@@ -15,17 +18,17 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy import Connection, text
 
-from app.services.explore_scaper_events import scaper_events_for_city
-from tests.test_scaper_postgres import pg  # noqa: F401  (fixture; pytest_plugins in a test module is ignored in a full run)
+from app.services.explore_scaper_events import MIN_PROVIDER_SHARE_EVERY, scaper_events_for_city
+from tests.test_scaper_postgres import pg  # noqa: F401
 
 pytestmark = pytest.mark.scaper_postgres
 
 CITY_SLUG = "scaper-mix-it"
 CITY = "Scaper-Mix-It"
 TZ = "America/Chicago"
-# Far in the future so expiry never hides a row; noon local keeps the local day stable.
 DAY_1 = datetime(2099, 3, 10, 12, 0, tzinfo=timezone.utc)
 DAY_2 = DAY_1 + timedelta(days=1)
+WEEK_LATER = DAY_1 + timedelta(days=5)
 
 
 class _ConnDb:
@@ -91,8 +94,23 @@ def _minutes(base: datetime, count: int, *, offset: int = 0, step: int = 5) -> l
     return [base + timedelta(minutes=offset + step * i) for i in range(count)]
 
 
-def test_first_page_mixes_providers_within_a_day(pg) -> None:
-    """30 Ticketmaster rows early, 3 Eventbrite later: page 1 (size 12) holds all 3 Eventbrite rows."""
+def test_window_mix_puts_minor_provider_in_first_page(pg) -> None:
+    """200 Ticketmaster early + 5 Eventbrite later in the week: page 1 (24) has >= 3 Eventbrite."""
+    _, conn = pg
+    sid = _source_id(conn)
+    _seed(conn, sid, "ticketmaster", "tm", _minutes(DAY_1, 200))
+    _seed(conn, sid, "eventbrite", "eb", _minutes(WEEK_LATER, 5, offset=60))
+
+    page_1 = _page(_ConnDb(conn), page=1, per_page=24)
+    providers = [e["source"] for e in page_1]
+    assert providers.count("eventbrite") >= 3
+    assert providers.count("ticketmaster") + providers.count("eventbrite") == len(page_1)
+    eb_times = [(e["date"], e["time"]) for e in page_1 if e["source"] == "eventbrite"]
+    assert eb_times == sorted(eb_times)
+
+
+def test_same_day_late_minor_still_gets_slots(pg) -> None:
+    """30 Ticketmaster early, 3 Eventbrite later same day: minor rows appear by mix_position."""
     _, conn = pg
     sid = _source_id(conn)
     _seed(conn, sid, "ticketmaster", "tm", _minutes(DAY_1, 30))
@@ -100,37 +118,15 @@ def test_first_page_mixes_providers_within_a_day(pg) -> None:
 
     page_1 = _page(_ConnDb(conn), page=1, per_page=12)
     providers = [e["source"] for e in page_1]
-    assert providers.count("eventbrite") == 3
-    assert providers.count("ticketmaster") == 9
-    # Round-robin: both providers alternate until Eventbrite runs out.
-    assert providers[:6] == ["ticketmaster", "eventbrite"] * 3
-    # Within one provider the order stays chronological.
+    assert providers.count("eventbrite") >= 1
     for provider in ("ticketmaster", "eventbrite"):
         times = [(e["date"], e["time"]) for e in page_1 if e["source"] == provider]
         assert times == sorted(times)
 
 
-def test_day_one_events_always_precede_day_two(pg) -> None:
-    _, conn = pg
-    sid = _source_id(conn)
-    _seed(conn, sid, "ticketmaster", "tm1", _minutes(DAY_1, 4))
-    _seed(conn, sid, "eventbrite", "eb1", _minutes(DAY_1, 2, offset=120))
-    # Day 2 has an Eventbrite row earlier in the day than Day 1's Eventbrite rows would be.
-    _seed(conn, sid, "eventbrite", "eb2", _minutes(DAY_2, 3))
-    _seed(conn, sid, "ticketmaster", "tm2", _minutes(DAY_2, 3, offset=30))
-
-    rows = _page(_ConnDb(conn), page=1, per_page=50)
-    days = [e["date"] for e in rows]
-    assert len(rows) == 12
-    assert days == sorted(days)
-    assert days[:6] == [DAY_1.date().isoformat()] * 6
-    assert days[6:] == [DAY_2.date().isoformat()] * 6
-
-
 def test_single_provider_is_plain_start_time_order(pg) -> None:
     _, conn = pg
     sid = _source_id(conn)
-    # Insert out of chronological order so the result cannot be insertion order by accident.
     starts = _minutes(DAY_1, 10)
     _seed(conn, sid, "ticketmaster", "tm", list(reversed(starts)))
 
@@ -164,11 +160,10 @@ def test_paging_returns_every_row_exactly_once(pg) -> None:
     assert len(seen) == expected_total
     assert len(set(seen)) == expected_total
 
-    # Deterministic: the same page twice yields the same ids in the same order.
     assert [e["id"] for e in _page(db, page=2, per_page=12)] == [e["id"] for e in _page(db, page=2, per_page=12)]
 
 
-def test_round_robin_is_generic_over_three_providers(pg) -> None:
+def test_three_providers_each_get_slots_in_window(pg) -> None:
     _, conn = pg
     sid = _source_id(conn)
     _seed(conn, sid, "ticketmaster", "tm", _minutes(DAY_1, 6))
@@ -176,7 +171,10 @@ def test_round_robin_is_generic_over_three_providers(pg) -> None:
     _seed(conn, sid, "ticketweb", "tw", _minutes(DAY_1, 2, offset=600))
 
     providers = [e["source"] for e in _page(_ConnDb(conn), page=1, per_page=50)]
-    # Rank 1 of each provider (ordered by start_time), then rank 2 of each, then the rest.
-    assert providers[:3] == ["ticketmaster", "eventbrite", "ticketweb"]
-    assert providers[3:6] == ["ticketmaster", "eventbrite", "ticketweb"]
-    assert providers[6:] == ["ticketmaster"] * 4
+    assert "ticketmaster" in providers
+    assert "eventbrite" in providers
+    assert "ticketweb" in providers
+    # First minor-provider slots land at mix_position 6 (rank 1 * MIN_PROVIDER_SHARE_EVERY).
+    assert MIN_PROVIDER_SHARE_EVERY == 6
+    assert providers.index("eventbrite") < 12
+    assert providers.index("ticketweb") < 12

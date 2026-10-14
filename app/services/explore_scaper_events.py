@@ -15,25 +15,42 @@ from app.services.scaper_event_visibility import visible_events_cte
 # State names for the detail view; extend when a new Scaper city is added.
 _CITY_STATE = {"orlando": "Florida", "chicago": "Illinois"}
 
-# F27 provider mix. Events are ranked inside their local day (events.timezone), and
-# within a day the providers take turns: the soonest unseen event from each provider,
-# then the next from each, and so on. provider_rank_in_day is a window function, so
-# the mix happens in SQL before LIMIT/OFFSET and paging stays gap- and duplicate-free.
-# With one provider (or once the others run out) the order collapses to start_time.
-_LOCAL_DAY_SQL = "(start_time AT TIME ZONE COALESCE(NULLIF(timezone, ''), 'UTC'))::date"
-PROVIDER_MIX_ORDER_BY = "local_day ASC, provider_rank_in_day ASC, start_time ASC, id ASC"
+# F27b provider mix across the whole date window (not per local day). Each provider's
+# events keep chronological rank_p; the largest provider uses mix_position = rank_p;
+# every other provider gets one slot per MIN_PROVIDER_SHARE_EVERY of its own ranks
+# (mix_position = rank_p * MIN_PROVIDER_SHARE_EVERY). Final order is mix_position,
+# start_time, id before LIMIT/OFFSET so paging stays duplicate- and gap-free.
+MIN_PROVIDER_SHARE_EVERY = 6
+PROVIDER_MIX_ORDER_BY = "mix_position ASC, start_time ASC, id ASC"
 
 
 def provider_mix_ranked_sql(source: str = "visible") -> str:
-    """SELECT over `source` adding local_day + provider_rank_in_day (row_number per day+provider)."""
+    """SELECT over `source` adding rank_p + mix_position (window-wide provider share)."""
+    share = MIN_PROVIDER_SHARE_EVERY
     return f"""
-        SELECT *,
-               {_LOCAL_DAY_SQL} AS local_day,
-               row_number() OVER (
-                   PARTITION BY {_LOCAL_DAY_SQL}, provider
-                   ORDER BY start_time ASC, id ASC
-               ) AS provider_rank_in_day
-        FROM {source}
+        SELECT mixed.*
+        FROM (
+            SELECT r.*,
+                   CASE
+                     WHEN r.provider = dom.dominant_provider THEN r.rank_p
+                     ELSE r.rank_p * {share}
+                   END AS mix_position
+            FROM (
+                SELECT v.*,
+                       row_number() OVER (
+                           PARTITION BY v.provider
+                           ORDER BY v.start_time ASC, v.id ASC
+                       ) AS rank_p
+                FROM {source} AS v
+            ) AS r
+            CROSS JOIN (
+                SELECT provider AS dominant_provider
+                FROM {source}
+                GROUP BY provider
+                ORDER BY count(*) DESC, provider ASC
+                LIMIT 1
+            ) AS dom
+        ) AS mixed
     """
 
 
@@ -127,8 +144,8 @@ def scaper_events_for_city(
 ) -> dict[str, Any]:
     """Use the source's city stamp, never a radius or browser GPS coordinate.
 
-    Page order (F27): events are grouped by local day; inside a day providers take
-    turns so a small provider is not buried under a large one. See PROVIDER_MIX_ORDER_BY.
+    Page order (F27b): window-wide provider share via mix_position (see
+    MIN_PROVIDER_SHARE_EVERY and PROVIDER_MIX_ORDER_BY).
     """
     if db.bind is None or db.bind.dialect.name != "postgresql":
         raise RuntimeError("Scaper events require PostgreSQL")

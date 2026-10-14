@@ -10,6 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.schemas.place_spine import PlaceSpineDetail, PlaceSpinePhoto
+from app.services.place_facts_service import PlaceFactsService
 from app.utils.exceptions import AppException
 
 _GERS_ID_RE = re.compile(r"^[0-9a-f]{16,64}$", re.IGNORECASE)
@@ -114,7 +115,7 @@ _SPINE_SELECT = """
 DEFAULT_SPINE_NEAR_RADIUS_M = 50.0
 
 
-def _detail_from_row(row: Any) -> PlaceSpineDetail:
+def _detail_from_row(row: Any, *, facts=None) -> PlaceSpineDetail:
     category, category_label = _format_category_label(row.get("basic_category"))
     wikidata_qid = row.get("wikidata_qid")
     short_description = row.get("short_description")
@@ -158,6 +159,7 @@ def _detail_from_row(row: Any) -> PlaceSpineDetail:
         next_slot=None,
         slots_tonight=None,
         updated_at=updated_at,
+        facts=facts or [],
     )
 
 
@@ -184,7 +186,8 @@ class PlaceSpineService:
         if row is None:
             AppException.not_found("Place not found")
 
-        return _detail_from_row(row)
+        facts = PlaceFactsService.facts_for_gers_id(db, normalized)
+        return _detail_from_row(row, facts=facts)
 
     @staticmethod
     def get_nearest(
@@ -223,4 +226,5 @@ class PlaceSpineService:
         if row is None:
             AppException.not_found("Place not found")
 
-        return _detail_from_row(row)
+        facts = PlaceFactsService.facts_for_gers_id(db, str(row["gers_id"]))
+        return _detail_from_row(row, facts=facts)

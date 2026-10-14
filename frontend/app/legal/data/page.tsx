@@ -127,6 +127,70 @@ export default function LegalDataPage() {
 
             <hr style={{ borderColor: "#F1F5F9" }} />
 
+            <section>
+              <h2 className="text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
+                Wikipedia
+              </h2>
+              <p>
+                Some place descriptions in Explore are short excerpts from English{" "}
+                <a
+                  href="https://www.wikipedia.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline underline-offset-2"
+                  style={{ color: "#0E6E5C" }}
+                >
+                  Wikipedia
+                </a>{" "}
+                articles, used under the{" "}
+                <a
+                  href="https://creativecommons.org/licenses/by-sa/4.0/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline underline-offset-2"
+                  style={{ color: "#0E6E5C" }}
+                >
+                  Creative Commons Attribution-ShareAlike 4.0
+                </a>{" "}
+                license. Where shown, Rovvy labels the text &quot;From Wikipedia&quot; with a link to the
+                source article. Wikipedia content is not written by Rovvy.
+              </p>
+            </section>
+
+            <hr style={{ borderColor: "#F1F5F9" }} />
+
+            <section>
+              <h2 className="text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
+                OpenStreetMap
+              </h2>
+              <p>
+                Opening hours, wheelchair access, and related tags for some places come from{" "}
+                <a
+                  href="https://www.openstreetmap.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline underline-offset-2"
+                  style={{ color: "#0E6E5C" }}
+                >
+                  OpenStreetMap
+                </a>{" "}
+                contributors under the{" "}
+                <a
+                  href="https://opendatacommons.org/licenses/odbl/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline underline-offset-2"
+                  style={{ color: "#0E6E5C" }}
+                >
+                  Open Database License (ODbL)
+                </a>
+                . We show provider-stated values only and credit &quot;© OpenStreetMap contributors&quot; on
+                listings that display OSM facts.
+              </p>
+            </section>
+
+            <hr style={{ borderColor: "#F1F5F9" }} />
+
             <section id="removal">
               <h2 className="text-lg font-semibold mb-3" style={{ color: "#0E6E5C" }}>
                 Event removal requests

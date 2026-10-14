@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { buildLiveDirectionsHref } from "@/app/(dashboard)/live/live-explore-deeplink";
@@ -19,6 +20,13 @@ import { ExploreDrawerPhotoUpload } from "./ExploreDrawerPhotoUpload";
 import { EXPLORE_MAP_PREVIEW_LABEL, exploreListingHasRealPhoto } from "../explore-listing-media";
 import { photoCreditText } from "../explore-photo-credit";
 import { explorePhoneHref } from "../explore-place-actions";
+import {
+  factByKey,
+  fetchExplorePlaceSpineFacts,
+  firstParagraph,
+  mergeHoursFromFacts,
+  type ExplorePlaceFact,
+} from "../explore-place-spine-facts";
 
 type ExploreDetailDrawerProps = {
   detail: ExploreSlotDetail | null;
@@ -37,7 +45,33 @@ export function ExploreDetailDrawer({
   saveError,
   isSaved = false,
 }: ExploreDetailDrawerProps) {
+  const [placeFacts, setPlaceFacts] = useState<ExplorePlaceFact[]>([]);
+
+  useEffect(() => {
+    if (!detail || detail.listingKind !== "place") {
+      setPlaceFacts([]);
+      return;
+    }
+    let cancelled = false;
+    void fetchExplorePlaceSpineFacts(detail.id).then((facts) => {
+      if (!cancelled) setPlaceFacts(facts);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [detail?.id, detail?.listingKind]);
+
+  const hoursMerged = useMemo(
+    () =>
+      mergeHoursFromFacts(detail?.openingHours, detail?.hoursSource, placeFacts),
+    [detail?.openingHours, detail?.hoursSource, placeFacts],
+  );
+
   if (!detail) return null;
+
+  const wikiExtract = factByKey(placeFacts, "extract");
+  const wheelchair = factByKey(placeFacts, "wheelchair");
+  const showOsmCredit = placeFacts.some((f) => f.source === "osm");
 
   const bookLabel = exploreDrawerProviderActionLabel({
     source: detail.source,
@@ -128,6 +162,27 @@ export function ExploreDetailDrawer({
             {ratingLine ? <span className={styles.drawerRating}>{ratingLine}</span> : null}
           </div>
           <p className={styles.drawerBody}>{detail.body}</p>
+          {wikiExtract ? (
+            <div className={styles.drawerPlaceInfo}>
+              <p className={styles.drawerBody}>{firstParagraph(wikiExtract.value)}</p>
+              <p className={styles.drawerPriceNote}>
+                From{" "}
+                {wikiExtract.source_url ? (
+                  <a href={wikiExtract.source_url} target="_blank" rel="noopener noreferrer">
+                    Wikipedia
+                  </a>
+                ) : (
+                  "Wikipedia"
+                )}
+                {wikiExtract.license ? ` · ${wikiExtract.license}` : null}
+              </p>
+            </div>
+          ) : null}
+          {wheelchair?.value ? (
+            <p className={styles.drawerBody}>
+              Wheelchair access: {wheelchair.value}
+            </p>
+          ) : null}
           <div className={styles.drawerTags}>
             {detail.tags.map((tag) => (
               <span key={tag}>{tag}</span>
@@ -166,12 +221,23 @@ export function ExploreDetailDrawer({
           ) : null}
           {detail.listingKind === "place" ? <ExploreDrawerPhotoUpload placeId={detail.id} /> : null}
           <div className={styles.drawerSectionLabel}>
-            {detail.openingHours
-              ? `Hours · ${drawerHoursSourceLabel(detail.hoursSource)}`
+            {hoursMerged.openingHours
+              ? `Hours · ${drawerHoursSourceLabel(hoursMerged.hoursSource)}`
               : "Hours unknown"}
           </div>
-          {detail.openingHours ? (
-            <p className={styles.drawerBody}>{detail.openingHours}</p>
+          {hoursMerged.openingHours ? (
+            <p className={styles.drawerBody}>{hoursMerged.openingHours}</p>
+          ) : null}
+          {showOsmCredit ? (
+            <p className={styles.drawerPriceNote}>
+              <a
+                href="https://www.openstreetmap.org/copyright"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                © OpenStreetMap contributors
+              </a>
+            </p>
           ) : null}
           <div className={styles.drawerActions}>
             {scaperTicketHref ? (
