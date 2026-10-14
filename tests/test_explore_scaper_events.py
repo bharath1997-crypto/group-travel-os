@@ -60,6 +60,30 @@ def test_orlando_hub_uses_city_not_five_km_and_preserves_unknown_price():
     assert all("duplicate_of IS NULL" in sql for sql, _ in db.sql)
 
 
+def test_hub_reader_mixes_providers_per_local_day_in_sql():
+    """F27: the page query ranks by (local_day, provider round-robin, start_time, id) before LIMIT."""
+    row = {
+        "id": uuid4(), "title": "Chicago show", "category": "Music",
+        "start_time": datetime.now(timezone.utc) + timedelta(days=1),
+        "venue_name": "Hall", "image_url": None, "ticket_url": "", "price_min": None,
+        "price_max": None, "is_free": None, "status": "scheduled",
+        "provider": "ticketmaster", "lat": 41.8, "lng": -87.6,
+        "timezone": "America/Chicago", "fetched_at": datetime.now(timezone.utc),
+    }
+    db = FakeDb(row)
+    scaper_events_for_city(db, city="Chicago", page=2, per_page=24)
+    page_sql = next(sql for sql, _ in db.sql if "LIMIT :limit" in sql)
+    normalized = " ".join(page_sql.split())
+    assert "row_number() OVER ( PARTITION BY" in normalized
+    assert "'UTC'))::date, provider ORDER BY start_time ASC, id ASC )" in normalized
+    assert "AS provider_rank_in_day" in normalized
+    assert "ORDER BY local_day ASC, provider_rank_in_day ASC, start_time ASC, id ASC LIMIT :limit OFFSET :offset" in normalized
+    # The window runs over the visibility CTE and the result is paged in SQL, not sorted in Python.
+    assert normalized.index("WITH visible AS") < normalized.index("row_number()") < normalized.index("LIMIT :limit")
+    _, params = db.sql[-1]
+    assert (params["limit"], params["offset"]) == (24, 24)
+
+
 def test_scaper_detail_has_no_invented_rating_or_distance():
     row = {
         "id": uuid4(), "title": "Orlando show", "category": "Music",

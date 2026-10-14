@@ -15,6 +15,27 @@ from app.services.scaper_event_visibility import visible_events_cte
 # State names for the detail view; extend when a new Scaper city is added.
 _CITY_STATE = {"orlando": "Florida", "chicago": "Illinois"}
 
+# F27 provider mix. Events are ranked inside their local day (events.timezone), and
+# within a day the providers take turns: the soonest unseen event from each provider,
+# then the next from each, and so on. provider_rank_in_day is a window function, so
+# the mix happens in SQL before LIMIT/OFFSET and paging stays gap- and duplicate-free.
+# With one provider (or once the others run out) the order collapses to start_time.
+_LOCAL_DAY_SQL = "(start_time AT TIME ZONE COALESCE(NULLIF(timezone, ''), 'UTC'))::date"
+PROVIDER_MIX_ORDER_BY = "local_day ASC, provider_rank_in_day ASC, start_time ASC, id ASC"
+
+
+def provider_mix_ranked_sql(source: str = "visible") -> str:
+    """SELECT over `source` adding local_day + provider_rank_in_day (row_number per day+provider)."""
+    return f"""
+        SELECT *,
+               {_LOCAL_DAY_SQL} AS local_day,
+               row_number() OVER (
+                   PARTITION BY {_LOCAL_DAY_SQL}, provider
+                   ORDER BY start_time ASC, id ASC
+               ) AS provider_rank_in_day
+        FROM {source}
+    """
+
 
 def city_slug(city: str) -> str:
     """'Chicago, IL' -> 'chicago'; 'New York' -> 'new-york' (matches ingest.sources.city_slug)."""
@@ -104,7 +125,11 @@ def scaper_events_for_city(
     page: int = 1,
     per_page: int = 200,
 ) -> dict[str, Any]:
-    """Use the source's city stamp, never a radius or browser GPS coordinate."""
+    """Use the source's city stamp, never a radius or browser GPS coordinate.
+
+    Page order (F27): events are grouped by local day; inside a day providers take
+    turns so a small provider is not buried under a large one. See PROVIDER_MIX_ORDER_BY.
+    """
     if db.bind is None or db.bind.dialect.name != "postgresql":
         raise RuntimeError("Scaper events require PostgreSQL")
     slug = city_slug(city)
@@ -137,8 +162,8 @@ def scaper_events_for_city(
                 SELECT id, title, category, start_time, venue_name, image_url,
                        ticket_url, price_min, price_max, is_free, status, provider,
                        lat, lng, timezone, fetched_at
-                FROM visible
-                ORDER BY start_time ASC, id ASC
+                FROM ({provider_mix_ranked_sql()}) AS ranked
+                ORDER BY {PROVIDER_MIX_ORDER_BY}
                 LIMIT :limit OFFSET :offset
             """), params,
         ).mappings().all()
