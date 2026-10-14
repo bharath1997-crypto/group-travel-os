@@ -2,6 +2,17 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-14 — Ground-only route intelligence (Live + Wayra)
+
+- **Change:** Route intelligence resolver is ground-only; no flight segment types in API or Live panel. Wayra seeds/copy updated so assistants do not suggest air travel.
+- **Verify:** pytest **987 passed**; vitest **549 passed**; tsc clean.
+
+## 2026-10-14 — Travel: flight product removed from app shell
+
+- **Context:** Owner decision (AGENTS.md §4); Explore/Live unaffected except copy/nav — no `/flights` routes or metasearch.
+- **Verification:** Same backend/frontend test counts as Travel Tab README entry (2026-10-14 flight removal); dashboard nav Plan/Trips links to Hotels, Routes, Buses only.
+- **Next:** None for Explorer; directions handoff remains Live → `/routes`.
+
 ## 2026-10-14 — F27c: TypeScript clean + provider-mix SQL guard + Postgres test docs
 
 - **TS:** `explore-plan-picks` — removed dead `nightlife` branch (use `bar` with `PhotoTheme`); test fixture uses `theme: "music"`. `ProfileTravelMap` — MapLibre markers use `element.style.zIndex` (10 pins / 100 live GPS), not Leaflet `zIndexOffset`.
