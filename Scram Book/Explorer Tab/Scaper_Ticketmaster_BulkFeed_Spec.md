@@ -23,10 +23,34 @@ throttling risk in Ticketmaster's terms. The bulk feed is Ticketmaster's own exp
 - The feed also carries events far into the future (≈ half the sample starts after 60 days).
 - Quota: one index call per run (count it against the 5,000/day).
 
-## 3. Compliance gates (owner approval before the first live run)
+## 3. Compliance gates (Perplexity review of the Discovery Feed terms, 2026-10-12)
 
-- Ticketmaster's Discovery **Feed** terms are not yet reviewed (Perplexity checked the Discovery API v2 terms only). **Owner:** run the Perplexity prompt in §12; mention the feed in the pending Ticketmaster email.
-- Same rules as today (`AGENTS.md` §4): hot-link images only; "Tickets via Ticketmaster" provider link; purge at event end (+6 h when no end time); 24 h removal with `ingest.blocklist`; no revenue from the data without Ticketmaster's written approval.
+Findings (quotes not re-fetched by Claude):
+- **Eligibility is unclear.** Ticketmaster's pages disagree: the Discovery Feed page says "open to the public" with any developer API key; the Developer FAQ says "for our approved partners"; an older Data Feeds page says "authorized clients only". Our key works technically.
+- **No feed-specific terms exist.** The General Terms of Use (last updated 2023-06-27) very likely apply, since the Feed is "sourced from the Discovery API" and the FAQ says feed users agree to the Terms of Use.
+- **Storing:** only "for reasonable periods in order to provide the service" (undefined). Deleting at event end and re-syncing from each file fits the purpose. No required refresh or deletion schedule; the only deadline is **owner removal within 24 h**. Events dropped from the feed should be hidden or deleted (the feed deliberately excludes events, e.g. release note 2025-10-07), which is what the expiry step in §4.3 does.
+- **Refresh:** no limit is stated on how often the file may be downloaded; files refresh about hourly. One download is one request, which fits the terms' rate-limiting language. A file can be up to a day old, so the provider's page is the source of truth for status.
+- **Attribution:** none required. Plain-text "Tickets via Ticketmaster" plus the URL is likely fine. **No Ticketmaster logo** (trademarks are not licensed). **Keep feed URLs unchanged**: if we become an affiliate, the feed URLs carry the affiliate tracking.
+- **Images:** hot-linking an event's own image is not expressly allowed or banned (only "generic image hosting" is banned). Keep hot-linking; never copy the files.
+- **Commercial use:** deriving revenue from the API is barred "except as set forth below", and nothing follows in the published text. The route that permits earning is the **Ticketmaster Affiliate Program on Impact** (affiliates use the Discovery API and Feed). Impact holds the legal agreements and payments, so join once the business is registered or ready to receive payments.
+- **Written confirmation:** use the **"Partner with Us"** form (developer.ticketmaster.com/support/contact-us); Ticketmaster says "Do not use the developer support form for partnership inquiries". Typical reply: within 48 hours. The earlier owner email appears to have gone to the wrong channel (no reply).
+
+Gates before the first **live** run: (1) the dry run (no data written) may happen at any time; (2) owner sends the Partner with Us message below and decides whether to wait for the reply or proceed on the "open to the public" page; (3) revenue of any kind from Ticketmaster data waits for Affiliate Program approval.
+Same rules as today (`AGENTS.md` §4): hot-link images only; "Tickets via Ticketmaster" text link; purge at event end (+6 h when no end time); 24 h removal with `ingest.blocklist`.
+
+**Partner with Us message (owner pastes into the form):**
+```
+We are building Rovvy (rovvy.app), a group-planning app that shows local events and sends
+users to Ticketmaster to buy tickets. We use the Discovery API today and want to switch to
+the Discovery Feed (US JSON, one download per day) instead of thousands of search calls.
+Please confirm in writing: (1) our developer account is approved for the Discovery Feed;
+(2) we may store events until they end (plus 6 hours when there is no end time), refreshed
+from each file, and delete them at the latest 24 hours after an owner removal request;
+(3) we may show each event's feed image by linking to Ticketmaster's image URL;
+(4) a plain-text "Tickets via Ticketmaster" credit with the unchanged event URL is
+acceptable, with no logo; (5) whether joining the Affiliate Program on Impact is the only
+route to earn revenue from these listings. We have no ads or subscriptions today.
+```
 
 ## 4. Design
 
@@ -129,7 +153,7 @@ guard + feed_state; (3) venue matching batches + dedup queue; (4) CLI feed-load 
 feed (the dry run rolls back; ask me before any commit of data). Then apply AGENTS.md §1.
 ```
 
-## 12. Perplexity prompt (owner, before the first live run)
+## 12. Perplexity prompt (done 2026-10-12 — see §3; kept for reference)
 
 ```
 Ticketmaster "Discovery Feed" (developer.ticketmaster.com, discovery-feed/v2/events): who

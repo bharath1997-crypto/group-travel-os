@@ -2,6 +2,14 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-14 — Ticketmaster Discovery Feed terms (Perplexity): findings and decisions
+
+- Source: Perplexity answer pasted by the owner, quoting developer.ticketmaster.com pages (General Terms of Use 2023-06-27, Discovery Feed page, FAQ, Partners pages, Contact Us). Not re-fetched by Claude.
+- **Eligibility unclear** (three pages disagree); no feed-specific agreement; the developer terms very likely apply. **Storage**: "reasonable periods", no schedule, 24 h removal. **Refresh**: no limit stated, hourly files. **Attribution**: none required; text credit, no logo, **do not alter feed URLs**. **Images**: hot-link only (unclear). **Revenue**: only through the Affiliate Program on Impact.
+- **Likely cause of the unanswered email:** Ticketmaster says partnership questions must use the **"Partner with Us" form**, not the developer support form. The bulk-feed spec §3 now holds a ready message.
+- Changes: bulk-feed spec §3 rewritten with these findings and gates; AGENTS.md §4 adds a Discovery Feed bullet. The design is unchanged (daily download, expire missing events, purge at end, hot-linked images).
+- Owner actions: send the Partner with Us message; decide whether the first live run waits for a reply; Affiliate Program application (Impact) when the business can receive payments.
+
 ## 2026-10-12 — Push `edc5e59` deployed (verified via GitHub API and Cloud Run)
 
 - Owner pushed `0a02d26..edc5e59` (11 commits: Scaper pilot report, Instagram/Bandsintown decisions, F47 photo pipeline, purge at event end, bulk feed spec, CI fix).
