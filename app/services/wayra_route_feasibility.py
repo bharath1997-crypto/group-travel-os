@@ -76,7 +76,7 @@ def assess_drive_feasibility(
             reason="extreme_distance",
             message=(
                 f"{place_label} is about {miles:,.0f} mi from {user_label} — too far for a single continuous drive. "
-                "Use flights for the long-haul segment, then navigate locally on Live."
+                "Long distance — use Plan → Routes for ground segments you can drive or take transit, then navigate locally on Live."
             ),
         )
 

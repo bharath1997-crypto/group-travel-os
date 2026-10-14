@@ -299,7 +299,7 @@ class EmailVerificationService:
                                         
                                         <div style="border-left: 3px solid #0F766E; padding-left: 16px;">
                                             <div style="font-weight: bold; color: #F8FAFC; font-size: 14px;">Explore destinations</div>
-                                            <div style="font-size: 13px; color: #94A3B8; margin-top: 4px;">Browse flights, hotels & activities</div>
+                                            <div style="font-size: 13px; color: #94A3B8; margin-top: 4px;">Browse routes, hotels & activities</div>
                                         </div>
                                     </td>
                                 </tr>
@@ -346,7 +346,7 @@ Get started: https://rovvy.app/dashboard
 Quick start:
 1. Create your first trip → Plan → New Trip
 2. Invite friends → Share invite link
-3. Explore → Browse flights & hotels
+3. Explore → Browse places & hotels
 
 Follow us:
 Instagram: @rovvyapp

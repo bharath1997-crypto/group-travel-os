@@ -60,7 +60,7 @@ export default function MessagesNotificationsPage() {
         <SettingsHubRow
           icon={DollarSign}
           label="Price Alerts"
-          sublabel="Notify when flight or hotel prices drop"
+          sublabel="Notify when hotel prices drop"
           badge="Coming Soon"
           accentColor="amber"
         />

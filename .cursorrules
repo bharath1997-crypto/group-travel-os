@@ -422,11 +422,11 @@ After every feature change, update this section in .cursorrules:
 | Page / Feature | Status | Last Updated |
 |---|---|---|
 | Auth (JWT + OTP + Google OAuth) | Complete | 2025-06 |
-| Flights page (Duffel + Amadeus concurrent metasearch; Phase 2 trust UI; results funnel) | Modified | 2026-09 |
+| Flights page (metasearch/booking) | Deprecated | 2026-10-14 |
 | Hotels page (Agoda) | Complete | 2025-06 |
 | Routes search | Complete | 2025-06 |
 | Activities (GetYourGuide) | Complete | 2025-06 |
-| Deal Scanner | Complete | 2025-06 |
+| Deal Scanner (flight deals) | Deprecated | 2026-10-14 |
 | Buddy Trips | Complete | 2025-06 |
 | Email Verification | Complete | 2025-06 |
 | Welcome Email | Complete | 2025-06 |

@@ -141,7 +141,7 @@ INTENTS += [
         "rovvy_features_overview",
         "project",
         "What can I do in Rovvy?",
-        "You can create groups and trips, plan flights and hotels, split expenses, run polls, "
+        "You can create groups and trips, plan routes and hotels, split expenses, run polls, "
         "explore destinations, share Live locations, and ask Wayra for travel help. Open the "
         "sidebar to jump between Dashboard, Plan, Explore, Group, Live, and Profile.",
         variants=[
@@ -688,14 +688,14 @@ INTENTS += [
         "plan_page",
         "plan",
         "What is the Plan page?",
-        "Plan is Rovvy's booking and routing hub. Open Plan in the sidebar to search Flights, "
-        "Hotels, Routes, and Buses — compare options next to your group context.",
+        "Plan is Rovvy's booking and routing hub. Open Plan in the sidebar for Hotels, "
+        "Routes, and Buses — compare ground options next to your group context.",
         variants=[
             "What is the Plan page?",
             "Explain Plan",
             "Where do I book?",
             "Plan tab what is it?",
-            "Flights hotels where?",
+            "Routes hotels where?",
             "plan page what",
             "hey what is plan",
             "Booking hub?",
@@ -704,22 +704,21 @@ INTENTS += [
         ],
     ),
     _intent(
-        "search_flights",
+        "search_routes",
         "plan",
-        "How do I search flights?",
-        "Open Plan → Flights, enter origin, destination, and dates, then compare options. "
-        "You can keep planning beside your group trip context.",
+        "How do I get directions?",
+        "Open Plan → Routes, enter origin, destination, and date, then compare driving and transit "
+        "options from Google. You can keep planning beside your group trip context.",
         variants=[
-            "How do I search flights?",
-            "Find flights",
-            "Book a flight",
-            "Flight search where?",
-            "Look up flights",
-            "search flights how",
-            "hey find flights",
-            "Plane tickets?",
-            "ok so flight search",
-            "Air travel search?",
+            "How do I get directions?",
+            "Find driving directions",
+            "Transit directions where?",
+            "Look up routes",
+            "search routes how",
+            "hey find route",
+            "Ground directions?",
+            "ok so routes tab",
+            "How to get there by car or bus?",
         ],
     ),
     _intent(
@@ -936,7 +935,7 @@ INTENTS += [
         "travel_modes",
         "live",
         "How do I switch travel modes?",
-        "Open Plan in the sidebar to switch between Flights, Hotels, Routes, and Buses. On Live, "
+        "Open Plan in the sidebar for Hotels, Routes, and Buses. On Live, "
         "use the map tools for driving, walking, and Solo Live navigation.",
         variants=[
             "How do I switch travel modes?",
@@ -1563,25 +1562,6 @@ INTENTS += [
             "Day plans?",
             "ok so activities",
             "Attractions?",
-        ],
-    ),
-    _intent(
-        "deal_scanner",
-        "plan",
-        "What is Deal Scanner?",
-        "Deal Scanner helps surface travel deal opportunities in Rovvy's planning tools. Check "
-        "Plan and Explore for offers related to your destinations when available.",
-        variants=[
-            "What is Deal Scanner?",
-            "Find deals",
-            "Travel deals?",
-            "Cheap flights deals?",
-            "Deal scanner how?",
-            "deal scanner what",
-            "hey deals",
-            "Discount travel?",
-            "ok so deal scanner",
-            "Promo fares?",
         ],
     ),
     _intent(

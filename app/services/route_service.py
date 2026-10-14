@@ -1,7 +1,7 @@
 """
-Combine Kiwi flights + Google Routes ground options for A→B discovery.
+Google Routes ground options for A→B discovery (directions only).
 
-Ground segment uses Routes API computeRoutes (TRANSIT + DRIVE); failures are isolated.
+Uses Routes API computeRoutes (TRANSIT + DRIVE); failures are isolated.
 """
 
 from __future__ import annotations
@@ -9,17 +9,14 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from datetime import date, datetime
+from datetime import date
 from typing import Any
 from urllib.parse import quote_plus
 
 import httpx
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.schemas.flight import FlightResult
 from app.schemas.route import RouteSearchResponse, TransportMode, TransportOption
-from app.services.flight_service import FlightService
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -39,12 +36,10 @@ _ground_cache: dict[
 ] = {}
 
 
-def _travelpayouts_placeholder(origin: str, destination: str) -> str:
-    """Ground-segment affiliate deep link (Travelpayouts marker from env)."""
-    m = (settings.travelpayouts_marker or "").strip() or "727732"
+def _ground_booking_placeholder(origin: str, destination: str) -> str:
+    """Optional external ground search link when Google returns no bookable URL."""
     return (
-        "https://www.travelpayouts.com/"
-        f"?marker={quote_plus(m)}&partner_type=busbud_placeholder&utm_source=travello"
+        "https://www.google.com/maps/dir/?api=1"
         f"&origin={quote_plus(origin.strip())}&destination={quote_plus(destination.strip())}"
     )
 
@@ -186,76 +181,6 @@ def _google_route_to_option(
     )
 
 
-def _flight_duration_minutes(f: FlightResult) -> int:
-    if f.duration_minutes and f.duration_minutes > 0:
-        return int(f.duration_minutes)
-    try:
-        dep = datetime.fromisoformat(f.departure_at.replace("Z", "+00:00"))
-        arr = datetime.fromisoformat(f.arrival_at.replace("Z", "+00:00"))
-        delta = arr - dep
-        return max(1, int(delta.total_seconds() // 60))
-    except (TypeError, ValueError):
-        return 0
-
-
-def _flights_to_transport_options(flights: list[FlightResult]) -> list[TransportOption]:
-    options: list[TransportOption] = []
-    for f in flights:
-        dm = _flight_duration_minutes(f)
-        if dm <= 0:
-            dm = 1
-        airline_part = ", ".join(f.airlines) if f.airlines else "Flight"
-        summary = f"Fly {f.origin} → {f.destination}"
-        if airline_part:
-            summary = f"{summary} via {airline_part}"
-        steps = [
-            f"Airlines: {airline_part}",
-            f"Depart {f.departure_at}",
-            f"Arrive {f.arrival_at}",
-        ]
-        if f.stops > 0:
-            steps.append(f"{f.stops} stop(s)")
-        options.append(
-            TransportOption(
-                    mode=TransportMode.FLIGHT,
-                summary=summary,
-                duration_minutes=dm,
-                price_estimate=float(f.price),
-                currency=f.currency,
-                steps=steps,
-                booking_url=f.deep_link.strip() if f.deep_link else None,
-                provider="Kiwi.com",
-            ),
-        )
-    return options
-
-
-def _safe_search_flights(
-    origin: str,
-    destination: str,
-    day: date,
-    adults: int,
-) -> list[FlightResult]:
-    try:
-        return FlightService.search_flights(
-            fly_from=origin,
-            fly_to=destination,
-            date_from=day,
-            date_to=day,
-            adults=adults,
-            currency="USD",
-            cabins="M",
-            return_from=None,
-            return_to=None,
-        )
-    except HTTPException as exc:
-        logger.warning("Route discovery Kiwi HTTP error: %s", exc.detail)
-        return []
-    except (ValueError, TypeError, OSError, RuntimeError) as exc:
-        logger.warning("Route discovery Kiwi error: %s", exc)
-        return []
-
-
 async def _post_compute_route(
     client: httpx.AsyncClient,
     api_key: str,
@@ -303,7 +228,7 @@ async def _fetch_ground_routes_parallel(
     destination: str,
     api_key: str,
 ) -> list[TransportOption]:
-    aff_url = _travelpayouts_placeholder(origin, destination)
+    aff_url = _ground_booking_placeholder(origin, destination)
     timeout = httpx.Timeout(35.0)
     options: list[TransportOption] = []
     try:
@@ -369,7 +294,7 @@ async def _get_ground_options_async(origin: str, destination: str) -> list[Trans
 
 
 class RouteService:
-    """Orchestrates Kiwi + Google into one sorted comparison payload."""
+    """Ground route discovery via Google Routes API."""
 
     @staticmethod
     async def search_routes(
@@ -380,44 +305,19 @@ class RouteService:
         db: Session,
     ) -> RouteSearchResponse:
         _ = db
+        _ = day
+        _ = adults
 
         o_label = origin.strip()
         d_label = destination.strip()
 
-        flight_task = asyncio.to_thread(
-            _safe_search_flights,
-            o_label,
-            d_label,
-            day,
-            adults,
-        )
-        ground_task = _get_ground_options_async(o_label, d_label)
+        try:
+            ground_list = await _get_ground_options_async(o_label, d_label)
+        except Exception as exc:
+            logger.warning("Route discovery ground leg failed: %s", exc)
+            ground_list = []
 
-        gathered = await asyncio.gather(
-            flight_task,
-            ground_task,
-            return_exceptions=True,
-        )
-
-        flights_raw: list[FlightResult] = []
-        ground_list: list[TransportOption] = []
-
-        fr = gathered[0]
-        gr = gathered[1]
-
-        if isinstance(fr, BaseException):
-            logger.warning("Route discovery flight leg failed: %s", fr)
-        elif isinstance(fr, list):
-            flights_raw = fr
-
-        if isinstance(gr, BaseException):
-            logger.warning("Route discovery ground leg failed: %s", gr)
-        elif isinstance(gr, list):
-            ground_list = gr
-
-        options: list[TransportOption] = []
-        options.extend(_flights_to_transport_options(flights_raw))
-        options.extend(ground_list)
+        options: list[TransportOption] = list(ground_list)
 
         options.sort(
             key=lambda x: (

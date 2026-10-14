@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildSkyscannerSearchUrl,
   buildTravelHandoffPath,
   parseTravelHandoff,
   resolveTravelIata,
@@ -19,13 +18,13 @@ describe("travel-handoff", () => {
     expect(handoff?.destinationIata).toBe("VGA");
   });
 
-  it("resolves Hyderabad for flight search", () => {
+  it("resolves Hyderabad IATA for routes context", () => {
     expect(resolveTravelIata("Hyderabad, India")).toBe("HYD");
   });
 
-  it("builds travel handoff path for flights", () => {
+  it("builds travel handoff path for routes", () => {
     const path = buildTravelHandoffPath(
-      "flights",
+      "routes",
       {
         name: "Rajupala",
         city: "Guntur",
@@ -35,17 +34,9 @@ describe("travel-handoff", () => {
       },
       { name: "Chicago", country: "United States" },
     );
-    expect(path).toContain("/flights?");
+    expect(path).toContain("/routes?");
     expect(path).toContain("dest=Rajupala");
     expect(path).toContain("origin=Chicago");
-  });
-
-  it("builds public Skyscanner URL without affiliate env", () => {
-    const handoff = parseTravelHandoff(
-      new URLSearchParams("dest=Hyderabad&origin=Chicago&destCountry=India"),
-    );
-    const url = buildSkyscannerSearchUrl(handoff, "2026-09-01");
-    expect(url).toContain("skyscanner.net/transport/flights/chi/hyd/2026-09-01");
   });
 
   it("formats ground search labels from handoff places", () => {

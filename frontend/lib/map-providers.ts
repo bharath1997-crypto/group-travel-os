@@ -729,7 +729,7 @@ export function getLiveMapLibreLayerStyles(): Record<LiveMapLayer, LiveMapStyle>
 }
 
 /** Flat basemap for modal pickers — same browser-aware tile URLs as Live, without globe projection. */
-export function getFlightPickerBasemapStyle(): LiveMapStyle {
+export function getSeatsMapBasemapStyle(): LiveMapStyle {
   if (isLiveOpenFreeMapBasemapPrimary()) {
     return resolveOpenFreeMapCleanStyleUrlForLiveMap();
   }
@@ -752,7 +752,7 @@ export function getFlightPickerBasemapStyle(): LiveMapStyle {
     },
     layers: [
       {
-        id: "rovvy-flight-picker-bg",
+        id: "rovvy-seats-map-picker-bg",
         type: "background",
         paint: { "background-color": LIVE_MAP_RASTER_BG_LIGHT },
       },

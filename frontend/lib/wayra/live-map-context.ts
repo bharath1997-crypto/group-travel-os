@@ -140,7 +140,7 @@ export function buildLiveImplicitContextBlock(
 
   lines.push(
     "Use coordinates and region fields to identify the real-world location even when the pin label is generic.",
-    "When USER PHYSICAL LOCATION is present, plan reach/flights/timing/budget FROM home TO the pin.",
+    "When USER PHYSICAL LOCATION is present, plan ground reach, timing, and budget FROM home TO the pin.",
     "Answer on-site weather and activities about the destination pin.",
     "Treat the user's message as about this pin unless they clearly ask how Rovvy works.",
   );

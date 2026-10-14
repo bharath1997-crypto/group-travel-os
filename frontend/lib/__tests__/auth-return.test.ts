@@ -22,18 +22,20 @@ describe("authentication return paths", () => {
   afterEach(() => sessionStorage.clear());
 
   it("accepts local application paths and rejects external redirects", () => {
-    expect(safeAuthReturnPath("/flights/offer/offer-1?searchPrice=420")).toContain("/flights/offer/");
+    expect(safeAuthReturnPath("/routes?from=ORD&to=JFK")).toContain("/routes");
     expect(safeAuthReturnPath("https://evil.example/steal")).toBe("/explore");
     expect(safeAuthReturnPath("//evil.example/steal")).toBe("/explore");
   });
 
   it("supports next and the legacy returnTo parameter", () => {
-    expect(authReturnPathFromParams(new URLSearchParams("next=%2Fflights%2Foffer%2F1"))).toBe("/flights/offer/1");
-    expect(authReturnPathFromParams(new URLSearchParams("returnTo=%2Fflights%2Fresults"))).toBe("/flights/results");
+    expect(authReturnPathFromParams(new URLSearchParams("next=%2Froutes%3Ffrom%3DORD"))).toBe(
+      "/routes?from=ORD",
+    );
+    expect(authReturnPathFromParams(new URLSearchParams("returnTo=%2Fplan"))).toBe("/plan");
   });
 
   it("round-trips the intended destination through session storage", () => {
-    const next = "/flights/offer/offer-1?searchPrice=420&restored=1";
+    const next = "/routes?from=CHI&to=HYD&restored=1";
     rememberAuthReturnPath(next);
     expect(recalledAuthReturnPath()).toBe(next);
     expect(recalledAuthReturnPath("/explore", true)).toBe(next);
@@ -41,8 +43,8 @@ describe("authentication return paths", () => {
   });
 
   it("builds an encoded login URL", () => {
-    expect(authHref("/login", "/flights/results?from=ORD&to=HYD")).toBe(
-      "/login?next=%2Fflights%2Fresults%3Ffrom%3DORD%26to%3DHYD",
+    expect(authHref("/login", "/routes?from=ORD&to=HYD")).toBe(
+      "/login?next=%2Froutes%3Ffrom%3DORD%26to%3DHYD",
     );
   });
 });

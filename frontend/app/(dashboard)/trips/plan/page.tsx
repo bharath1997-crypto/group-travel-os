@@ -62,7 +62,7 @@ const BORDER = "#E9ECEF";
 const BG = "#F8F9FA";
 
 type TripType = "business" | "leisure";
-type TransportMode = "car" | "train" | "flight" | "bus";
+type TransportMode = "car" | "train" | "bus";
 
 type PlannerLocation = {
   id: string;
@@ -117,7 +117,7 @@ function haversineKm(
 function suggestTransport(d: number): TransportMode {
   if (d < 150) return "car";
   if (d < 500) return "train";
-  return "flight";
+  return "bus";
 }
 
 function estCostForLeg(d: number, mode: TransportMode): number {
@@ -128,8 +128,6 @@ function estCostForLeg(d: number, mode: TransportMode): number {
       return Math.round(d * 0.6);
     case "train":
       return Math.round(d * 1.5);
-    case "flight":
-      return 4000;
     default:
       return Math.round(d * 8);
   }
@@ -1204,7 +1202,7 @@ export default function PlanTripPage() {
                         [
                           "car",
                           "train",
-                          "flight",
+                          "bus",
                           "bus",
                         ] as TransportMode[]
                       ).map((m) => (
@@ -1218,7 +1216,7 @@ export default function PlanTripPage() {
                       <span className="font-semibold" style={{ color: CORAL }}>
                         {sug}
                       </span>{" "}
-                      (&lt;150km car · &lt;500km train · else flight)
+                      (&lt;150km car · &lt;500km train · else bus)
                     </p>
                   </div>
                 );

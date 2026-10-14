@@ -359,7 +359,7 @@ export const EXPLORE_CITY_REEL: ExploreCityReel[] = [
     name: "Denver",
     region: "CO",
     slots: "88 slots live",
-    badge: "2 hr flight",
+    badge: "2 hr away",
     badgeVariant: "light",
     social: "Trails open till October",
   },

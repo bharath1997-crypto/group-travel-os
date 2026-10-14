@@ -8,7 +8,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.schemas.flight import FlightResult
 from app.schemas.route import TransportMode, TransportOption
 from app.utils.auth import get_current_user
 
@@ -30,30 +29,8 @@ def _clear_auth():
     app.dependency_overrides.pop(get_current_user, None)
 
 
-def _sample_flight() -> FlightResult:
-    return FlightResult(
-        id="f1",
-        price=189.0,
-        currency="USD",
-        airlines=["AA"],
-        departure_at="2026-07-01T14:00:00.000000Z",
-        arrival_at="2026-07-01T17:35:00.000000Z",
-        origin="ORD",
-        destination="JFK",
-        duration_minutes=215,
-        deep_link="https://kiwi.example/book",
-        stops=0,
-    )
-
-
-
-def test_route_search_combines_kiwi_and_ground(monkeypatch):
+def test_route_search_returns_ground_options(monkeypatch):
     app.dependency_overrides[get_current_user] = _mock_user
-
-    monkeypatch.setattr(
-        "app.services.route_service.FlightService.search_flights",
-        lambda **kw: [_sample_flight()],
-    )
 
     async def fake_ground(o: str, d: str):
         return [
@@ -62,7 +39,15 @@ def test_route_search_combines_kiwi_and_ground(monkeypatch):
                 summary=f"Drive {o} → {d}",
                 duration_minutes=180,
                 steps=["Merge onto highway"],
-                booking_url="https://www.travelpayouts.com/?x=1",
+                booking_url="https://www.google.com/maps/dir/?api=1",
+                provider="Google Maps",
+            ),
+            TransportOption(
+                mode=TransportMode.TRANSIT,
+                summary=f"Transit {o} → {d}",
+                duration_minutes=90,
+                steps=["Board metro"],
+                booking_url="https://www.google.com/maps/dir/?api=1",
                 provider="Google Maps",
             ),
         ]
@@ -87,9 +72,8 @@ def test_route_search_combines_kiwi_and_ground(monkeypatch):
     assert body["origin"] == "ORD"
     assert body["destination"] == "JFK"
     modes = {o["mode"] for o in body["options"]}
-    assert "flight" in modes
-    assert "drive" in modes
-    assert len(body["options"]) >= 2
+    assert modes == {"drive", "transit"}
+    assert len(body["options"]) == 2
 
 
 def test_route_search_requires_auth_401():
@@ -105,32 +89,15 @@ def test_route_search_requires_auth_401():
     assert r.status_code == 401
 
 
-def test_route_search_survives_kiwi_failure(monkeypatch):
+def test_route_search_survives_ground_failure(monkeypatch):
     app.dependency_overrides[get_current_user] = _mock_user
 
-    def boom(**kw):
-        raise RuntimeError("kiwi simulated outage")
-
-    monkeypatch.setattr(
-        "app.services.route_service.FlightService.search_flights",
-        boom,
-    )
-
-    async def fake_ground(o: str, d: str):
-        return [
-            TransportOption(
-                mode=TransportMode.TRANSIT,
-                summary=f"Transit {o} → {d}",
-                duration_minutes=90,
-                steps=["Board metro"],
-                booking_url="https://www.travelpayouts.com/",
-                provider="Google Maps",
-            ),
-        ]
+    async def boom(o: str, d: str):
+        raise RuntimeError("google simulated outage")
 
     monkeypatch.setattr(
         "app.services.route_service._get_ground_options_async",
-        fake_ground,
+        boom,
     )
 
     r = client.get(
@@ -143,5 +110,4 @@ def test_route_search_survives_kiwi_failure(monkeypatch):
     )
     assert r.status_code == 200
     body = r.json()
-    assert len(body["options"]) == 1
-    assert body["options"][0]["mode"] == "transit"
+    assert body["options"] == []

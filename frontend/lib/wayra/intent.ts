@@ -36,7 +36,7 @@ const APP_INTENT_RESPONSES: Record<AppIntent, string> = {
   create_trip:
     "From the dashboard choose your trip workspace, or open Trips and tap New Trip. Add a title, dates, and destination, then invite your group so everyone shares polls, splits, and live coordination on the same itinerary.",
   plan_page_explainer:
-    "Plan is Rovvy's booking and routing hub in one place. Open Plan in the sidebar to search Flights, Hotels, Routes, and Buses—compare options and keep planning next to your group context.",
+    "Plan is Rovvy's booking and routing hub in one place. Open Plan in the sidebar for Hotels, Routes, and Buses—compare ground options and keep planning next to your group context.",
   notifications:
     "Tap the bell icon in the top-right on any screen to open your notification feed, or go to Notifications (/notifications) for trip updates, invites, and group activity.",
   notification_settings:
@@ -603,9 +603,9 @@ export function contextualAppFallback(page: string, activeTab?: string | null): 
       "Tell me which you want—groups, trips, Plan, polls, expenses, Live map, or Explore."
     );
   }
-  if (p.startsWith("plan") || ["flights", "hotels", "routes", "buses"].includes(p)) {
+  if (p.startsWith("plan") || ["hotels", "routes", "buses"].includes(p)) {
     return (
-      "You're in Plan—use Flights, Hotels, Routes, or Buses from the sidebar to compare options. " +
+      "You're in Plan—use Hotels, Routes, or Buses from the sidebar to compare options. " +
       "Ask me how to search any tab, or switch to a trip to align bookings with your group."
     );
   }
@@ -737,7 +737,7 @@ export function resolveTravelFallback(
       prefix +
       "Name your month, budget, and how far you will travel—city breaks favor museums and food, " +
       "coasts favor weather windows, mountains favor gear and lodging near trails.\n\n" +
-      "Try Explore for inspiration, then vote in a trip poll before anyone books flights."
+      "Try Explore for inspiration, then vote in a trip poll before anyone books transport."
     );
   }
 

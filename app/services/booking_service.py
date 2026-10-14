@@ -5,7 +5,6 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from app.services.duffel_client import get_offer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -16,27 +15,16 @@ from app.schemas.booking import BookingCreate
 from app.services.expense_service import ExpenseService
 from app.services.trip_service import TripService
 from app.utils.exceptions import AppException
-from config import settings
 
 logger = logging.getLogger(__name__)
 
 
-def _duffel_booking_url(provider_reference: str) -> str:
-    return f"https://app.duffel.com/search/offers/{provider_reference}"
-
-
-def _resolve_duffel_offer(provider_reference: str) -> str:
-    api_key = (settings.duffel_api_key or "").strip()
-    if not api_key:
-        AppException.service_unavailable("Flight booking is not configured")
-
-    try:
-        get_offer(provider_reference)
-    except Exception as exc:
-        logger.warning("Duffel offer lookup failed for %s: %s", provider_reference, exc)
-        AppException.bad_request("Invalid or expired flight offer")
-
-    return _duffel_booking_url(provider_reference)
+def _booking_url_from_reference(ref: str) -> str:
+    if ref.startswith("http://") or ref.startswith("https://"):
+        return ref
+    AppException.bad_request(
+        "Pass an https booking link as provider_reference."
+    )
 
 
 class BookingService:
@@ -61,13 +49,13 @@ class BookingService:
         if not ref:
             AppException.bad_request("provider_reference is required")
 
-        booking_url = _resolve_duffel_offer(ref)
+        booking_url = _booking_url_from_reference(ref)
         currency = (data.currency or "USD").strip().upper()
 
         booking = Booking(
             trip_id=trip_id,
             created_by=actor.id,
-            provider=BookingProvider.duffel,
+            provider=BookingProvider.manual_link,
             provider_reference=ref,
             status=BookingStatus.pending,
             booking_url=booking_url,

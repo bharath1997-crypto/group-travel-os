@@ -100,7 +100,7 @@ class TestContextualAppFallback:
 
     def test_plan_page_context(self) -> None:
         msg = contextual_app_fallback("plan")
-        assert "flights" in msg.lower() or "plan" in msg.lower()
+        assert "routes" in msg.lower() or "plan" in msg.lower()
 
 
 class TestAIAssistantServiceIntegration:

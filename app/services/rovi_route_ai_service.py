@@ -9,7 +9,7 @@ Token-safe flow:
   Rovi writes user-facing explanation
 
 Rules enforced in system prompt:
-- Do not invent flight numbers, exact prices, exact schedules
+- Do not invent exact prices or exact schedules
 - Do not hallucinate visa eligibility
 - Always say "Provider check required" when live data is missing
 """
@@ -66,7 +66,6 @@ Your job:
 Explain route options clearly using ONLY the structured route data provided by the backend.
 
 NEVER invent:
-- exact flight numbers
 - exact ticket prices
 - exact train or bus schedules
 - visa/immigration eligibility
@@ -104,6 +103,7 @@ def _build_compact_payload(resp: RouteIntelligenceResponse) -> str:
         "distance_km": resp.distance_km,
         "is_international": resp.is_international,
         "requires_border_crossing": resp.requires_border_crossing,
+        "ground_unavailable_reason": resp.ground_unavailable_reason,
         "route_options": [],
     }
 
@@ -191,7 +191,12 @@ class RoviRouteAIService:
     @staticmethod
     def explain(resp: RouteIntelligenceResponse) -> str:
         if not resp.route_options:
-            return "No route options could be resolved. Try a different destination."
+            if resp.ground_unavailable_reason:
+                return resp.ground_unavailable_reason
+            return (
+                "No ground route found for this trip. "
+                "Use Plan → Routes for drive and transit directions where Google can route locally."
+            )
 
         key = _cache_key(resp)
         now = time.time()

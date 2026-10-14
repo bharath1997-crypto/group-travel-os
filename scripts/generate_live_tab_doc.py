@@ -18,7 +18,7 @@ FILE_DESCRIPTIONS: dict[str, str] = {
     "SoloLiveActivePanel.tsx": "Pre-navigation Solo command panel (shown when liveStage=solo_drive_command — rarely reached).",
     "SoloLiveNavigationOverlay.tsx": "Full-screen Waze-style turn-by-turn navigation overlay during active nav.",
     "SoloRoutePreviewPanel.tsx": "Legacy/orphan route preview panel — not imported by page.tsx.",
-    "RoviRouteIntelligencePanel.tsx": "Long-distance multi-modal route options UI (flights, trains, etc.).",
+    "RoviRouteIntelligencePanel.tsx": "Long-distance ground route options UI (drive, transit, etc.).",
     "SavedPlacePanel.tsx": "Detail panel for a locally saved place.",
     "LiveMapRightControls.tsx": "Right dock: compass, locate, layers panel, 2D/3D toggle, sound/notifications.",
     "LiveMapLayerControl.tsx": "Base map layer picker sub-component.",
@@ -791,7 +791,7 @@ def main() -> None:
     add()
     add("```typescript")
     add('buildTravelHandoffPath(kind, target, origin)')
-    add("// kind: \"plan\" | \"flights\" | \"routes\" | \"buses\"")
+    add("// kind: \"plan\" | \"routes\" | \"buses\"")
     add("```")
     add()
     add("Used when:")
@@ -1059,7 +1059,7 @@ def main() -> None:
     add("  → shouldOpenRouteIntelligence = true")
     add("  → liveStage = long_distance_preview")
     add("  → fetchRouteIntelligence")
-    add("  → RoviRouteIntelligencePanel shows flight/train/bus options")
+    add("  → RoviRouteIntelligencePanel shows ground route options")
     add("  → user selects option → handleOpenTravelTab")
     add("```")
     add()

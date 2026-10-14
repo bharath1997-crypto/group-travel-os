@@ -36,16 +36,15 @@ export function buildTravelHandoffUrl(
 
 export function travelHandoffKindForRouteOption(option: RouteOption): TravelHandoffKind {
   const segmentTypes = new Set(option.segments.map((segment) => segment.type));
-  if (segmentTypes.has("flight")) return "flights";
-  if (segmentTypes.has("train") || segmentTypes.has("bus")) return "routes";
+  if (segmentTypes.has("train") || segmentTypes.has("bus") || segmentTypes.has("drive")) {
+    return "routes";
+  }
   if (segmentTypes.has("local_transport")) return "buses";
   return "plan";
 }
 
 export function travelHandoffLabel(kind: TravelHandoffKind): string {
   switch (kind) {
-    case "flights":
-      return "Open Flights in Travel";
     case "routes":
       return "Open Routes in Travel";
     case "buses":

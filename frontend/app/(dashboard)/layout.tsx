@@ -10,7 +10,6 @@ import {
   Wallet,
   Briefcase,
   Activity,
-  Plane,
   Heart,
   Navigation2,
   User,
@@ -90,7 +89,6 @@ const NAV_SECTIONS: NavSectionDef[] = [
     subs: [
       { href: "/trips",            label: "Trips",    Icon: Briefcase },
       { href: "/group",            label: "People",   Icon: LucideUsers },
-      { href: "/flights",          label: "Flights",  Icon: Plane },
       { href: "/split-activities", label: "Money",    Icon: Wallet },
     ],
   },
@@ -200,7 +198,6 @@ function sectionActive(pathname: string, section: NavSectionDef): boolean {
       pathname === "/trips" ||
       pathname.startsWith("/trips/") ||
       pathname.startsWith("/trip-space") ||
-      pathname.startsWith("/flights") ||
       pathname.startsWith("/hotels") ||
       pathname.startsWith("/routes") ||
       pathname.startsWith("/buses") ||
@@ -373,7 +370,6 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     pathname === "/map" || pathname === "/explore/map" || isLivePage;
   const isExplorerEventsShell = pathname.startsWith("/explore/events");
   const isExploreShortsShell = pathname.startsWith("/explore/shorts");
-  const isFlightsPage = pathname.startsWith("/flights");
   const isRoutesPage = pathname.startsWith("/routes");
   const isActivitiesPage = pathname.startsWith("/activities");
   const isHotelsPage = pathname.startsWith("/hotels");
@@ -534,7 +530,6 @@ function DashboardChrome({ children }: { children: ReactNode }) {
     isMapPage ||
     isExplorerEventsShell ||
     isExploreShortsShell ||
-    isFlightsPage ||
     isRoutesPage ||
     isActivitiesPage ||
     isHotelsPage ||

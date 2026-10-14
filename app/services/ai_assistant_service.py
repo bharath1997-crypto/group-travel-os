@@ -198,7 +198,7 @@ EXPENSES & SPLITS:
 - Settle: Mark individual splits as settled
 
 PLAN PAGE:
-- Search flights: Plan → Flights tab → enter origin, destination, dates
+- Get directions: Plan → Routes tab → enter origin, destination, date
 - Search buses: Plan → Buses tab → powered by Busbud via Travelpayouts
 - Search hotels: Plan → Hotels tab
 - Search activities: Plan → Activities tab

@@ -29,7 +29,7 @@ export default function GroupsPage() {
           My Groups
         </h1>
         <p className="mt-3 text-sm text-slate-500">
-          Your groups will appear here. Create a group to coordinate flights, split expenses, and share itineraries in real-time.
+          Your groups will appear here. Create a group to coordinate trips, split expenses, and share itineraries in real-time.
         </p>
 
         {/* Action Button */}
@@ -55,7 +55,7 @@ export default function GroupsPage() {
               <span className="text-base" role="img" aria-label="itinerary">✈️</span>
               <div>
                 <h4 className="text-sm font-semibold text-slate-900">Share itineraries</h4>
-                <p className="text-xs text-slate-500">All members can view plans and flight statuses.</p>
+                <p className="text-xs text-slate-500">All members can view plans and trip updates.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">

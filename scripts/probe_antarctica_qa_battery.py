@@ -49,7 +49,7 @@ QUESTIONS = [
         "What is that place? I had that somewhere here in my Antarctica region."
     ),
     "I have $40,000 on my hand — I want to spend 15-16 days. What should I plan from Chicago?",
-    "When should I plan this trip and what flight should I catch from Chicago?",
+    "When should I plan this trip and how do I get there from Chicago by ground?",
 ]
 
 

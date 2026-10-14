@@ -98,7 +98,6 @@ geopandas>=1.0.0
 reverse_geocoder>=1.5.1
 
 aiosqlite==0.20.0
-duffel-api
 yt-dlp
 instaloader
 boto3>=1.34

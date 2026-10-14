@@ -11,7 +11,7 @@ const CARDS = [
     emoji: "✈️",
     title: "Start a group trip",
     description:
-      "Create a shared workspace to coordinate flights, stays, activities, and calendars with your whole crew.",
+      "Create a shared workspace to coordinate trips, stays, activities, and calendars with your whole crew.",
     cta: "Create Trip",
     gradient: "from-teal-50 to-emerald-50",
     border: "border-primary/20",

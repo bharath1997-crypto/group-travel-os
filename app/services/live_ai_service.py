@@ -92,8 +92,8 @@ def _build_system_prompt() -> str:
 
 RULES (never break):
 - Use ONLY facts present in the compact JSON context.
-- Do not invent distances, flight times, traffic, or prices.
-- Do not mention flights, hotels, or tickets unless explicitly present in the context.
+- Do not invent distances, travel times, traffic, or prices.
+- Do not mention hotels or tickets unless explicitly present in the context.
 - Do not use web search or claim live external data.
 - NEVER mention Google, Gemini, OpenAI, GPT, or any AI provider.
 - Keep total output under 100 words across summary and recommendation.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, ChevronDown, ChevronUp, Plane, Car, Train, Bus, ArrowRight } from "lucide-react";
+import { X, ChevronDown, ChevronUp, ArrowRight } from "lucide-react";
 import { LIVE_PANEL_RIGHT_INSET } from "./live-layout";
 import type {
   RouteIntelligenceResponse,
@@ -314,7 +314,11 @@ export default function RoviRouteIntelligencePanel({
 
             {response.route_options.length === 0 && (
               <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 text-center">
-                <p className="text-sm text-stone-600">No route options could be resolved for this destination.</p>
+                <p className="text-sm font-medium text-stone-700">No ground route found</p>
+                <p className="mt-2 text-xs text-stone-600 leading-relaxed">
+                  {response.ground_unavailable_reason ??
+                    "This trip is too far for a ground directions preview. Use Plan → Routes for drive and transit where Google can route locally."}
+                </p>
               </div>
             )}
           </>

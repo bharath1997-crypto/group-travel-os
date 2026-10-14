@@ -1,9 +1,8 @@
 /**
- * Live map → Travel tab handoff (parse URL params, IATA resolve, provider links).
- * No Skyscanner API required — uses public search URLs or optional Impact affiliate base.
+ * Live map → Travel tab handoff (parse URL params, city labels for routes/buses/plan).
  */
 
-export type TravelHandoffKind = "plan" | "flights" | "routes" | "buses";
+export type TravelHandoffKind = "plan" | "routes" | "buses";
 
 export type TravelHandoffPlace = {
   name: string;
@@ -21,15 +20,6 @@ export type TravelHandoffContext = {
   destinationIata: string | null;
   fromLive: boolean;
 };
-
-const TRAVELPAYOUTS_MARKER =
-  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_TRAVELPAYOUTS_MARKER) || "727732";
-
-const TRAVELPAYOUTS_TRS = "528092";
-
-/** Optional Impact affiliate URL prefix from Skyscanner partner dashboard. */
-export const SKYSCANNER_AFFILIATE_BASE =
-  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SKYSCANNER_AFFILIATE_URL?.trim()) || "";
 
 const CITY_IATA: Record<string, string> = {
   chicago: "CHI",
@@ -74,7 +64,7 @@ function firstCityToken(label: string): string {
   return part;
 }
 
-/** Map a city / place label to a metro IATA code when possible. */
+/** Map a city / place label to a metro IATA code when possible (routes context only). */
 export function resolveTravelIata(label: string | null | undefined): string | null {
   if (!label) return null;
   const trimmed = label.trim();
@@ -175,130 +165,4 @@ export function buildTravelHandoffPath(
   origin: { name?: string | null; country?: string | null; lat?: number | null; lng?: number | null } | null,
 ): string {
   return `/${kind}?${buildTravelHandoffQuery(destination, origin)}`;
-}
-
-function travelpayoutsWidgetUrl(extra: Record<string, string>): string {
-  const params = new URLSearchParams({
-    currency: "usd",
-    trs: TRAVELPAYOUTS_TRS,
-    shmarker: TRAVELPAYOUTS_MARKER,
-    powered_by: "true",
-    locale: "en",
-    searchUrl: "www.aviasales.com/search",
-    primary_override: "#0E6E5C",
-    color_button: "#0E6E5C",
-    color_icons: "#0E6E5C",
-    color_text: "#FFFFFF",
-    color_bg: "#FFFFFF",
-    color_bg_search: "#1F2326",
-    color_border: "#C4C4C4",
-    color_focused: "#0E6E5C",
-    border_radius: "0",
-    plain: "false",
-    ...extra,
-  });
-  return `https://tpwdg.com/content?${params.toString()}`;
-}
-
-export function buildTravelpayoutsFlightSearchWidgetUrl(handoff: TravelHandoffContext | null): string {
-  const extra: Record<string, string> = {
-    show_hotels: "true",
-    promo_id: "7879",
-    campaign_id: "100",
-  };
-  if (handoff?.originIata) extra.origin = handoff.originIata;
-  if (handoff?.destinationIata) extra.destination = handoff.destinationIata;
-  return travelpayoutsWidgetUrl(extra);
-}
-
-export function buildTravelpayoutsScheduleWidgetUrl(handoff: TravelHandoffContext | null): string {
-  const extra: Record<string, string> = {
-    color_button: "#0E6E5C",
-    target_host: "www.aviasales.com/search",
-    one_way: "false",
-    only_direct: "false",
-    period: "year",
-    range: "7,14",
-    promo_id: "2811",
-    campaign_id: "100",
-  };
-  extra.origin = handoff?.originIata || "CHI";
-  extra.destination = handoff?.destinationIata || "LON";
-  return travelpayoutsWidgetUrl(extra);
-}
-
-export function buildTravelpayoutsPricingCalendarUrl(handoff: TravelHandoffContext | null): string {
-  const extra: Record<string, string> = {
-    one_way: "false",
-    only_direct: "false",
-    period: "year",
-    range: "7,14",
-    promo_id: "4041",
-    campaign_id: "100",
-  };
-  extra.origin = handoff?.originIata || "CHI";
-  return travelpayoutsWidgetUrl(extra);
-}
-
-export function buildTravelpayoutsFlightMapUrl(handoff: TravelHandoffContext | null): string {
-  const lat = handoff?.origin.lat ?? handoff?.destination.lat ?? 41.8781;
-  const lng = handoff?.origin.lng ?? handoff?.destination.lng ?? -87.6298;
-  const params = new URLSearchParams({
-    currency: "usd",
-    trs: TRAVELPAYOUTS_TRS,
-    shmarker: TRAVELPAYOUTS_MARKER,
-    lat: String(lat),
-    lng: String(lng),
-    powered_by: "true",
-    search_host: "www.aviasales.com/search",
-    origin_iata: handoff?.originIata || "CHI",
-    destination_iata: handoff?.destinationIata || "",
-    one_way: "false",
-    only_direct: "false",
-    locale: "en",
-    period: "year",
-    range: "7,14",
-    theme: "light",
-    draggable: "true",
-    disable_zoom: "false",
-    show_buttons: "true",
-    scroll_zoom: "false",
-    zoom: "3",
-    width: "100%",
-    height: "500px",
-    type: "map",
-    promo_id: "4054",
-  });
-  return `https://tpwdg.com/content?${params.toString()}`;
-}
-
-function defaultDepartDate(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 14);
-  return d.toISOString().slice(0, 10);
-}
-
-/**
- * Skyscanner without API:
- * - Default: public skyscanner.net transport URL (works immediately).
- * - With NEXT_PUBLIC_SKYSCANNER_AFFILIATE_URL: wrap via Impact link from partner dashboard.
- */
-export function buildSkyscannerSearchUrl(handoff: TravelHandoffContext | null, departDate?: string): string | null {
-  const origin = handoff?.originIata?.toLowerCase();
-  const destination = handoff?.destinationIata?.toLowerCase();
-  if (!origin || !destination) return null;
-
-  const date = departDate || defaultDepartDate();
-  const target = `https://www.skyscanner.net/transport/flights/${origin}/${destination}/${date}/`;
-
-  if (SKYSCANNER_AFFILIATE_BASE) {
-    const base = SKYSCANNER_AFFILIATE_BASE.replace(/\/$/, "");
-    const joiner = base.includes("?") ? "&" : "?";
-    return `${base}${joiner}u=${encodeURIComponent(target)}`;
-  }
-  return target;
-}
-
-export function skyscannerAffiliateConfigured(): boolean {
-  return Boolean(SKYSCANNER_AFFILIATE_BASE);
 }
