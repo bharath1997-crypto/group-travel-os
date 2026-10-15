@@ -259,7 +259,7 @@ function BusesPageContent() {
     <div className="min-h-[calc(100dvh-80px)] bg-app rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
       {handoff ? (
         <div className="max-w-6xl mx-auto mb-6">
-          <TravelHandoffBanner handoff={handoff} showSkyscanner={false} />
+          <TravelHandoffBanner handoff={handoff} />
         </div>
       ) : null}
       {/* Search Header */}

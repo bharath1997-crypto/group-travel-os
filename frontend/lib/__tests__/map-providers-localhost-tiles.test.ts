@@ -22,7 +22,7 @@ describe("OpenFreeMap dev tile fallback", () => {
     expect(mod.rewriteRovvyTileWorkerRequestUrl("https://tiles.rovvy.app/planet/1/0/0.pbf")).toBe(
       "https://tiles.openfreemap.org/planet/1/0/0.pbf",
     );
-    expect(mod.getFlightPickerBasemapStyle()).toBe(
+    expect(mod.getSeatsMapBasemapStyle()).toBe(
       "https://tiles.openfreemap.org/styles/liberty",
     );
   });

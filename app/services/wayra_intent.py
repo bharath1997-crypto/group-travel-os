@@ -54,7 +54,7 @@ APP_INTENT_RESPONSES: dict[AppIntent, str] = {
     ),
     AppIntent.PLAN_PAGE: (
         "Plan is Rovvy's booking and routing hub in one place. Open Plan in the sidebar to search "
-        "Flights, Hotels, Routes, and Buses—compare options and keep planning next to your group context."
+        "Hotels, Routes, and Buses—compare ground options and keep planning next to your group context."
     ),
     AppIntent.NOTIFICATIONS: (
         "Tap the bell icon in the top-right on any screen to open your notification feed, "
@@ -319,7 +319,7 @@ _DISCOVERY_PREP_EXCLUDE_RE = re.compile(
     r"interesting|things to (see|do)|see or do|what can i do|what s special|what is special|"
     r"nearby|markets?|famous food|local food|food over|what is the famous|any .* food|"
     r"culture|museums?|activities|worth (?:seeing|visiting|doing)|what should i know about this place|"
-    r"\$\d|\d+\s*(?:k|000)\s*(?:dollars|usd)|budget|on my hand|what flight|which flight|how many days"
+    r"\$\d|\d+\s*(?:k|000)\s*(?:dollars|usd)|budget|on my hand|how many days"
     r")\b",
     re.I,
 )
@@ -652,9 +652,9 @@ def contextual_app_fallback(page: str, active_tab: str | None = None) -> str:
             "check open polls and splits, tap the bell for notifications, or open Plan to book transport. "
             "Tell me which you want—groups, trips, Plan, polls, expenses, Live map, or Explore."
         )
-    if p.startswith("plan") or p in ("flights", "hotels", "routes", "buses"):
+    if p.startswith("plan") or p in ("hotels", "routes", "buses"):
         return (
-            "You're in Plan—use Flights, Hotels, Routes, or Buses from the sidebar to compare options. "
+            "You're in Plan—use Hotels, Routes, or Buses from the sidebar to compare options. "
             "Ask me how to search any tab, or switch to a trip to align bookings with your group."
         )
     if p.startswith("explore") or p.startswith("activities"):
@@ -801,7 +801,7 @@ def travel_fallback_message(message: str, context: dict[str, Any] | None = None)
         body = (
             "Name your month, budget, and how far you will travel—city breaks favor museums and food, "
             "coasts favor weather windows, mountains favor gear and lodging near trails.\n\n"
-            "Try Explore for inspiration, then vote in a trip poll before anyone books flights."
+            "Try Explore for inspiration, then vote in a trip poll before anyone books transport."
         )
         return prefix + body
 

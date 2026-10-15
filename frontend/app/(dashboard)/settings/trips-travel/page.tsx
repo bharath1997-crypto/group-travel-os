@@ -58,14 +58,14 @@ export default function TripsTravelPage() {
         <SettingsHubRow
           icon={Award}
           label="Loyalty Programs"
-          sublabel="Airlines, hotels, and rewards cards"
+          sublabel="Hotels and rewards cards"
           badge="Coming Soon"
           accentColor="purple"
         />
         <SettingsHubRow
           icon={Briefcase}
           label="Booking Preferences"
-          sublabel="Defaults for flights, hotels, activities"
+          sublabel="Defaults for routes, hotels, activities"
           badge="Coming Soon"
           accentColor="purple"
         />

@@ -25,8 +25,8 @@ import {
   Menu,
   Music,
   Pill,
-  Plane,
   ShoppingBag,
+  Users,
   Sparkles,
   Utensils,
   UploadCloud,
@@ -206,7 +206,6 @@ function categoryIconComponent(category: string): LucideIcon {
     activity: Drama,
     shopping: ShoppingBag,
     medical: Pill,
-    flight: Plane,
     entertainment: Music,
     other: ClipboardList,
   };
@@ -524,7 +523,7 @@ export default function SplitActivitiesPage() {
             id: "exp_1",
             trip_id: "trip_euro",
             paid_by: "user_jane",
-            description: "[Flight] Paris Airfare Tickets",
+            description: "[Transport] Paris rail tickets",
             amount: 800,
             currency: "USD",
             created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
@@ -1521,7 +1520,7 @@ export default function SplitActivitiesPage() {
   if (groups.length === 0) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-6" style={{ background: BG }}>
-        <Plane className="h-16 w-16 text-navy" strokeWidth={1.5} aria-hidden />
+        <Users className="h-16 w-16 text-navy" strokeWidth={1.5} aria-hidden />
         <p className="mt-4 text-lg font-bold" style={{ color: NAVY }}>
           No groups yet
         </p>
@@ -2587,7 +2586,6 @@ function AddExpenseSheet(props: {
     { key: "Activity", Icon: Drama },
     { key: "Shopping", Icon: ShoppingBag },
     { key: "Medical", Icon: Pill },
-    { key: "Flight", Icon: Plane },
     { key: "Other", Icon: ClipboardList },
   ] as const;
 

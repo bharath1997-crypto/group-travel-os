@@ -48,7 +48,7 @@ export const VEHICLE_PREFERENCE_OPTIONS: {
   {
     id: "public",
     label: "Public transport",
-    description: "Flights, trains, and buses via Travel tab",
+    description: "Trains and buses via Travel tab",
   },
 ];
 

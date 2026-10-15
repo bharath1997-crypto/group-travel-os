@@ -13,7 +13,6 @@ from app.utils.database import Base
 
 
 class BookingProvider(str, enum.Enum):
-    duffel = "duffel"
     manual_link = "manual_link"
 
 

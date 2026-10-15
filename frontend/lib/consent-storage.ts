@@ -2,9 +2,9 @@
  * Consent-aware browser storage for Rovvy preference data.
  *
  * - Necessary storage (auth tokens) is handled separately via gt_token.
- * - Preferences (recent airports, UI prefs) require explicit preference consent for localStorage.
+ * - Preferences (recent searches, UI prefs) require explicit preference consent for localStorage.
  * - When preference consent is declined or undecided, preference data uses sessionStorage only.
- * - Analytics consent does not gate flight functionality.
+ * - Analytics consent does not gate core map or directions functionality.
  */
 
 export type ConsentCategory = "necessary" | "preferences" | "analytics";

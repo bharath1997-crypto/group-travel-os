@@ -41,7 +41,7 @@ export const DEMO_CONTACTS: DemoContactRow[] = [
 export const DEMO_DM_SCRIPTS: Record<DemoContactKind, DemoScriptLine[]> = {
   arjun: [
     { dir: "in", text: "Hey! Are we still going to Goa next month?", time: "Apr 20, 10:30 AM" },
-    { dir: "out", text: "Yes! Booking flights this week. Check the poll I created.", time: "Apr 20, 10:32 AM" },
+    { dir: "out", text: "Yes! Booking hotels this week. Check the poll I created.", time: "Apr 20, 10:32 AM" },
     { dir: "in", text: "Perfect. Should I book the hotel or will the group decide?", time: "Apr 20, 10:33 AM" },
     { dir: "out", text: "Let's do a poll for that too.", time: "Apr 20, 10:35 AM" },
     { dir: "in", text: "Good idea. Also Suresh is asking about the budget split.", time: "Apr 20, 11:00 AM" },

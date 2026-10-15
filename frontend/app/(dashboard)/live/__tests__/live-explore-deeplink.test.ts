@@ -7,23 +7,28 @@ function queryParam(href: string, key: string): string | null {
   return new URLSearchParams(qs).get(key);
 }
 
+const OVERTURE_UUID = "5d1bbd9b-7a0d-4427-ba73-632cc1dc3f84";
+const STREET_ADDRESS = "56 W Adams St, Chicago, IL, 60603";
+
 describe("buildLiveDirectionsHref", () => {
-  it("builds href with gers_id, coords, and encoded name", () => {
+  it("builds href with Overture UUID gers_id, coords, name, and address", () => {
     const href = buildLiveDirectionsHref({
-      gersId: "08f2664a1c2b3d4e5f6789012345678",
+      gersId: OVERTURE_UUID,
       lat: 41.881,
       lng: -87.623,
       name: "Center for Native Futures",
+      address: STREET_ADDRESS,
     });
     expect(href).toContain("/live?");
-    expect(href).toContain("gers_id=08f2664a1c2b3d4e5f6789012345678");
+    expect(href).toContain(`gers_id=${OVERTURE_UUID}`);
     expect(href).toContain("lat=41.881");
     expect(href).toContain("lng=-87.623");
     expect(href).not.toBeNull();
     expect(queryParam(href!, "name")).toBe("Center for Native Futures");
+    expect(queryParam(href!, "address")).toBe(STREET_ADDRESS);
   });
 
-  it("includes Overture UUID gers_id", () => {
+  it("normalizes UUID gers_id to lowercase", () => {
     const href = buildLiveDirectionsHref({
       gersId: "78B4925D-0560-4352-8453-553395500EC6",
       lat: 41.88,
@@ -45,29 +50,38 @@ describe("buildLiveDirectionsHref", () => {
     expect(buildLiveDirectionsHref({ lat: 0, lng: 200 })).toBeNull();
   });
 
-  it("encodes special characters in name", () => {
-    const href = buildLiveDirectionsHref({ lat: 1, lng: 2, name: "Foo & Bar" });
+  it("encodes special characters in name and address", () => {
+    const href = buildLiveDirectionsHref({
+      lat: 1,
+      lng: 2,
+      name: "Foo & Bar",
+      address: "123 Main St & Co",
+    });
     expect(href).not.toBeNull();
     expect(queryParam(href!, "name")).toBe("Foo & Bar");
+    expect(queryParam(href!, "address")).toBe("123 Main St & Co");
   });
 });
 
 describe("parseLiveDeepLink", () => {
-  it("parses valid params", () => {
+  it("parses valid params including UUID gers_id and address", () => {
     const params = new URLSearchParams(
-      "gers_id=08f2664a1c2b3d4e5f6789012345678&lat=41.88&lng=-87.62&name=Pritzker+Park",
+      `gers_id=${OVERTURE_UUID}&lat=41.88&lng=-87.62&name=Pritzker+Park&address=${encodeURIComponent(STREET_ADDRESS)}`,
     );
     expect(parseLiveDeepLink(params)).toEqual({
-      gersId: "08f2664a1c2b3d4e5f6789012345678",
+      gersId: OVERTURE_UUID,
       lat: 41.88,
       lng: -87.62,
       name: "Pritzker Park",
+      address: STREET_ADDRESS,
     });
   });
 
-  it("allows missing gers_id", () => {
+  it("allows missing gers_id and address", () => {
     const params = new URLSearchParams("lat=28.5&lng=-81.3&name=Event");
-    expect(parseLiveDeepLink(params)?.gersId).toBeNull();
+    const parsed = parseLiveDeepLink(params);
+    expect(parsed?.gersId).toBeNull();
+    expect(parsed?.address).toBeNull();
   });
 
   it("rejects bad numbers and out-of-range", () => {

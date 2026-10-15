@@ -1,4 +1,4 @@
-"""Multi-modal route discovery (Kiwi + Google Routes)."""
+"""Ground route discovery (Google Routes directions)."""
 
 from datetime import date
 
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/routes", tags=["routes"])
 @router.get(
     "/search",
     response_model=RouteSearchResponse,
-    summary="Compare flight and ground routes between two places",
+    summary="Compare ground routes between two places",
 )
 async def search_multimodal_routes(
     origin: str = Query(..., min_length=1, description="Origin city or airport"),

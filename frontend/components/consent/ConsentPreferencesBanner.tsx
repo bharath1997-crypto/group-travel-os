@@ -40,8 +40,8 @@ export default function ConsentPreferencesBanner() {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900">Storage preferences</p>
           <p className="mt-1 text-xs leading-relaxed text-slate-600">
-            Rovvy can remember recent airport picks on this device when you allow preference storage.
-            Flight search works either way.{" "}
+            Rovvy can remember recent search picks on this device when you allow preference storage.
+            Map and directions work either way.{" "}
             <Link href="/cookie-policy" className="font-medium text-primary underline-offset-2 hover:underline">
               Cookie Policy
             </Link>
@@ -61,7 +61,7 @@ export default function ConsentPreferencesBanner() {
                 <span>
                   <span className="font-medium">Preference storage</span>
                   <span className="block text-xs text-slate-500">
-                    Save recent airport selections across visits (localStorage).
+                    Save recent search selections across visits (localStorage).
                   </span>
                 </span>
               </label>

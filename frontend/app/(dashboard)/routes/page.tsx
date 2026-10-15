@@ -7,7 +7,7 @@ import { getToken } from "@/lib/auth";
 import TravelHandoffBanner from "@/components/travel/TravelHandoffBanner";
 import { parseTravelHandoff, travelHandoffSearchLabel } from "@/lib/travel-handoff";
 
-type TransportMode = "flight" | "transit" | "bus" | "train" | "drive";
+type TransportMode = "transit" | "bus" | "train" | "drive";
 type TransportOptionRow = {
   mode: TransportMode;
   summary: string;
@@ -25,7 +25,7 @@ type RouteSearchPayload = {
   options: TransportOptionRow[];
 };
 
-type ModeFilter = "all" | "flights" | "ground" | "drive";
+type ModeFilter = "all" | "ground" | "drive";
 
 function todayPlus(days: number): string {
   const d = new Date();
@@ -45,8 +45,6 @@ function formatDuration(minutes: number): string {
 
 function modeIcon(mode: TransportMode): string {
   switch (mode) {
-    case "flight":
-      return "✈️";
     case "drive":
       return "🚗";
     case "bus":
@@ -61,7 +59,6 @@ function modeIcon(mode: TransportMode): string {
 
 function modeMatchesFilter(opt: TransportOptionRow, filter: ModeFilter): boolean {
   if (filter === "all") return true;
-  if (filter === "flights") return opt.mode === "flight";
   if (filter === "drive") return opt.mode === "drive";
   /* ground = bus / train / transit */
   return opt.mode === "bus" || opt.mode === "train" || opt.mode === "transit";
@@ -175,7 +172,7 @@ function RoutesPageContent() {
     <div className="min-h-[calc(100dvh-80px)] bg-app rounded-3xl p-6 md:p-8 text-slate-850 shadow-sm border border-slate-200/80">
       {handoff ? (
         <div className="max-w-6xl mx-auto mb-6">
-          <TravelHandoffBanner handoff={handoff} showSkyscanner={false} />
+          <TravelHandoffBanner handoff={handoff} />
         </div>
       ) : null}
       {/* Search Header */}
@@ -190,8 +187,8 @@ function RoutesPageContent() {
           How to get there
         </h1>
         <p className="mt-2 text-sm text-slate-500 leading-relaxed max-w-2xl">
-          Compare flights (Kiwi.com) with transit and driving directions (Google
-          Routes). Use airport codes or place names Google can resolve.
+          Compare transit and driving directions (Google Routes). Use place names
+          or addresses Google can resolve.
         </p>
       </div>
 
@@ -205,7 +202,7 @@ function RoutesPageContent() {
             <input
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              placeholder="City or airport (e.g. ORD, Chicago)"
+              placeholder="City or address (e.g. Chicago, IL)"
               className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
             />
           </label>
@@ -216,7 +213,7 @@ function RoutesPageContent() {
             <input
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              placeholder="City or airport (e.g. JFK, New York)"
+              placeholder="City or address (e.g. New York, NY)"
               className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
             />
           </label>
@@ -264,8 +261,7 @@ function RoutesPageContent() {
           {(
             [
               ["all", "ALL"],
-              ["flights", "✈️ FLIGHTS"],
-              ["ground", "🚌 BUS/TRAIN"],
+              ["ground", "🚌 TRANSIT"],
               ["drive", "🚗 DRIVE"],
             ] as const
           ).map(([v, label]) => (
@@ -427,7 +423,7 @@ function RoutesPageContent() {
                         if (!opt.booking_url) e.preventDefault();
                       }}
                     >
-                      {opt.mode === "flight" ? "Book flight" : "Book / info"}
+                      Book / info
                     </a>
                   </div>
                 </div>

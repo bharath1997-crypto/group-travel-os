@@ -14,7 +14,6 @@ import {
   Activity,
   Calendar,
   CloudSun,
-  Plane,
   Building2,
   Route,
   Bus,
@@ -47,7 +46,6 @@ const EXPLORE_SUBNAV = [
 
 const TRIPS_SUBNAV = [
   { href: "/trip-space",  label: "Trip Space",  Icon: Map },
-  { href: "/flights",     label: "Flights",     Icon: Plane },
   { href: "/hotels",      label: "Hotels",      Icon: Building2 },
   { href: "/routes",      label: "Routes",      Icon: Route },
   { href: "/buses",       label: "Buses",       Icon: Bus },
@@ -63,7 +61,7 @@ function getPrimaryTab(pathname: string): PrimaryTab {
     return "explore";
   if (
     pathname.startsWith("/trips") || pathname.startsWith("/trip-space") ||
-    pathname.startsWith("/flights") || pathname.startsWith("/hotels") ||
+    pathname.startsWith("/hotels") ||
     pathname.startsWith("/routes") || pathname.startsWith("/buses") ||
     pathname.startsWith("/group") || pathname.startsWith("/buddy") ||
     false

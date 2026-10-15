@@ -520,7 +520,7 @@ def build_user_origin_planning_block(
 ) -> str:
     """
     Clarify home (GPS) vs map pin (planning destination) for Live trip answers.
-    Injected into LLM source blocks so reach/flight/budget questions plan from home.
+    Injected into LLM source blocks so reach/ground-travel/budget questions plan from home.
     """
     if not ctx:
         return ""
@@ -583,7 +583,7 @@ def build_user_origin_planning_block(
 
     lines.extend(
         [
-            "Answer reach, flights, timing, budget, and day-count FROM home TO the destination pin.",
+            "Answer reach (ground directions only), timing, budget, and day-count FROM home TO the destination pin.",
             "Answer on-site weather, activities, and local conditions about the destination pin.",
             "Do not tell the user they are physically at the pin when home and pin are far apart.",
         ]

@@ -227,7 +227,7 @@ def resolve_app_guide_local_reply(message: str, page: str) -> str | None:
         )
     if "switch travel modes" in q or "travel modes" in q:
         return (
-            "Open Plan in the sidebar to switch between Flights, Hotels, Routes, and Buses. "
+            "Open Plan in the sidebar to switch between Hotels, Routes, and Buses. "
             "On Live, use the map tools for driving, walking, and Solo Live navigation."
         )
     if "solo live" in q:
@@ -493,7 +493,7 @@ def resolve_navigation_reply(
         if dist_block:
             return (
                 f"{dist_block.strip()} "
-                f"{label} may be remote — research flights, boats, or regional transit if a direct drive is unavailable."
+                f"{label} may be remote — use Plan → Routes for ground directions or regional transit where available."
             )
 
     if is_drive_navigation_question(message):

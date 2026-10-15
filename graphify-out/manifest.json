@@ -510,8 +510,8 @@
     "semantic_hash": ""
   },
   "app/jobs/scheduler.py": {
-    "mtime": 1789725047.7918625,
-    "ast_hash": "4d8971637ddfa7384c64ce6a78b81e27",
+    "mtime": 1790500584.5470507,
+    "ast_hash": "03fe52cdf49d1247fd7eb658791d94b2",
     "semantic_hash": ""
   },
   "app/jobs/seatgeek_sync.py": {
@@ -530,12 +530,12 @@
     "semantic_hash": ""
   },
   "app/main.py": {
-    "mtime": 1789896420.3149524,
-    "ast_hash": "386c20ee14cd673dd90a9a79ddeb70ce",
+    "mtime": 1790849956.1958814,
+    "ast_hash": "82e959902c4c37b9a12ed5993f1edd1b",
     "semantic_hash": ""
   },
   "app/models/__init__.py": {
-    "mtime": 1789811287.0357518,
+    "mtime": 1790500584.5490758,
     "ast_hash": "031008df92fd064d3ee3e5a9ec17d2a9",
     "semantic_hash": ""
   },
@@ -770,8 +770,8 @@
     "semantic_hash": ""
   },
   "app/routers/explorer_v2.py": {
-    "mtime": 1790417589.2761962,
-    "ast_hash": "369e6df17639f00f3634b5e19898ba8b",
+    "mtime": 1790934211.2075667,
+    "ast_hash": "56370f52e67e915ed1f603a9aed55e0c",
     "semantic_hash": ""
   },
   "app/routes/__init__.py": {
@@ -855,8 +855,8 @@
     "semantic_hash": ""
   },
   "app/routes/explore.py": {
-    "mtime": 1790412314.2607965,
-    "ast_hash": "fa1915002e65d7187fce384989c9915d",
+    "mtime": 1790848841.6053631,
+    "ast_hash": "21039682f33f694b5e8e5919e0b67f13",
     "semantic_hash": ""
   },
   "app/routes/explorer.py": {
@@ -875,13 +875,13 @@
     "semantic_hash": ""
   },
   "app/routes/geocoding.py": {
-    "mtime": 1790150004.6603353,
+    "mtime": 1790500584.5510705,
     "ast_hash": "9b62d1ff06f47bf01b49879354626916",
     "semantic_hash": ""
   },
   "app/routes/groups.py": {
-    "mtime": 1777966946.698084,
-    "ast_hash": "cdbd6c40a85f8848c0381fb381a1e061",
+    "mtime": 1790761084.2763615,
+    "ast_hash": "652a78c065e645e400e39a46200eeea2",
     "semantic_hash": ""
   },
   "app/routes/hotels.py": {
@@ -955,7 +955,7 @@
     "semantic_hash": ""
   },
   "app/routes/places.py": {
-    "mtime": 1789811287.0182765,
+    "mtime": 1790500584.5530715,
     "ast_hash": "63d9216d8f5af262285827028c27f6d1",
     "semantic_hash": ""
   },
@@ -975,8 +975,8 @@
     "semantic_hash": ""
   },
   "app/routes/social.py": {
-    "mtime": 1777965138.6928394,
-    "ast_hash": "5630a97cb1925feae8b3fa18a63738f5",
+    "mtime": 1790848624.8412032,
+    "ast_hash": "f83d927c080a398ae1dc602cc9746493",
     "semantic_hash": ""
   },
   "app/routes/stats.py": {
@@ -1005,8 +1005,8 @@
     "semantic_hash": ""
   },
   "app/routes/trips.py": {
-    "mtime": 1784973763.5927696,
-    "ast_hash": "9fa5d7b59cb1e4e44b97117daa1547dd",
+    "mtime": 1790587985.5809016,
+    "ast_hash": "68e9e5f7b86a395f0978bc68c96a062d",
     "semantic_hash": ""
   },
   "app/routes/unified_experiences.py": {
@@ -1050,8 +1050,8 @@
     "semantic_hash": ""
   },
   "app/schemas/auth.py": {
-    "mtime": 1779529017.142341,
-    "ast_hash": "54ef04cd1934fd4d8bb79cb33234c894",
+    "mtime": 1790761140.8117247,
+    "ast_hash": "fc966280baff23f211aba495d14d8a0d",
     "semantic_hash": ""
   },
   "app/schemas/booking.py": {
@@ -1120,8 +1120,8 @@
     "semantic_hash": ""
   },
   "app/schemas/group.py": {
-    "mtime": 1777966946.7001038,
-    "ast_hash": "cdcd46ef5fdcb16e446fc8002ac55e63",
+    "mtime": 1790761084.2758465,
+    "ast_hash": "9a05ebfc3a3f8e3d721007ed0168bdc8",
     "semantic_hash": ""
   },
   "app/schemas/hotel.py": {
@@ -1195,8 +1195,8 @@
     "semantic_hash": ""
   },
   "app/schemas/social.py": {
-    "mtime": 1777965138.699158,
-    "ast_hash": "b8f89be8f9e7489357214b5a23225773",
+    "mtime": 1790848769.278585,
+    "ast_hash": "b9f0f87a34f6960b3e719a0522339927",
     "semantic_hash": ""
   },
   "app/schemas/timer.py": {
@@ -1220,8 +1220,8 @@
     "semantic_hash": ""
   },
   "app/schemas/trip_item.py": {
-    "mtime": 1784973763.5948207,
-    "ast_hash": "5ee545ca54ef7807df114d8ffa6c95eb",
+    "mtime": 1790587985.4873862,
+    "ast_hash": "55979d0de050d49f216f2162a5619255",
     "semantic_hash": ""
   },
   "app/schemas/trip_public.py": {
@@ -1280,8 +1280,8 @@
     "semantic_hash": ""
   },
   "app/services/app_settings_service.py": {
-    "mtime": 1777966946.701535,
-    "ast_hash": "b38d987328192e55f69ba1aba95f13da",
+    "mtime": 1790848590.621003,
+    "ast_hash": "9c0800bcfce83e9fd2648b628416d37f",
     "semantic_hash": ""
   },
   "app/services/auth_service.py": {
@@ -1360,7 +1360,7 @@
     "semantic_hash": ""
   },
   "app/services/events_service.py": {
-    "mtime": 1790159311.129326,
+    "mtime": 1790500584.5540736,
     "ast_hash": "0109dee2b61fbfbeb525db92ba2b7e3c",
     "semantic_hash": ""
   },
@@ -1370,7 +1370,7 @@
     "semantic_hash": ""
   },
   "app/services/explore_city_extended_service.py": {
-    "mtime": 1790151195.4606144,
+    "mtime": 1790500584.556072,
     "ast_hash": "bbfd1f3a2dbc251f09473c65ace68d62",
     "semantic_hash": ""
   },
@@ -1505,7 +1505,7 @@
     "semantic_hash": ""
   },
   "app/services/geocoding_service.py": {
-    "mtime": 1790150004.6603353,
+    "mtime": 1790500584.5580735,
     "ast_hash": "622db8c1714a91d04e6fa9ffb833f74b",
     "semantic_hash": ""
   },
@@ -1520,8 +1520,8 @@
     "semantic_hash": ""
   },
   "app/services/group_service.py": {
-    "mtime": 1781557118.692564,
-    "ast_hash": "884dc7e4cb76d294130975c8d75926bc",
+    "mtime": 1790761084.275121,
+    "ast_hash": "74ed9eca090e9136b5a296dcf0104093",
     "semantic_hash": ""
   },
   "app/services/hotel_service.py": {
@@ -1565,7 +1565,7 @@
     "semantic_hash": ""
   },
   "app/services/live_search_taxonomy_service.py": {
-    "mtime": 1789896399.6905608,
+    "mtime": 1790500584.5590692,
     "ast_hash": "59f9f934f8cc21236b5e890746df618d",
     "semantic_hash": ""
   },
@@ -1640,7 +1640,7 @@
     "semantic_hash": ""
   },
   "app/services/places_nearby_service.py": {
-    "mtime": 1790150004.6773863,
+    "mtime": 1790500584.5600698,
     "ast_hash": "236c191136fab0837632b31103b6a801",
     "semantic_hash": ""
   },
@@ -1750,13 +1750,13 @@
     "semantic_hash": ""
   },
   "app/services/social_service.py": {
-    "mtime": 1777965138.7149346,
-    "ast_hash": "d1bedba7081986661abe84409048811d",
+    "mtime": 1790848642.843503,
+    "ast_hash": "c1760191a2456902d0c4757d156a60ee",
     "semantic_hash": ""
   },
   "app/services/stats_service.py": {
-    "mtime": 1776931027.6343532,
-    "ast_hash": "0b12fee701eeec36a710128b6d41660d",
+    "mtime": 1790761102.6941907,
+    "ast_hash": "adca0c92a874c31b9f2242bfefb5e065",
     "semantic_hash": ""
   },
   "app/services/stripe_service.py": {
@@ -1805,8 +1805,8 @@
     "semantic_hash": ""
   },
   "app/services/trip_service.py": {
-    "mtime": 1784973763.598485,
-    "ast_hash": "40525a9a691452905ee6f2e85fef9b3a",
+    "mtime": 1790587985.5340843,
+    "ast_hash": "32562895420260147f48f996d48fd741",
     "semantic_hash": ""
   },
   "app/services/user_flight_preference_service.py": {
@@ -1840,8 +1840,8 @@
     "semantic_hash": ""
   },
   "app/services/wayra_personal_service.py": {
-    "mtime": 1785059254.5235183,
-    "ast_hash": "053b511fb25eeb8a405232706822cac5",
+    "mtime": 1790505124.5996835,
+    "ast_hash": "c75831285d3167c10a92a9104b311992",
     "semantic_hash": ""
   },
   "app/services/wayra_place_context.py": {
@@ -1940,7 +1940,7 @@
     "semantic_hash": ""
   },
   "data/live_search_taxonomy.json": {
-    "mtime": 1789897740.000464,
+    "mtime": 1790500584.5610685,
     "ast_hash": "1c5ee7ccc251625991ad4a582d9436bf",
     "semantic_hash": ""
   },
@@ -2040,12 +2040,12 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore-v2/page.tsx": {
-    "mtime": 1789382617.5526223,
-    "ast_hash": "c61a52180f992cf55542b66c6c282b54",
+    "mtime": 1790500583.162614,
+    "ast_hash": "2c79ae53f9ef51921ff15c227f37d98c",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/[city]/events/page.tsx": {
-    "mtime": 1790158547.912119,
+    "mtime": 1790500584.562584,
     "ast_hash": "66c02551f929f4a6bd0175f054b96417",
     "semantic_hash": ""
   },
@@ -2055,37 +2055,37 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/activities/page.tsx": {
-    "mtime": 1790073663.9096167,
+    "mtime": 1790500584.5636058,
     "ast_hash": "56025bf6dacb516fda0f88487f45a43e",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/amusement/page.tsx": {
-    "mtime": 1790150004.6603353,
+    "mtime": 1790500584.5647264,
     "ast_hash": "f06f12cdc1889d26e18e7b9921e97d94",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/event/[id]/page.tsx": {
-    "mtime": 1790241350.4552886,
+    "mtime": 1790500584.569744,
     "ast_hash": "9f8c092eb87f759024891e7e6cf1be5f",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/events/page.tsx": {
-    "mtime": 1790150004.633725,
+    "mtime": 1790500584.5711563,
     "ast_hash": "2a1b67973c218a8ec8103c54c5dfee46",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/food/page.tsx": {
-    "mtime": 1790150004.6773863,
+    "mtime": 1790500584.5741813,
     "ast_hash": "929a6574f5b387f149ce04489e2b10f3",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/gaming/page.tsx": {
-    "mtime": 1790150004.6388218,
+    "mtime": 1790500584.5753672,
     "ast_hash": "b6f14248fed5716d43cda51313bae573",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/landmarks/page.tsx": {
-    "mtime": 1790150004.6603353,
+    "mtime": 1790500584.5758827,
     "ast_hash": "b20b306f929e6adbec3a1e33c19ecb68",
     "semantic_hash": ""
   },
@@ -2095,22 +2095,22 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/nightlife/page.tsx": {
-    "mtime": 1790150004.6307237,
+    "mtime": 1790500584.5758827,
     "ast_hash": "1f8bc464ca118ea742c5021715d42130",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/page.tsx": {
-    "mtime": 1790414959.5544963,
-    "ast_hash": "171624c658a4f1664665c56d66c40b6c",
+    "mtime": 1791799590.0354567,
+    "ast_hash": "a664c1119ced899c095be4c5a43fd4e7",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/parks/page.tsx": {
-    "mtime": 1790150004.6773863,
+    "mtime": 1790500584.5782194,
     "ast_hash": "df0682ebddf9e566327cb962380dfaf7",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/shopping/page.tsx": {
-    "mtime": 1790150004.6152115,
+    "mtime": 1790500584.5792215,
     "ast_hash": "501b2bafed56e03aa45d45051b813923",
     "semantic_hash": ""
   },
@@ -2120,12 +2120,12 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/sports/page.tsx": {
-    "mtime": 1790073663.9107428,
+    "mtime": 1790500584.5806706,
     "ast_hash": "ef9e0569a84fb51418f2485431ba334c",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/trekking/page.tsx": {
-    "mtime": 1790150004.6388218,
+    "mtime": 1790500584.5816886,
     "ast_hash": "8980bb2fbd5e9db0e8253d784bbdc742",
     "semantic_hash": ""
   },
@@ -2160,12 +2160,12 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/layout.tsx": {
-    "mtime": 1789723482.8909464,
-    "ast_hash": "3d59d3ad14cb594d27851e6d3d2dfc24",
+    "mtime": 1790934275.1702018,
+    "ast_hash": "5c4128b7ada99661719ef6d1020b3354",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/FarAwayPlacePanel.tsx": {
-    "mtime": 1789635731.9731207,
+    "mtime": 1790500584.584688,
     "ast_hash": "ea4308e52fefdb45ddc4acd32af48477",
     "semantic_hash": ""
   },
@@ -2190,7 +2190,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/LiveMapClickPopup.tsx": {
-    "mtime": 1790150004.659336,
+    "mtime": 1790500584.5856905,
     "ast_hash": "c97ce302a125133c104c0ac30e97af9d",
     "semantic_hash": ""
   },
@@ -2200,7 +2200,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/LiveMapComponent.tsx": {
-    "mtime": 1790150004.6773863,
+    "mtime": 1790500584.5866892,
     "ast_hash": "a8bb0fe008ca616dd25d2a12b3ee5d0e",
     "semantic_hash": ""
   },
@@ -2210,7 +2210,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/LiveMapLayerControl.tsx": {
-    "mtime": 1790150004.6483343,
+    "mtime": 1790500584.5885096,
     "ast_hash": "8a64d394a8605a0fd2a3f66f5f6c16ff",
     "semantic_hash": ""
   },
@@ -2220,7 +2220,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/LiveMapRightControls.tsx": {
-    "mtime": 1789896531.8523436,
+    "mtime": 1790500584.589527,
     "ast_hash": "4fdb7cacae90026dc76a02fc3db0ba01",
     "semantic_hash": ""
   },
@@ -2265,17 +2265,17 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/SoloLiveActivePanel.tsx": {
-    "mtime": 1790329500.9154718,
-    "ast_hash": "b6a11c415ed2feae68467dc2b8807d0e",
+    "mtime": 1790500584.5950482,
+    "ast_hash": "771a42d248cc1e6509e0edd339783436",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/SoloLiveNavigationOverlay.tsx": {
-    "mtime": 1790329654.124258,
-    "ast_hash": "0d4910ccebeab712d82ee4c97ff21b80",
+    "mtime": 1790500584.5950482,
+    "ast_hash": "984837602b63e1f4abdbde385984fd52",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/SoloRoutePreviewPanel.tsx": {
-    "mtime": 1789635732.082683,
+    "mtime": 1790500584.5960674,
     "ast_hash": "2bf5652b50d1eb75f39a0287340afc8d",
     "semantic_hash": ""
   },
@@ -2320,7 +2320,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/__tests__/live-place-display.test.ts": {
-    "mtime": 1790150004.6483343,
+    "mtime": 1790500584.5990727,
     "ast_hash": "ecfa29f6defa2038e2ee74cb6f28ad19",
     "semantic_hash": ""
   },
@@ -2345,8 +2345,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-clean-map-housenumbers.ts": {
-    "mtime": 1790150004.652335,
-    "ast_hash": "fa9014e7e90e4db53263970edf838375",
+    "mtime": 1790500584.601076,
+    "ast_hash": "251312c9ffec8e6584eed0a9a3798005",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-dark-map-labels.ts": {
@@ -2375,7 +2375,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-geocoding.ts": {
-    "mtime": 1790150004.6212265,
+    "mtime": 1790500584.6020641,
     "ast_hash": "6e093a1473a740d292037e051dbab965",
     "semantic_hash": ""
   },
@@ -2390,17 +2390,17 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-hybrid-roads-sync.ts": {
-    "mtime": 1789811287.0291898,
+    "mtime": 1790500584.6030746,
     "ast_hash": "3fbbda52d9f25ad013a552316fffd33b",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-immersive-chrome.ts": {
-    "mtime": 1789722745.4596286,
+    "mtime": 1790500584.6030746,
     "ast_hash": "55a00a9857fb89a85c7eeb6d0130836d",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-layout.ts": {
-    "mtime": 1789462657.808036,
+    "mtime": 1790500584.604211,
     "ast_hash": "230dc7bf7271dddd18f324ba8078a8fd",
     "semantic_hash": ""
   },
@@ -2410,7 +2410,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-map-attribution.ts": {
-    "mtime": 1790150004.6192162,
+    "mtime": 1790500584.604211,
     "ast_hash": "19f5da61c61254fa883cf2878a6590d0",
     "semantic_hash": ""
   },
@@ -2420,22 +2420,22 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-map-labels.ts": {
-    "mtime": 1790150004.6483343,
+    "mtime": 1790500584.605231,
     "ast_hash": "7dd96edd7b0a7e6ce39281e8b519cc6d",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-map-layer-preference.ts": {
-    "mtime": 1789811286.9886317,
+    "mtime": 1790500584.605231,
     "ast_hash": "3f34b45e1af271f71049a6524baa2115",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-map-pick-context.ts": {
-    "mtime": 1790150004.6252327,
+    "mtime": 1790500584.6069472,
     "ast_hash": "949ca1f92dfa715369057e28c6c58de3",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-map-right-controls.ts": {
-    "mtime": 1789722746.0956686,
+    "mtime": 1790500584.6069472,
     "ast_hash": "56950a9012c40b7a73caa79128894c3a",
     "semantic_hash": ""
   },
@@ -2460,12 +2460,12 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-place-display.ts": {
-    "mtime": 1790150004.627234,
+    "mtime": 1790500584.6107533,
     "ast_hash": "e91e95c11db6ff5fea4dc8cbb809bf56",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-place-enrich.ts": {
-    "mtime": 1789635732.0207193,
+    "mtime": 1790500584.6107533,
     "ast_hash": "887e36c90b0484c2fccba1af71c2499e",
     "semantic_hash": ""
   },
@@ -2475,17 +2475,17 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-place-media.ts": {
-    "mtime": 1789635732.0227225,
+    "mtime": 1790500584.611781,
     "ast_hash": "e66acd0f80a10d72c4e59c3d777bf4f3",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-poi-icons.ts": {
-    "mtime": 1790150004.6388218,
+    "mtime": 1790500584.6137834,
     "ast_hash": "44a2a152c6c4857ea6f06bbe380b1037",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-recent-searches.ts": {
-    "mtime": 1790150004.646333,
+    "mtime": 1790500584.615319,
     "ast_hash": "ef68a02bbab9c7e6e7aa917d31eb8750",
     "semantic_hash": ""
   },
@@ -2505,7 +2505,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-routing.ts": {
-    "mtime": 1789811287.0467987,
+    "mtime": 1790500584.6163263,
     "ast_hash": "311d910848675e2fa0f6d1f51f85fd38",
     "semantic_hash": ""
   },
@@ -2565,12 +2565,12 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-types.ts": {
-    "mtime": 1790150004.6282346,
+    "mtime": 1791793868.335446,
     "ast_hash": "c7b86d7a0e20513dc9aab8791ea66c0d",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/page.tsx": {
-    "mtime": 1790150004.6307237,
+    "mtime": 1790500584.6193268,
     "ast_hash": "ae19166306a510fa6def405bc4ca0669",
     "semantic_hash": ""
   },
@@ -2580,7 +2580,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/route-intelligence.ts": {
-    "mtime": 1789635732.0766833,
+    "mtime": 1790500584.6203277,
     "ast_hash": "ff3a86fc1590a5f50f17ddf890455822",
     "semantic_hash": ""
   },
@@ -2605,8 +2605,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/profile/page.tsx": {
-    "mtime": 1789725268.8457005,
-    "ast_hash": "847a438ea7920fde0386924c77e49591",
+    "mtime": 1790934275.1692076,
+    "ast_hash": "c7a9560e51c3d8a6538f40d6f7ed683f",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/profile_new/page.tsx": {
@@ -2660,8 +2660,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/settings/account-security/verification/page.tsx": {
-    "mtime": 1789382617.712196,
-    "ast_hash": "b4b5ca20cb4008637d8b9e98c7ee6c4b",
+    "mtime": 1790761157.0550241,
+    "ast_hash": "0ad0883497482fc227425743137aca4e",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/settings/account/page.tsx": {
@@ -2795,8 +2795,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/settings/privacy/page.tsx": {
-    "mtime": 1789382617.726207,
-    "ast_hash": "eddae253f2def87abf157fdb3d918375",
+    "mtime": 1790849319.2857454,
+    "ast_hash": "e2822c90dc07e1a264e815ac99f3b6ba",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/settings/security/page.tsx": {
@@ -2825,8 +2825,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/settings/wayra-ai/page.tsx": {
-    "mtime": 1781777543.8535872,
-    "ast_hash": "01f01c2d78cee674da081325926db397",
+    "mtime": 1790504792.6120825,
+    "ast_hash": "2cfc6f7cbd4a9391561207b49abc06da",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/split-activities/page.tsx": {
@@ -3070,8 +3070,8 @@
     "semantic_hash": ""
   },
   "frontend/components/LoungeDock.tsx": {
-    "mtime": 1789382617.7523782,
-    "ast_hash": "e0389efa39117a243987836672bc08a0",
+    "mtime": 1791538277.99335,
+    "ast_hash": "ecb7cac93688bd680b66db9de06ff188",
     "semantic_hash": ""
   },
   "frontend/components/MapComponent.tsx": {
@@ -3115,8 +3115,8 @@
     "semantic_hash": ""
   },
   "frontend/components/ProfileDropdown.tsx": {
-    "mtime": 1777965138.7652016,
-    "ast_hash": "ca372f90084cdf7ebc41dd9f92b2c708",
+    "mtime": 1790587359.2699502,
+    "ast_hash": "936e225d167a836573a45dca498b1e72",
     "semantic_hash": ""
   },
   "frontend/components/RovvyLogo.tsx": {
@@ -3135,8 +3135,8 @@
     "semantic_hash": ""
   },
   "frontend/components/ai/AIAssistantSidecar.tsx": {
-    "mtime": 1790414895.1116736,
-    "ast_hash": "e68632bf2961d16125ac206f402be23e",
+    "mtime": 1790504743.0567367,
+    "ast_hash": "1b4402ecc1eea88fd7dc2c54ec8be486",
     "semantic_hash": ""
   },
   "frontend/components/auth/AuthExploreLayout.tsx": {
@@ -3220,7 +3220,7 @@
     "semantic_hash": ""
   },
   "frontend/components/explorer/ExploreCardImage.tsx": {
-    "mtime": 1790241849.563273,
+    "mtime": 1790500584.626962,
     "ast_hash": "321700e6f61d8c56058dd22fa36ccfcd",
     "semantic_hash": ""
   },
@@ -3420,8 +3420,8 @@
     "semantic_hash": ""
   },
   "frontend/components/lounge/LoungeChatWindow.tsx": {
-    "mtime": 1789382617.7942305,
-    "ast_hash": "1755be8df3ae8ef33f20e2021bea0ccc",
+    "mtime": 1790508032.6496253,
+    "ast_hash": "b722c5028c128e224ba20efff8734d25",
     "semantic_hash": ""
   },
   "frontend/components/lounge/OpenLoungeButton.tsx": {
@@ -3470,8 +3470,8 @@
     "semantic_hash": ""
   },
   "frontend/components/lounge/hub/GroupInfoPanel.tsx": {
-    "mtime": 1789382617.7972238,
-    "ast_hash": "a8d723b5db7e5d17f0cdef7e70cedb78",
+    "mtime": 1790508155.5789647,
+    "ast_hash": "7409e384f161603abdb13b69efced6af",
     "semantic_hash": ""
   },
   "frontend/components/lounge/hub/GroupMembersDrawer.tsx": {
@@ -3530,8 +3530,8 @@
     "semantic_hash": ""
   },
   "frontend/components/lounge/hub/TravelHubTabs.tsx": {
-    "mtime": 1789382617.8007362,
-    "ast_hash": "2a9b93f38ee3c24dedef05c061bec21e",
+    "mtime": 1790508176.2276158,
+    "ast_hash": "69388c3cc21f360e111a9f203291bc96",
     "semantic_hash": ""
   },
   "frontend/components/lounge/index.ts": {
@@ -3595,7 +3595,7 @@
     "semantic_hash": ""
   },
   "frontend/components/ui/WayraIcon.tsx": {
-    "mtime": 1789462484.2925007,
+    "mtime": 1790500584.627887,
     "ast_hash": "134c88d5a539c296a4f75d796808a754",
     "semantic_hash": ""
   },
@@ -3605,7 +3605,7 @@
     "semantic_hash": ""
   },
   "frontend/data/live_search_taxonomy.json": {
-    "mtime": 1790150004.6398237,
+    "mtime": 1790500584.627887,
     "ast_hash": "1c5ee7ccc251625991ad4a582d9436bf",
     "semantic_hash": ""
   },
@@ -3635,7 +3635,7 @@
     "semantic_hash": ""
   },
   "frontend/lib/api.ts": {
-    "mtime": 1789382634.0171385,
+    "mtime": 1790500584.629919,
     "ast_hash": "97ad51bc2480be8f5773a34624fc9006",
     "semantic_hash": ""
   },
@@ -3675,7 +3675,7 @@
     "semantic_hash": ""
   },
   "frontend/lib/explore-events.ts": {
-    "mtime": 1790241314.5952623,
+    "mtime": 1790500584.630918,
     "ast_hash": "3e22087b6919a9e8f3240d2e7e917a2a",
     "semantic_hash": ""
   },
@@ -3700,8 +3700,8 @@
     "semantic_hash": ""
   },
   "frontend/lib/firebase-client.ts": {
-    "mtime": 1783505351.6925125,
-    "ast_hash": "f064a9267ff78e8d441dacf883099031",
+    "mtime": 1790760742.7382128,
+    "ast_hash": "433dc212d11bc71d452fbc6035f90305",
     "semantic_hash": ""
   },
   "frontend/lib/geo.ts": {
@@ -3710,8 +3710,8 @@
     "semantic_hash": ""
   },
   "frontend/lib/live-foot-routes.ts": {
-    "mtime": 1789811688.1795676,
-    "ast_hash": "b23af7c9a4ce303de94efae44977eb70",
+    "mtime": 1790500584.6319215,
+    "ast_hash": "34df5bb0181a1f257503cea4ccf014dd",
     "semantic_hash": ""
   },
   "frontend/lib/live-sea-routes-data.ts": {
@@ -3855,7 +3855,7 @@
     "semantic_hash": ""
   },
   "frontend/lib/map-providers.ts": {
-    "mtime": 1789812021.0585961,
+    "mtime": 1790500584.6339173,
     "ast_hash": "2af4a95cbf3d9f8b52e3a0e384295f3d",
     "semantic_hash": ""
   },
@@ -3875,8 +3875,8 @@
     "semantic_hash": ""
   },
   "frontend/lib/open-wayra.ts": {
-    "mtime": 1789382617.8388004,
-    "ast_hash": "435a79264e51b8101dcf65e79623b3e0",
+    "mtime": 1790504743.055733,
+    "ast_hash": "6c17c075198d1def2dc857966113f072",
     "semantic_hash": ""
   },
   "frontend/lib/place-enrichment.ts": {
@@ -3985,7 +3985,7 @@
     "semantic_hash": ""
   },
   "frontend/lib/wayra/place-region.ts": {
-    "mtime": 1790150004.6182103,
+    "mtime": 1790500584.6349192,
     "ast_hash": "c67d98ddfc0cd9ba3815fdcc66f08d65",
     "semantic_hash": ""
   },
@@ -4005,12 +4005,12 @@
     "semantic_hash": ""
   },
   "frontend/next.config.ts": {
-    "mtime": 1789723808.1672294,
+    "mtime": 1790500584.6349192,
     "ast_hash": "425f2394cea884f959c2a245d64caec0",
     "semantic_hash": ""
   },
   "frontend/package.json": {
-    "mtime": 1790241857.8666193,
+    "mtime": 1790500584.6399245,
     "ast_hash": "c27351e73ee962c5914ae0f616c2e895",
     "semantic_hash": ""
   },
@@ -4050,7 +4050,7 @@
     "semantic_hash": ""
   },
   "frontend/vitest.config.ts": {
-    "mtime": 1790241849.104542,
+    "mtime": 1790500584.6409187,
     "ast_hash": "90bd827c3b1a938f0edb56c53175fe3e",
     "semantic_hash": ""
   },
@@ -4280,7 +4280,7 @@
     "semantic_hash": ""
   },
   "tests/conftest.py": {
-    "mtime": 1789720380.5059822,
+    "mtime": 1790500584.6419191,
     "ast_hash": "73f6be7eae1d8554d7b3baf12ad233e6",
     "semantic_hash": ""
   },
@@ -4375,8 +4375,8 @@
     "semantic_hash": ""
   },
   "tests/test_explore_events_endpoint.py": {
-    "mtime": 1790159318.1578386,
-    "ast_hash": "b63864082c1ea7fea6e438e62795dc7d",
+    "mtime": 1790848919.4804072,
+    "ast_hash": "4f975581b1127b30ec66c9602758dffd",
     "semantic_hash": ""
   },
   "tests/test_explorer.py": {
@@ -4394,16 +4394,6 @@
     "ast_hash": "6084bcdf5f94ef841ee2df94fb2e4e1a",
     "semantic_hash": ""
   },
-  "tests/test_flight_service_unit.py": {
-    "mtime": 1789382617.85131,
-    "ast_hash": "430419ba7ef4575f69ef07d0208bb76d",
-    "semantic_hash": ""
-  },
-  "tests/test_flights.py": {
-    "mtime": 1789382617.85131,
-    "ast_hash": "9263eaf09cedb1cb38b56a59aced2ade",
-    "semantic_hash": ""
-  },
   "tests/test_foursquare_osm_jobs.py": {
     "mtime": 1781557118.7509353,
     "ast_hash": "11b5be61c85fe1f4759bb512066db05b",
@@ -4415,7 +4405,7 @@
     "semantic_hash": ""
   },
   "tests/test_geocoding.py": {
-    "mtime": 1790150004.6603353,
+    "mtime": 1790500584.6452854,
     "ast_hash": "9413409ca3094572e10b93f699258715",
     "semantic_hash": ""
   },
@@ -4460,7 +4450,7 @@
     "semantic_hash": ""
   },
   "tests/test_live_search_taxonomy.py": {
-    "mtime": 1790150004.6603353,
+    "mtime": 1790500584.6462946,
     "ast_hash": "6c3f40883bc2c18e7b41ff2f656f3446",
     "semantic_hash": ""
   },
@@ -4625,8 +4615,8 @@
     "semantic_hash": ""
   },
   "tests/test_wayra_personal.py": {
-    "mtime": 1781557118.7539792,
-    "ast_hash": "b06f53531a738731f555f3cb9ecad042",
+    "mtime": 1790505124.6006942,
+    "ast_hash": "33bb3ac86d5f0136e70ca7b53c621955",
     "semantic_hash": ""
   },
   "tests/test_wayra_place_context.py": {
@@ -4995,8 +4985,8 @@
     "semantic_hash": ""
   },
   ".claude/CLAUDE.md": {
-    "mtime": 1789382617.4390662,
-    "ast_hash": "c05a68a08e7721cb0811d0a349790f1b",
+    "mtime": 1791191434.8051171,
+    "ast_hash": "78934b15ea1663d81ce3075aaaa060da",
     "semantic_hash": ""
   },
   ".claude/skills/graphify/SKILL.md": {
@@ -5055,8 +5045,8 @@
     "semantic_hash": ""
   },
   ".github/workflows/production-ci.yml": {
-    "mtime": 1785227579.6342547,
-    "ast_hash": "6d43043b86f95c7e947424df4a884494",
+    "mtime": 1790587497.7297525,
+    "ast_hash": "da822d6bf77b0b03af56e5bc6dceb3b8",
     "semantic_hash": ""
   },
   ".github/workflows/test.yml": {
@@ -5065,8 +5055,8 @@
     "semantic_hash": ""
   },
   "CLAUDE.md": {
-    "mtime": 1789382617.4410653,
-    "ast_hash": "e286d60d7f17b8eaa262c5a470c2f50f",
+    "mtime": 1791191422.8233643,
+    "ast_hash": "9469214c605a32c74a1d692be4bca4d9",
     "semantic_hash": ""
   },
   "DEVLOG_2026_04_30.md": {
@@ -5075,8 +5065,8 @@
     "semantic_hash": ""
   },
   "GEMINI.md": {
-    "mtime": 1789382617.4420674,
-    "ast_hash": "8752a2fc7c4ec1e88443d0a74cb2aca3",
+    "mtime": 1791191434.8031013,
+    "ast_hash": "9286e03c701ff09717a4f650f2a295d5",
     "semantic_hash": ""
   },
   "GROUP_TRAVEL_OS_OVERVIEW.md": {
@@ -5140,18 +5130,18 @@
     "semantic_hash": ""
   },
   "requirements-ci.txt": {
-    "mtime": 1783673402.4898405,
-    "ast_hash": "5ecfed084e20229355040d18df2b4e72",
+    "mtime": 1791454968.1251879,
+    "ast_hash": "4c0e33641281f2b7e5d046402ede5ca4",
     "semantic_hash": ""
   },
   "requirements-prod.txt": {
-    "mtime": 1781557118.7448475,
-    "ast_hash": "8c96a7f200f75b34caa5fdc9321e014f",
+    "mtime": 1790934504.4531214,
+    "ast_hash": "f7a2ffddd4dfbcb59b234af4d30b4417",
     "semantic_hash": ""
   },
   "requirements.txt": {
-    "mtime": 1781557118.745933,
-    "ast_hash": "0b4fb37fb2d1167ac48d80dd32f82362",
+    "mtime": 1790934504.4515593,
+    "ast_hash": "8d82f12250da65274a12718e622871b3",
     "semantic_hash": ""
   },
   "runtime.txt": {
@@ -5380,12 +5370,12 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/__tests__/live-saved-places-store.test.ts": {
-    "mtime": 1789635731.9671116,
+    "mtime": 1790500584.6000664,
     "ast_hash": "715b4434e2165b0a6183c4df5f996f5a",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/__tests__/live-tap-geocode-cache.test.ts": {
-    "mtime": 1790150004.6773863,
+    "mtime": 1790500584.6000664,
     "ast_hash": "daf2f255a5820a41906ac434570263ef",
     "semantic_hash": ""
   },
@@ -5410,12 +5400,12 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-saved-places-store.ts": {
-    "mtime": 1789635732.051335,
+    "mtime": 1790500584.6173284,
     "ast_hash": "c7a304bd88d58caa3ea2ff0d1910a218",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-tap-geocode-cache.ts": {
-    "mtime": 1790150004.6603353,
+    "mtime": 1790500584.6173284,
     "ast_hash": "69a83c1ef13c80ee6e1df7f3381c5af4",
     "semantic_hash": ""
   },
@@ -5540,7 +5530,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/__tests__/live-place-name-i18n.test.ts": {
-    "mtime": 1789635731.9605951,
+    "mtime": 1790500584.5990727,
     "ast_hash": "f6d2f70b587b9ef2ff3e7396ebd617cd",
     "semantic_hash": ""
   },
@@ -5565,7 +5555,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-place-name-i18n.ts": {
-    "mtime": 1789635732.02472,
+    "mtime": 1790500584.611781,
     "ast_hash": "383ecfaf845dd803f6b79c387cb24257",
     "semantic_hash": ""
   },
@@ -5575,7 +5565,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-preview-actions.ts": {
-    "mtime": 1789635732.0322323,
+    "mtime": 1790500584.6143048,
     "ast_hash": "9f1018adb4a0142387374e0b3ec5d7bc",
     "semantic_hash": ""
   },
@@ -5665,12 +5655,12 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/__tests__/live-map-style-switch.test.ts": {
-    "mtime": 1790150004.6483343,
+    "mtime": 1790500584.5980647,
     "ast_hash": "a645c690bf807cf284f701b7cacfd156",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-map-style-switch.ts": {
-    "mtime": 1789811286.977196,
+    "mtime": 1790500584.6094778,
     "ast_hash": "37e15e924daabc91fd6356c0a86f66ce",
     "semantic_hash": ""
   },
@@ -5720,7 +5710,7 @@
     "semantic_hash": ""
   },
   "app/services/flight_booking_service.py": {
-    "mtime": 1789383344.4645202,
+    "mtime": 1790500584.556072,
     "ast_hash": "b91a96e9ec4a147582a22f9c2d42867b",
     "semantic_hash": ""
   },
@@ -5810,7 +5800,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-travel-handoff.ts": {
-    "mtime": 1789635732.055819,
+    "mtime": 1790500584.6183236,
     "ast_hash": "46069f13db6af5ede32a57be9c4b12bd",
     "semantic_hash": ""
   },
@@ -5959,26 +5949,6 @@
     "ast_hash": "0ce301f4f791b6c80453bd523b7ec898",
     "semantic_hash": ""
   },
-  "tests/test_flight_booking.py": {
-    "mtime": 1789382617.8483088,
-    "ast_hash": "0864448a8ee8bb463becd0cae1442005",
-    "semantic_hash": ""
-  },
-  "tests/test_flight_meta_providers.py": {
-    "mtime": 1789382617.8493102,
-    "ast_hash": "27b0167ee35bd60dcf161d3c49365d2a",
-    "semantic_hash": ""
-  },
-  "tests/test_flight_offer_service_unit.py": {
-    "mtime": 1789382617.8503098,
-    "ast_hash": "42c2ec8d1339989084eb8949b6134a53",
-    "semantic_hash": ""
-  },
-  "tests/test_flight_offers.py": {
-    "mtime": 1789382617.8503098,
-    "ast_hash": "385a4cdbc83a4425a9e98cbdf664ebf8",
-    "semantic_hash": ""
-  },
   "tests/test_luxury_plan_routing.py": {
     "mtime": 1789382617.8523097,
     "ast_hash": "d88cd190982fa6b11dace449f25a8f45",
@@ -6055,8 +6025,8 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1789382617.4410653,
-    "ast_hash": "89a0c6845a4003b54717b1bf7ba87771",
+    "mtime": 1791964788.1474228,
+    "ast_hash": "ee50db5750cddc788a01538791a82924",
     "semantic_hash": ""
   },
   "qa-antarctica-battery-results.txt": {
@@ -6182,11 +6152,6 @@
   "frontend/lib/flight-journey-api.ts": {
     "mtime": 1789382617.8327875,
     "ast_hash": "1726168d0c61dca0927a1dc081281321",
-    "semantic_hash": ""
-  },
-  "tests/test_flight_journey_service_unit.py": {
-    "mtime": 1789383401.5098343,
-    "ast_hash": "f1dea67f7a562b6f08ba290c5baa7c71",
     "semantic_hash": ""
   },
   "frontend/components/travel/AirlineIdentity.tsx": {
@@ -6335,12 +6300,12 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore-v2/page.tsx": {
-    "mtime": 1789382617.5526223,
-    "ast_hash": "c61a52180f992cf55542b66c6c282b54",
+    "mtime": 1790500583.162614,
+    "ast_hash": "2c79ae53f9ef51921ff15c227f37d98c",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/[city]/events/page.tsx": {
-    "mtime": 1790158547.912119,
+    "mtime": 1790500584.562584,
     "ast_hash": "66c02551f929f4a6bd0175f054b96417",
     "semantic_hash": ""
   },
@@ -6350,37 +6315,37 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/activities/page.tsx": {
-    "mtime": 1790073663.9096167,
+    "mtime": 1790500584.5636058,
     "ast_hash": "56025bf6dacb516fda0f88487f45a43e",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/amusement/page.tsx": {
-    "mtime": 1790150004.6603353,
+    "mtime": 1790500584.5647264,
     "ast_hash": "f06f12cdc1889d26e18e7b9921e97d94",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/event/[id]/page.tsx": {
-    "mtime": 1790241350.4552886,
+    "mtime": 1790500584.569744,
     "ast_hash": "9f8c092eb87f759024891e7e6cf1be5f",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/events/page.tsx": {
-    "mtime": 1790150004.633725,
+    "mtime": 1790500584.5711563,
     "ast_hash": "2a1b67973c218a8ec8103c54c5dfee46",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/food/page.tsx": {
-    "mtime": 1790150004.6773863,
+    "mtime": 1790500584.5741813,
     "ast_hash": "929a6574f5b387f149ce04489e2b10f3",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/gaming/page.tsx": {
-    "mtime": 1790150004.6388218,
+    "mtime": 1790500584.5753672,
     "ast_hash": "b6f14248fed5716d43cda51313bae573",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/landmarks/page.tsx": {
-    "mtime": 1790150004.6603353,
+    "mtime": 1790500584.5758827,
     "ast_hash": "b20b306f929e6adbec3a1e33c19ecb68",
     "semantic_hash": ""
   },
@@ -6390,22 +6355,22 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/nightlife/page.tsx": {
-    "mtime": 1790150004.6307237,
+    "mtime": 1790500584.5758827,
     "ast_hash": "1f8bc464ca118ea742c5021715d42130",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/page.tsx": {
-    "mtime": 1790414959.5544963,
-    "ast_hash": "171624c658a4f1664665c56d66c40b6c",
+    "mtime": 1790500584.5771997,
+    "ast_hash": "1638de5948bf8bde903d33bc652e71ab",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/parks/page.tsx": {
-    "mtime": 1790150004.6773863,
+    "mtime": 1790500584.5782194,
     "ast_hash": "df0682ebddf9e566327cb962380dfaf7",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/shopping/page.tsx": {
-    "mtime": 1790150004.6152115,
+    "mtime": 1790500584.5792215,
     "ast_hash": "501b2bafed56e03aa45d45051b813923",
     "semantic_hash": ""
   },
@@ -6415,12 +6380,12 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/sports/page.tsx": {
-    "mtime": 1790073663.9107428,
+    "mtime": 1790500584.5806706,
     "ast_hash": "ef9e0569a84fb51418f2485431ba334c",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/trekking/page.tsx": {
-    "mtime": 1790150004.6388218,
+    "mtime": 1790500584.5816886,
     "ast_hash": "8980bb2fbd5e9db0e8253d784bbdc742",
     "semantic_hash": ""
   },
@@ -6500,12 +6465,12 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/layout.tsx": {
-    "mtime": 1789723482.8909464,
+    "mtime": 1790500584.5836916,
     "ast_hash": "3d59d3ad14cb594d27851e6d3d2dfc24",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/FarAwayPlacePanel.tsx": {
-    "mtime": 1789635731.9731207,
+    "mtime": 1790500584.584688,
     "ast_hash": "ea4308e52fefdb45ddc4acd32af48477",
     "semantic_hash": ""
   },
@@ -6535,7 +6500,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/LiveMapClickPopup.tsx": {
-    "mtime": 1790150004.659336,
+    "mtime": 1790500584.5856905,
     "ast_hash": "c97ce302a125133c104c0ac30e97af9d",
     "semantic_hash": ""
   },
@@ -6545,7 +6510,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/LiveMapComponent.tsx": {
-    "mtime": 1790150004.6773863,
+    "mtime": 1790500584.5866892,
     "ast_hash": "a8bb0fe008ca616dd25d2a12b3ee5d0e",
     "semantic_hash": ""
   },
@@ -6555,7 +6520,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/LiveMapLayerControl.tsx": {
-    "mtime": 1790150004.6483343,
+    "mtime": 1790500584.5885096,
     "ast_hash": "8a64d394a8605a0fd2a3f66f5f6c16ff",
     "semantic_hash": ""
   },
@@ -6570,7 +6535,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/LiveMapRightControls.tsx": {
-    "mtime": 1789896531.8523436,
+    "mtime": 1790500584.589527,
     "ast_hash": "4fdb7cacae90026dc76a02fc3db0ba01",
     "semantic_hash": ""
   },
@@ -6630,17 +6595,17 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/SoloLiveActivePanel.tsx": {
-    "mtime": 1790329500.9154718,
-    "ast_hash": "b6a11c415ed2feae68467dc2b8807d0e",
+    "mtime": 1790500584.5950482,
+    "ast_hash": "771a42d248cc1e6509e0edd339783436",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/SoloLiveNavigationOverlay.tsx": {
-    "mtime": 1790329654.124258,
-    "ast_hash": "0d4910ccebeab712d82ee4c97ff21b80",
+    "mtime": 1790500584.5950482,
+    "ast_hash": "984837602b63e1f4abdbde385984fd52",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/SoloRoutePreviewPanel.tsx": {
-    "mtime": 1789635732.082683,
+    "mtime": 1790500584.5960674,
     "ast_hash": "2bf5652b50d1eb75f39a0287340afc8d",
     "semantic_hash": ""
   },
@@ -6685,7 +6650,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/__tests__/live-map-style-switch.test.ts": {
-    "mtime": 1790150004.6483343,
+    "mtime": 1790500584.5980647,
     "ast_hash": "a645c690bf807cf284f701b7cacfd156",
     "semantic_hash": ""
   },
@@ -6700,12 +6665,12 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/__tests__/live-place-display.test.ts": {
-    "mtime": 1790150004.6483343,
+    "mtime": 1790500584.5990727,
     "ast_hash": "ecfa29f6defa2038e2ee74cb6f28ad19",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/__tests__/live-place-name-i18n.test.ts": {
-    "mtime": 1789635731.9605951,
+    "mtime": 1790500584.5990727,
     "ast_hash": "f6d2f70b587b9ef2ff3e7396ebd617cd",
     "semantic_hash": ""
   },
@@ -6720,7 +6685,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/__tests__/live-saved-places-store.test.ts": {
-    "mtime": 1789635731.9671116,
+    "mtime": 1790500584.6000664,
     "ast_hash": "715b4434e2165b0a6183c4df5f996f5a",
     "semantic_hash": ""
   },
@@ -6735,7 +6700,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/__tests__/live-tap-geocode-cache.test.ts": {
-    "mtime": 1790150004.6773863,
+    "mtime": 1790500584.6000664,
     "ast_hash": "daf2f255a5820a41906ac434570263ef",
     "semantic_hash": ""
   },
@@ -6750,8 +6715,8 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-clean-map-housenumbers.ts": {
-    "mtime": 1790150004.652335,
-    "ast_hash": "fa9014e7e90e4db53263970edf838375",
+    "mtime": 1790500584.601076,
+    "ast_hash": "251312c9ffec8e6584eed0a9a3798005",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-dark-map-labels.ts": {
@@ -6785,7 +6750,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-geocoding.ts": {
-    "mtime": 1790150004.6212265,
+    "mtime": 1790500584.6020641,
     "ast_hash": "6e093a1473a740d292037e051dbab965",
     "semantic_hash": ""
   },
@@ -6805,17 +6770,17 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-hybrid-roads-sync.ts": {
-    "mtime": 1789811287.0291898,
+    "mtime": 1790500584.6030746,
     "ast_hash": "3fbbda52d9f25ad013a552316fffd33b",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-immersive-chrome.ts": {
-    "mtime": 1789722745.4596286,
+    "mtime": 1790500584.6030746,
     "ast_hash": "55a00a9857fb89a85c7eeb6d0130836d",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-layout.ts": {
-    "mtime": 1789462657.808036,
+    "mtime": 1790500584.604211,
     "ast_hash": "230dc7bf7271dddd18f324ba8078a8fd",
     "semantic_hash": ""
   },
@@ -6825,7 +6790,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-map-attribution.ts": {
-    "mtime": 1790150004.6192162,
+    "mtime": 1790500584.604211,
     "ast_hash": "19f5da61c61254fa883cf2878a6590d0",
     "semantic_hash": ""
   },
@@ -6835,27 +6800,27 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-map-labels.ts": {
-    "mtime": 1790150004.6483343,
+    "mtime": 1790500584.605231,
     "ast_hash": "7dd96edd7b0a7e6ce39281e8b519cc6d",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-map-layer-preference.ts": {
-    "mtime": 1789811286.9886317,
+    "mtime": 1790500584.605231,
     "ast_hash": "3f34b45e1af271f71049a6524baa2115",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-map-pick-context.ts": {
-    "mtime": 1790150004.6252327,
+    "mtime": 1790500584.6069472,
     "ast_hash": "949ca1f92dfa715369057e28c6c58de3",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-map-right-controls.ts": {
-    "mtime": 1789722746.0956686,
+    "mtime": 1790500584.6069472,
     "ast_hash": "56950a9012c40b7a73caa79128894c3a",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-map-style-switch.ts": {
-    "mtime": 1789811286.977196,
+    "mtime": 1790500584.6094778,
     "ast_hash": "37e15e924daabc91fd6356c0a86f66ce",
     "semantic_hash": ""
   },
@@ -6900,12 +6865,12 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-place-display.ts": {
-    "mtime": 1790150004.627234,
+    "mtime": 1790500584.6107533,
     "ast_hash": "e91e95c11db6ff5fea4dc8cbb809bf56",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-place-enrich.ts": {
-    "mtime": 1789635732.0207193,
+    "mtime": 1790500584.6107533,
     "ast_hash": "887e36c90b0484c2fccba1af71c2499e",
     "semantic_hash": ""
   },
@@ -6915,12 +6880,12 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-place-media.ts": {
-    "mtime": 1789635732.0227225,
+    "mtime": 1790500584.611781,
     "ast_hash": "e66acd0f80a10d72c4e59c3d777bf4f3",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-place-name-i18n.ts": {
-    "mtime": 1789635732.02472,
+    "mtime": 1790500584.611781,
     "ast_hash": "383ecfaf845dd803f6b79c387cb24257",
     "semantic_hash": ""
   },
@@ -6930,17 +6895,17 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-poi-icons.ts": {
-    "mtime": 1790150004.6388218,
+    "mtime": 1790500584.6137834,
     "ast_hash": "44a2a152c6c4857ea6f06bbe380b1037",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-preview-actions.ts": {
-    "mtime": 1789635732.0322323,
+    "mtime": 1790500584.6143048,
     "ast_hash": "9f1018adb4a0142387374e0b3ec5d7bc",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-recent-searches.ts": {
-    "mtime": 1790150004.646333,
+    "mtime": 1790500584.615319,
     "ast_hash": "ef68a02bbab9c7e6e7aa917d31eb8750",
     "semantic_hash": ""
   },
@@ -6965,7 +6930,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-routing.ts": {
-    "mtime": 1789811287.0467987,
+    "mtime": 1790500584.6163263,
     "ast_hash": "311d910848675e2fa0f6d1f51f85fd38",
     "semantic_hash": ""
   },
@@ -6985,7 +6950,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-saved-places-store.ts": {
-    "mtime": 1789635732.051335,
+    "mtime": 1790500584.6173284,
     "ast_hash": "c7a304bd88d58caa3ea2ff0d1910a218",
     "semantic_hash": ""
   },
@@ -7020,12 +6985,12 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-tap-geocode-cache.ts": {
-    "mtime": 1790150004.6603353,
+    "mtime": 1790500584.6173284,
     "ast_hash": "69a83c1ef13c80ee6e1df7f3381c5af4",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-travel-handoff.ts": {
-    "mtime": 1789635732.055819,
+    "mtime": 1790500584.6183236,
     "ast_hash": "46069f13db6af5ede32a57be9c4b12bd",
     "semantic_hash": ""
   },
@@ -7050,12 +7015,12 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-types.ts": {
-    "mtime": 1790150004.6282346,
+    "mtime": 1790500584.6183236,
     "ast_hash": "c7b86d7a0e20513dc9aab8791ea66c0d",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/page.tsx": {
-    "mtime": 1790150004.6307237,
+    "mtime": 1790500584.6193268,
     "ast_hash": "ae19166306a510fa6def405bc4ca0669",
     "semantic_hash": ""
   },
@@ -7065,7 +7030,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/route-intelligence.ts": {
-    "mtime": 1789635732.0766833,
+    "mtime": 1790500584.6203277,
     "ast_hash": "ff3a86fc1590a5f50f17ddf890455822",
     "semantic_hash": ""
   },
@@ -7105,7 +7070,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/profile/page.tsx": {
-    "mtime": 1789725268.8457005,
+    "mtime": 1790500584.622429,
     "ast_hash": "847a438ea7920fde0386924c77e49591",
     "semantic_hash": ""
   },
@@ -7325,8 +7290,8 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/settings/wayra-ai/page.tsx": {
-    "mtime": 1781777543.8535872,
-    "ast_hash": "01f01c2d78cee674da081325926db397",
+    "mtime": 1790504792.6120825,
+    "ast_hash": "2cfc6f7cbd4a9391561207b49abc06da",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/split-activities/page.tsx": {
@@ -7635,8 +7600,8 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/components/ai/AIAssistantSidecar.tsx": {
-    "mtime": 1790414895.1116736,
-    "ast_hash": "e68632bf2961d16125ac206f402be23e",
+    "mtime": 1790504743.0567367,
+    "ast_hash": "1b4402ecc1eea88fd7dc2c54ec8be486",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/components/auth/AuthExploreLayout.tsx": {
@@ -7730,7 +7695,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/components/explorer/ExploreCardImage.tsx": {
-    "mtime": 1790241849.563273,
+    "mtime": 1790500584.626962,
     "ast_hash": "321700e6f61d8c56058dd22fa36ccfcd",
     "semantic_hash": ""
   },
@@ -8235,7 +8200,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/components/ui/WayraIcon.tsx": {
-    "mtime": 1789462484.2925007,
+    "mtime": 1790500584.627887,
     "ast_hash": "134c88d5a539c296a4f75d796808a754",
     "semantic_hash": ""
   },
@@ -8280,7 +8245,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/data/live_search_taxonomy.json": {
-    "mtime": 1790150004.6398237,
+    "mtime": 1790500584.627887,
     "ast_hash": "1c5ee7ccc251625991ad4a582d9436bf",
     "semantic_hash": ""
   },
@@ -8370,7 +8335,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/lib/api.ts": {
-    "mtime": 1789382634.0171385,
+    "mtime": 1790500584.629919,
     "ast_hash": "97ad51bc2480be8f5773a34624fc9006",
     "semantic_hash": ""
   },
@@ -8425,7 +8390,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/lib/explore-events.ts": {
-    "mtime": 1790241314.5952623,
+    "mtime": 1790500584.630918,
     "ast_hash": "3e22087b6919a9e8f3240d2e7e917a2a",
     "semantic_hash": ""
   },
@@ -8510,8 +8475,8 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/lib/live-foot-routes.ts": {
-    "mtime": 1789811688.1795676,
-    "ast_hash": "b23af7c9a4ce303de94efae44977eb70",
+    "mtime": 1790500584.6319215,
+    "ast_hash": "34df5bb0181a1f257503cea4ccf014dd",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/lib/live-sea-routes-data.ts": {
@@ -8655,7 +8620,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/lib/map-providers.ts": {
-    "mtime": 1789812021.0585961,
+    "mtime": 1790500584.6339173,
     "ast_hash": "2af4a95cbf3d9f8b52e3a0e384295f3d",
     "semantic_hash": ""
   },
@@ -8680,8 +8645,8 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/lib/open-wayra.ts": {
-    "mtime": 1789382617.8388004,
-    "ast_hash": "435a79264e51b8101dcf65e79623b3e0",
+    "mtime": 1790504743.055733,
+    "ast_hash": "6c17c075198d1def2dc857966113f072",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/lib/place-enrichment.ts": {
@@ -8810,7 +8775,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/lib/wayra/place-region.ts": {
-    "mtime": 1790150004.6182103,
+    "mtime": 1790500584.6349192,
     "ast_hash": "c67d98ddfc0cd9ba3815fdcc66f08d65",
     "semantic_hash": ""
   },
@@ -8835,12 +8800,12 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/next.config.ts": {
-    "mtime": 1789723808.1672294,
+    "mtime": 1790500584.6349192,
     "ast_hash": "425f2394cea884f959c2a245d64caec0",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/package.json": {
-    "mtime": 1790241857.8666193,
+    "mtime": 1790500584.6399245,
     "ast_hash": "c27351e73ee962c5914ae0f616c2e895",
     "semantic_hash": ""
   },
@@ -8880,7 +8845,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/vitest.config.ts": {
-    "mtime": 1790241849.104542,
+    "mtime": 1790500584.6409187,
     "ast_hash": "90bd827c3b1a938f0edb56c53175fe3e",
     "semantic_hash": ""
   },
@@ -8942,11 +8907,6 @@
   "frontend/lib/flight-recent-airports.ts": {
     "mtime": 1789382617.833794,
     "ast_hash": "cae0584a1a59ce49f9962d154e02a2d7",
-    "semantic_hash": ""
-  },
-  "tests/test_flight_places.py": {
-    "mtime": 1789382617.8503098,
-    "ast_hash": "0f90474fc2cda4a9beba63d478806c8c",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/AGENTS.md": {
@@ -9144,11 +9104,6 @@
     "ast_hash": "8d54f0ca3bfb61f4e2d09690558d368a",
     "semantic_hash": ""
   },
-  "tests/test_flight_metasearch.py": {
-    "mtime": 1789383394.7778294,
-    "ast_hash": "e40e3346f318e9974ed4dcf4ef231716",
-    "semantic_hash": ""
-  },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/lib/__tests__/flight-phase2-connections.test.ts": {
     "mtime": 1789382617.8262844,
     "ast_hash": "0589f0f61fab072e7cde21b8b53d1c24",
@@ -9184,11 +9139,6 @@
     "ast_hash": "ff86cca5d126d3e548dc9a5fb9b55e39",
     "semantic_hash": ""
   },
-  "tests/test_flight_phase2_connections.py": {
-    "mtime": 1789382617.8503098,
-    "ast_hash": "7c96dc6f01b5682aa81d7cc355a75d95",
-    "semantic_hash": ""
-  },
   "scripts/verify_ord_hba_acceptance.py": {
     "mtime": 1789382617.8483088,
     "ast_hash": "b64a89523f4b75b8e444302ffee626b4",
@@ -9205,7 +9155,7 @@
     "semantic_hash": ""
   },
   "app/services/flight_providers/registry.py": {
-    "mtime": 1789383319.2341945,
+    "mtime": 1790500584.5580735,
     "ast_hash": "74db87227b034143c3fde9ddb5b629a5",
     "semantic_hash": ""
   },
@@ -9217,11 +9167,6 @@
   "frontend/lib/__tests__/flight-provider-ui.test.ts": {
     "mtime": 1789382617.8272822,
     "ast_hash": "30083c540de956af691d6771cb246968",
-    "semantic_hash": ""
-  },
-  "tests/test_flight_provider_registry.py": {
-    "mtime": 1789383346.6660645,
-    "ast_hash": "9e8a9dfaf3bcde0c7d085374c84ce1b7",
     "semantic_hash": ""
   },
   "scripts/build_flight_provider_catalog.py": {
@@ -9264,11 +9209,6 @@
     "ast_hash": "0ee8967ff314b6b80cdc01897de9238a",
     "semantic_hash": ""
   },
-  "tests/test_flight_provider_directory.py": {
-    "mtime": 1789382617.8503098,
-    "ast_hash": "3237664610c3288f7e138db0bb90c608",
-    "semantic_hash": ""
-  },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/lib/__tests__/flight-amadeus-ui.test.ts": {
     "mtime": 1789382617.8232768,
     "ast_hash": "f6f6b31c6477837919e8273d086679c8",
@@ -9292,11 +9232,6 @@
   "frontend/lib/__tests__/flight-amadeus-ui.test.ts": {
     "mtime": 1789382617.8232768,
     "ast_hash": "f6f6b31c6477837919e8273d086679c8",
-    "semantic_hash": ""
-  },
-  "tests/test_amadeus_provider.py": {
-    "mtime": 1789382617.8483088,
-    "ast_hash": "a776b87d14eb2769051dc6f72e9fb7f9",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/lib/__tests__/flight-result-curation.test.ts": {
@@ -9375,8 +9310,8 @@
     "semantic_hash": ""
   },
   "Scram Book/README.md": {
-    "mtime": 1789382617.4463124,
-    "ast_hash": "dd3942c22d33c05aa5a4e4b5a4223e26",
+    "mtime": 1790589605.486552,
+    "ast_hash": "897681d7ecf40b53ed7c936e103e5e1a",
     "semantic_hash": ""
   },
   "graphify-out/converted/Rovvy_Travel_Flights_Scrum_Plan_b6974248.md": {
@@ -9400,8 +9335,8 @@
     "semantic_hash": ""
   },
   "Scram Book/Explorer Tab/README.md": {
-    "mtime": 1790418638.5722594,
-    "ast_hash": "1e668b446aa6aa1a2157e0c22dc8279c",
+    "mtime": 1791965832.8333533,
+    "ast_hash": "7df39b2bc4c63183db348210033777ef",
     "semantic_hash": ""
   },
   "Scram Book/Travel Tab/FL-045_WhiteLabel_Rollback.md": {
@@ -9485,7 +9420,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/HeroLocationWidget.tsx": {
-    "mtime": 1790157609.3269668,
+    "mtime": 1790500584.5610685,
     "ast_hash": "cd4113aa09a3aa32f19358c0af28dc2e",
     "semantic_hash": ""
   },
@@ -9500,7 +9435,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/components/ExploreDetailDrawer.tsx": {
-    "mtime": 1790329366.4297554,
+    "mtime": 1790500584.5647264,
     "ast_hash": "1c6cdf8c02ebebab5558602ad80085a9",
     "semantic_hash": ""
   },
@@ -9515,37 +9450,37 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/components/ExploreRankingRow.tsx": {
-    "mtime": 1790072799.2765288,
+    "mtime": 1790500584.5657449,
     "ast_hash": "58fb168c22d3be0f4b3eed5b4d6dd2c6",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/components/ExploreSavedBar.tsx": {
-    "mtime": 1790415021.936996,
-    "ast_hash": "e07aa8c3d646258aec52e71a02820e26",
+    "mtime": 1790500584.5667405,
+    "ast_hash": "8ee15f39aa268bca87b65d4a1b063fe3",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/components/ExploreSlotCard.tsx": {
-    "mtime": 1790414888.2349877,
-    "ast_hash": "1ab51ff4f6c8bfb04cf00213c6c9f6f0",
+    "mtime": 1790500584.5667405,
+    "ast_hash": "b06b0770225f5c404e3d4031dc9aac25",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/components/ExploreWayraPlanCard.tsx": {
-    "mtime": 1790072020.6100008,
+    "mtime": 1790500584.5677469,
     "ast_hash": "fd97db1d90c94e88471e6c181f9afde3",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/explore-fixtures.ts": {
-    "mtime": 1790412628.6286972,
-    "ast_hash": "cfa6979103305fc286b292c4a4a9720d",
+    "mtime": 1790500584.572186,
+    "ast_hash": "ba4fa586970d3bb9213b4dd1a6160528",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/explore-hub-data.ts": {
-    "mtime": 1790412316.0147333,
-    "ast_hash": "135bb4a8c8f9e5038a919370c7d66e7c",
+    "mtime": 1790500584.572186,
+    "ast_hash": "aa5ba7ed8653a63c3d0ae91f2f9de219",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/use-explore-hub.ts": {
-    "mtime": 1790328483.221702,
+    "mtime": 1790500584.5826893,
     "ast_hash": "8fb8d485f13f88324a3125eaec117dc4",
     "semantic_hash": ""
   },
@@ -9575,8 +9510,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/HeroLocationWidget.tsx": {
-    "mtime": 1790157609.3269668,
-    "ast_hash": "cd4113aa09a3aa32f19358c0af28dc2e",
+    "mtime": 1791534319.2400491,
+    "ast_hash": "5ea2347a6c8fa443a5dbfd02e62c46cc",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/components/ExploreAskCard.tsx": {
@@ -9590,8 +9525,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/components/ExploreDetailDrawer.tsx": {
-    "mtime": 1790329366.4297554,
-    "ast_hash": "1c6cdf8c02ebebab5558602ad80085a9",
+    "mtime": 1791536264.2729235,
+    "ast_hash": "72f695121362188e5d05bb8c09e5e24b",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/components/ExploreFilterChip.tsx": {
@@ -9600,43 +9535,43 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/components/ExploreProviderBadge.tsx": {
-    "mtime": 1789382617.5556264,
-    "ast_hash": "08e973b7477f0ada49516b7f6653ce4d",
+    "mtime": 1791537171.0601585,
+    "ast_hash": "42c78dd6f81a707be74025dd09c81038",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/components/ExploreRankingRow.tsx": {
-    "mtime": 1790072799.2765288,
+    "mtime": 1790500584.5657449,
     "ast_hash": "58fb168c22d3be0f4b3eed5b4d6dd2c6",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/components/ExploreSavedBar.tsx": {
-    "mtime": 1790415021.936996,
-    "ast_hash": "e07aa8c3d646258aec52e71a02820e26",
+    "mtime": 1790500584.5667405,
+    "ast_hash": "8ee15f39aa268bca87b65d4a1b063fe3",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/components/ExploreSlotCard.tsx": {
-    "mtime": 1790414888.2349877,
-    "ast_hash": "1ab51ff4f6c8bfb04cf00213c6c9f6f0",
+    "mtime": 1791538294.7248826,
+    "ast_hash": "0853a51a67fb45df56bde9703d115026",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/components/ExploreWayraPlanCard.tsx": {
-    "mtime": 1790072020.6100008,
+    "mtime": 1790500584.5677469,
     "ast_hash": "fd97db1d90c94e88471e6c181f9afde3",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/explore-fixtures.ts": {
-    "mtime": 1790412628.6286972,
-    "ast_hash": "cfa6979103305fc286b292c4a4a9720d",
+    "mtime": 1791538286.1247153,
+    "ast_hash": "e405b8df8076401f38c70334dd3e20e0",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/explore-hub-data.ts": {
-    "mtime": 1790412316.0147333,
-    "ast_hash": "135bb4a8c8f9e5038a919370c7d66e7c",
+    "mtime": 1791799704.60597,
+    "ast_hash": "2c77ca4fbdaafb62effe4c05fefb5910",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/use-explore-hub.ts": {
-    "mtime": 1790328483.221702,
-    "ast_hash": "8fb8d485f13f88324a3125eaec117dc4",
+    "mtime": 1791539838.233946,
+    "ast_hash": "efc1a9be44f9e189b80558f45fbe79b6",
     "semantic_hash": ""
   },
   "frontend/app/api/hero/route.ts": {
@@ -9685,7 +9620,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/LiveDockRail.tsx": {
-    "mtime": 1790150004.6603353,
+    "mtime": 1790500584.584688,
     "ast_hash": "986fd48523b0ce640ee3b34df9f466a9",
     "semantic_hash": ""
   },
@@ -9705,12 +9640,12 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/LiveLeftDock.tsx": {
-    "mtime": 1789811286.9952917,
+    "mtime": 1790500584.5856905,
     "ast_hash": "da6e6194ec129ef50ce9961eadfdb9bf",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/LiveNearbyList.tsx": {
-    "mtime": 1789635732.0683537,
+    "mtime": 1790500584.5905375,
     "ast_hash": "cfe72e437bd8bbe477e5468c84ac8419",
     "semantic_hash": ""
   },
@@ -9720,8 +9655,8 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/LivePageClient.tsx": {
-    "mtime": 1790150004.6483343,
-    "ast_hash": "6e2df1b902e2deeb008aba26fee26b6b",
+    "mtime": 1790500584.592528,
+    "ast_hash": "51ca4cbdba3f5178b8168a3c23c1591c",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/LiveReportModal.tsx": {
@@ -9735,7 +9670,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/LiveSetupPanel.tsx": {
-    "mtime": 1789811287.04151,
+    "mtime": 1790500584.5945313,
     "ast_hash": "a430b4c391bcfbe0fda27569596b53ef",
     "semantic_hash": ""
   },
@@ -9790,8 +9725,8 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/__tests__/live-map-layer-preference.test.ts": {
-    "mtime": 1789811688.291191,
-    "ast_hash": "5d953eab31238e90f7774af93908ff4e",
+    "mtime": 1790500584.5970657,
+    "ast_hash": "ba2875941cf5f3eb5f56f37839f1aa7d",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/__tests__/live-map-place-marker.test.ts": {
@@ -9800,8 +9735,8 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/__tests__/live-navigation-maneuver.test.ts": {
-    "mtime": 1790329655.1146104,
-    "ast_hash": "55fe26a1403f9336d90d5ff82f745129",
+    "mtime": 1790500584.5980647,
+    "ast_hash": "f347104735877c0c2127214569edd28f",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/__tests__/live-night-finished.test.ts": {
@@ -9865,7 +9800,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-dock-stages.ts": {
-    "mtime": 1790150004.6252327,
+    "mtime": 1790500584.601076,
     "ast_hash": "84766a02f4ec7b2b0cd580546c47fe06",
     "semantic_hash": ""
   },
@@ -9930,8 +9865,8 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-navigation-maneuver.ts": {
-    "mtime": 1790329478.9878092,
-    "ast_hash": "06d2f0e032ec3f3d8d5fda522a79e48e",
+    "mtime": 1790500584.6094778,
+    "ast_hash": "a1fdb5f5f2f1cb1353a64d56bf51ba1b",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/live/live-night-finished.ts": {
@@ -10035,7 +9970,7 @@
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/lib/__tests__/map-providers-openfreemap.test.ts": {
-    "mtime": 1790150004.6473365,
+    "mtime": 1790500584.6288998,
     "ast_hash": "03b3a664da0a80f0980d310411bf4290",
     "semantic_hash": ""
   },
@@ -10105,7 +10040,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/LiveDockRail.tsx": {
-    "mtime": 1790150004.6603353,
+    "mtime": 1790500584.584688,
     "ast_hash": "986fd48523b0ce640ee3b34df9f466a9",
     "semantic_hash": ""
   },
@@ -10125,12 +10060,12 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/LiveLeftDock.tsx": {
-    "mtime": 1789811286.9952917,
+    "mtime": 1790500584.5856905,
     "ast_hash": "da6e6194ec129ef50ce9961eadfdb9bf",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/LiveNearbyList.tsx": {
-    "mtime": 1789635732.0683537,
+    "mtime": 1790500584.5905375,
     "ast_hash": "cfe72e437bd8bbe477e5468c84ac8419",
     "semantic_hash": ""
   },
@@ -10140,8 +10075,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/LivePageClient.tsx": {
-    "mtime": 1790150004.6483343,
-    "ast_hash": "6e2df1b902e2deeb008aba26fee26b6b",
+    "mtime": 1791193525.294009,
+    "ast_hash": "1ae9430e3a6bfb63dcb444367b0fc469",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/LiveReportModal.tsx": {
@@ -10155,7 +10090,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/LiveSetupPanel.tsx": {
-    "mtime": 1789811287.04151,
+    "mtime": 1790500584.5945313,
     "ast_hash": "a430b4c391bcfbe0fda27569596b53ef",
     "semantic_hash": ""
   },
@@ -10210,8 +10145,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/__tests__/live-map-layer-preference.test.ts": {
-    "mtime": 1789811688.291191,
-    "ast_hash": "5d953eab31238e90f7774af93908ff4e",
+    "mtime": 1790500584.5970657,
+    "ast_hash": "ba2875941cf5f3eb5f56f37839f1aa7d",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/__tests__/live-map-place-marker.test.ts": {
@@ -10220,8 +10155,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/__tests__/live-navigation-maneuver.test.ts": {
-    "mtime": 1790329655.1146104,
-    "ast_hash": "55fe26a1403f9336d90d5ff82f745129",
+    "mtime": 1790500584.5980647,
+    "ast_hash": "f347104735877c0c2127214569edd28f",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/__tests__/live-night-finished.test.ts": {
@@ -10285,7 +10220,7 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-dock-stages.ts": {
-    "mtime": 1790150004.6252327,
+    "mtime": 1790500584.601076,
     "ast_hash": "84766a02f4ec7b2b0cd580546c47fe06",
     "semantic_hash": ""
   },
@@ -10350,8 +10285,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-navigation-maneuver.ts": {
-    "mtime": 1790329478.9878092,
-    "ast_hash": "06d2f0e032ec3f3d8d5fda522a79e48e",
+    "mtime": 1790500584.6094778,
+    "ast_hash": "a1fdb5f5f2f1cb1353a64d56bf51ba1b",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-night-finished.ts": {
@@ -10455,7 +10390,7 @@
     "semantic_hash": ""
   },
   "frontend/lib/__tests__/map-providers-openfreemap.test.ts": {
-    "mtime": 1790150004.6473365,
+    "mtime": 1790500584.6288998,
     "ast_hash": "03b3a664da0a80f0980d310411bf4290",
     "semantic_hash": ""
   },
@@ -10505,8 +10440,8 @@
     "semantic_hash": ""
   },
   "Scram Book/Live Tab/README.md": {
-    "mtime": 1790329730.2453377,
-    "ast_hash": "38b990411a41c0e4d74ab0155417363c",
+    "mtime": 1790507945.4127367,
+    "ast_hash": "9bf307d0c25cdd80074c74b7cd674551",
     "semantic_hash": ""
   },
   "Scram Book/Live Tab/Rovvy_Live_Tab_Technical_Documentation.md": {
@@ -10525,8 +10460,8 @@
     "semantic_hash": ""
   },
   "Scram Book/Live Tab/Rovvy_OpenFreeMap_Self_Host.md": {
-    "mtime": 1789811688.420241,
-    "ast_hash": "1b8235dd67b31c182e0e2028e133afbd",
+    "mtime": 1790500584.5470507,
+    "ast_hash": "ca1b299ea471f9f4aee69ba0617690b1",
     "semantic_hash": ""
   },
   "Scram Book/Live Tab/design/Rovvy_Live_v2_reference.html": {
@@ -11200,8 +11135,8 @@
     "semantic_hash": ""
   },
   "app/services/place_spine_service.py": {
-    "mtime": 1789811688.317931,
-    "ast_hash": "20cc39e7c15f639330d4982b22167e2b",
+    "mtime": 1790847647.9439209,
+    "ast_hash": "96784a70adcdf7d9c0f6fa51073d0f43",
     "semantic_hash": ""
   },
   "app/services/ride_cost_service.py": {
@@ -11270,8 +11205,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/__tests__/explore-hub-v6-map.test.ts": {
-    "mtime": 1790240732.7368731,
-    "ast_hash": "beec0bbb7fe451476e54f8c58be8ae07",
+    "mtime": 1791538288.8456156,
+    "ast_hash": "4ca662246845b8b4394f7babc46ee937",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/__tests__/explore-location-catalog.test.ts": {
@@ -11315,8 +11250,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/explore-hub-v6-map.ts": {
-    "mtime": 1790328523.9219298,
-    "ast_hash": "d256bb6b1de9acbfde719be528175b82",
+    "mtime": 1791799590.462932,
+    "ast_hash": "5fd934cf1a5e8f9d6d9cb449c75533af",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/explore-location-catalog.ts": {
@@ -11325,8 +11260,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/explore-location-scope.ts": {
-    "mtime": 1790071913.5253751,
-    "ast_hash": "582f0cefd377fb98c298655dd7aae00e",
+    "mtime": 1791535166.9018612,
+    "ast_hash": "1300d6d3ee0e276db459bd7c078ff10e",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/explore-open-listing.ts": {
@@ -11425,8 +11360,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/__tests__/live-place-spine-seed.test.ts": {
-    "mtime": 1790150004.6763875,
-    "ast_hash": "900ed37c48fff4dfa101e26802fb0642",
+    "mtime": 1791193283.4579804,
+    "ast_hash": "d38c1996d0a4b5e611e61baf9ad2c9d2",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/__tests__/live-place-spine.test.ts": {
@@ -11545,8 +11480,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-place-spine-seed.ts": {
-    "mtime": 1790150004.6483343,
-    "ast_hash": "aa7277a2a92f19b331408fdd89f9b7df",
+    "mtime": 1791193277.704007,
+    "ast_hash": "59cdf4ef4dada24609025e64e8241a99",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/live/live-place-spine.ts": {
@@ -11855,8 +11790,8 @@
     "semantic_hash": ""
   },
   "scripts/05_enrich_wikidata.py": {
-    "mtime": 1790150004.6307237,
-    "ast_hash": "fbe046091f5f3008de86eee5b3793fcd",
+    "mtime": 1791794109.6754353,
+    "ast_hash": "0de442184ad8faa7532add24d294f16b",
     "semantic_hash": ""
   },
   "scripts/05_resync.py": {
@@ -11975,8 +11910,8 @@
     "semantic_hash": ""
   },
   "Scram Book/Collection Tab/README.md": {
-    "mtime": 1790150004.6773863,
-    "ast_hash": "5761bb9fee3dad49a4b1410c96ce49cd",
+    "mtime": 1790507946.4185894,
+    "ast_hash": "bdd980d4b5d0a1b1ac0ec3bbb5db6044",
     "semantic_hash": ""
   },
   "Scram Book/Explorer Tab/Explore_Feature_Priority_Audit.md": {
@@ -11990,8 +11925,8 @@
     "semantic_hash": ""
   },
   "Scram Book/Seats Tab/README.md": {
-    "mtime": 1790150004.6388218,
-    "ast_hash": "cf98f58037a78cc0f163425787d9ded8",
+    "mtime": 1790507946.710406,
+    "ast_hash": "d94df41d1dbb9b4608fef14c825f6611",
     "semantic_hash": ""
   },
   "Scram Book/Wayra AI/GPT-6_Astra_Migration_Plan.md": {
@@ -12105,8 +12040,8 @@
     "semantic_hash": ""
   },
   "graphify-out/converted/Rovvy_Explorer_Scrum_Book_3a0cd46c.md": {
-    "mtime": 1790330470.2537768,
-    "ast_hash": "0653fc19c6bbe148e0e2d5c0153d409f",
+    "mtime": 1791965853.4631565,
+    "ast_hash": "fa33331611653d7ed4b8a17f1395057b",
     "semantic_hash": ""
   },
   ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/app/(dashboard)/explore/__tests__/explore-freshness-copy.test.ts": {
@@ -12245,13 +12180,13 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/__tests__/explore-hub-counts.test.ts": {
-    "mtime": 1790240755.5588517,
-    "ast_hash": "e335152bca783b1c9a995d26a2ac54ec",
+    "mtime": 1791799704.828803,
+    "ast_hash": "f1679251a7046d3e3094ed1810458fd8",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/__tests__/explore-hub-fetch-state.test.ts": {
-    "mtime": 1790412328.2491755,
-    "ast_hash": "3ef6d843e95673d713a0994b2522e7bc",
+    "mtime": 1791539845.679963,
+    "ast_hash": "000aebec37bbea64340ca650cd0882ef",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/__tests__/explore-test-date-fixtures.ts": {
@@ -12300,13 +12235,13 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/__tests__/explore-unknown-field-states.test.ts": {
-    "mtime": 1790241378.8877318,
-    "ast_hash": "d63fc559657b46fe4fa009b63649be2e",
+    "mtime": 1791451993.1519105,
+    "ast_hash": "fd707e71b9434fc00c23641b90f2b9d1",
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/explore-listing-field-state.ts": {
-    "mtime": 1790241378.1669452,
-    "ast_hash": "d2bc88e8ea32d58691627414e1933320",
+    "mtime": 1791538310.1772125,
+    "ast_hash": "9bc88ea67b1ad4f3679a9288a323c5f0",
     "semantic_hash": ""
   },
   "outputs/live-audit-20260924/build.mjs": {
@@ -12335,8 +12270,8 @@
     "semantic_hash": ""
   },
   "graphify-out/converted/Rovvy_Live_Scrum_Book_dc11030d.md": {
-    "mtime": 1790329764.3772535,
-    "ast_hash": "b28593da79b1ca07f84a7f4a6709c8f5",
+    "mtime": 1790589541.9307406,
+    "ast_hash": "fb181788c931b258c403ccf564fb2f19",
     "semantic_hash": ""
   },
   "outputs/live-audit-20260924/evidence.png": {
@@ -12380,8 +12315,8 @@
     "semantic_hash": ""
   },
   "app/services/explore_place_spine_service.py": {
-    "mtime": 1790412312.6668262,
-    "ast_hash": "b883e1c7fe117bc59dd271f0c81b693b",
+    "mtime": 1791794107.0514975,
+    "ast_hash": "1771bdab75ed67cd4487b7f212ae3557",
     "semantic_hash": ""
   },
   "app/services/place_ingest_run_service.py": {
@@ -12400,8 +12335,8 @@
     "semantic_hash": ""
   },
   "frontend/app/(dashboard)/explore/explore-hub-places-overture.ts": {
-    "mtime": 1790242645.3676355,
-    "ast_hash": "60bdc5ad712542e0419eb4c4b662de6e",
+    "mtime": 1790848617.0435114,
+    "ast_hash": "d0abf2eadcfc9b2c4062ec7c8e5ef5be",
     "semantic_hash": ""
   },
   "scratch/update_explorer_workbook_g01_g02.py": {
@@ -12420,8 +12355,8 @@
     "semantic_hash": ""
   },
   "tests/test_explore_place_spine.py": {
-    "mtime": 1790412341.3279529,
-    "ast_hash": "96a6a9524731342088295b55ada617e4",
+    "mtime": 1791794124.5516546,
+    "ast_hash": "8f38deb50b8d0942354f4285f108259a",
     "semantic_hash": ""
   },
   "tests/test_publish_places_r2.py": {
@@ -12450,8 +12385,8 @@
     "semantic_hash": ""
   },
   "tests/test_place_ingest_freshness_scoping.py": {
-    "mtime": 1790243248.6955092,
-    "ast_hash": "269e7e05b14e93bc974a436c1bb0eacf",
+    "mtime": 1790934114.8249083,
+    "ast_hash": "3cd50759a6dcc16f67b9004825ac894e",
     "semantic_hash": ""
   },
   "tests/test_place_ingest_runs_db.py": {
@@ -12580,18 +12515,18 @@
     "semantic_hash": ""
   },
   "scaper/__main__.py": {
-    "mtime": 1790417468.3845806,
-    "ast_hash": "f7b6854f8b5f2179ca5b72876c76cad2",
+    "mtime": 1791794108.5643463,
+    "ast_hash": "00fe0436eaa592cb1048954d6c2be513",
     "semantic_hash": ""
   },
   "scaper/config.py": {
-    "mtime": 1790417453.022109,
-    "ast_hash": "36e8479486ff26f6bad68033123c9bca",
+    "mtime": 1790419431.492547,
+    "ast_hash": "f3a63ae9513cc2c6a73a73166edac1b5",
     "semantic_hash": ""
   },
   "scaper/connectors/__init__.py": {
-    "mtime": 1790417452.995605,
-    "ast_hash": "54f96c7e295b5cccf13ed34c3a90c0ad",
+    "mtime": 1790419431.492547,
+    "ast_hash": "f28454cc3bf3d41fd862011303ebcd10",
     "semantic_hash": ""
   },
   "scaper/connectors/base.py": {
@@ -12610,43 +12545,658 @@
     "semantic_hash": ""
   },
   "scaper/models.py": {
-    "mtime": 1790418107.200902,
-    "ast_hash": "7cc86be1204914ba6ddd467d08f97717",
+    "mtime": 1791794081.5438201,
+    "ast_hash": "0facf824c3851feaf03be81c6e428d56",
     "semantic_hash": ""
   },
   "scaper/pipeline.py": {
-    "mtime": 1790418107.2039025,
-    "ast_hash": "c9023d75c5743eed561f2eac295bdb25",
+    "mtime": 1791452974.1398866,
+    "ast_hash": "a0a8d253d580c9832a233675dd528d02",
     "semantic_hash": ""
   },
   "scaper/store.py": {
-    "mtime": 1790418107.202898,
-    "ast_hash": "80947d6f0bcf100d7d6f51ee771ea3e4",
+    "mtime": 1791796129.6836715,
+    "ast_hash": "910745180f037f0974e22e309405328f",
     "semantic_hash": ""
   },
   "tests/scaper_fixtures.py": {
-    "mtime": 1790417518.9081562,
-    "ast_hash": "591fa4e093123143d9fe4b3caff5f1b4",
+    "mtime": 1791796458.5530987,
+    "ast_hash": "73b52ed5ad8ad400601d8da1b085f9a2",
     "semantic_hash": ""
   },
   "tests/test_scaper_eventbrite.py": {
-    "mtime": 1790417658.4232233,
-    "ast_hash": "4c52b18c9ef3a17678e15a8ef70b9b54",
+    "mtime": 1791191930.3538644,
+    "ast_hash": "b5d286c7b907fe92ad00285d03136962",
     "semantic_hash": ""
   },
   "tests/test_scaper_pipeline.py": {
-    "mtime": 1790418107.2039025,
-    "ast_hash": "605541b9c84331e2d47cfcac3d1428b4",
+    "mtime": 1791534109.7324133,
+    "ast_hash": "b64a159194116ae535c266fdb94b8364",
     "semantic_hash": ""
   },
   "tests/test_scaper_postgres.py": {
-    "mtime": 1790418107.205376,
-    "ast_hash": "f2b494ee70fc83ea9d43bd7bc5a182a8",
+    "mtime": 1791534109.7324133,
+    "ast_hash": "752f5e7d54873ec27c43057639fcbe60",
     "semantic_hash": ""
   },
   "Scram Book/Explorer Tab/Scaper_Connector_Architecture.md": {
-    "mtime": 1790418638.5728593,
-    "ast_hash": "8dca8d5d3f9a52a9062c4499d1f2d1fb",
+    "mtime": 1790419534.8173351,
+    "ast_hash": "694a0c5cd589c0ab23e247c9fe909a07",
+    "semantic_hash": ""
+  },
+  "app/services/explore_scaper_events.py": {
+    "mtime": 1791965834.041569,
+    "ast_hash": "8498aa6c176aacd6dc7eabd1aaf2f9d3",
+    "semantic_hash": ""
+  },
+  "migrations/009_scaper_dedup.sql": {
+    "mtime": 1790421128.3236427,
+    "ast_hash": "88406f1a3122abe7f45223a58f20adb6",
+    "semantic_hash": ""
+  },
+  "scaper/connectors/ticketmaster.py": {
+    "mtime": 1791794081.6375976,
+    "ast_hash": "c747126ad9006129aa9c47327e20f2d1",
+    "semantic_hash": ""
+  },
+  "scaper/dedup.py": {
+    "mtime": 1790934181.210657,
+    "ast_hash": "a822c8d6e06a8187ccf4b424aef49742",
+    "semantic_hash": ""
+  },
+  "scratch/supabase_db_size_probe.py": {
+    "mtime": 1790500147.0517855,
+    "ast_hash": "128c3ad7b7d17c04b715a8caac80c641",
+    "semantic_hash": ""
+  },
+  "scripts/deploy_scaper_orlando_hourly.ps1": {
+    "mtime": 1790420968.972621,
+    "ast_hash": "dbda42ddf5785e53120b6e50b70a8df4",
+    "semantic_hash": ""
+  },
+  "tests/test_explore_scaper_events.py": {
+    "mtime": 1791965501.4089053,
+    "ast_hash": "9f4e0cdf9a363ec56f5ac89228f04ed0",
+    "semantic_hash": ""
+  },
+  "tests/test_explorer_v2_events_pagination.py": {
+    "mtime": 1790500583.164006,
+    "ast_hash": "3a4fc8590ffdc032fd97b62882ed5e64",
+    "semantic_hash": ""
+  },
+  "tests/test_scaper_dedup.py": {
+    "mtime": 1790934274.2679176,
+    "ast_hash": "95e11711029103a8abcbd7f62478383d",
+    "semantic_hash": ""
+  },
+  "tests/test_scaper_ticketmaster.py": {
+    "mtime": 1791796463.7461114,
+    "ast_hash": "834ed52b755a57a7463b57201424399d",
+    "semantic_hash": ""
+  },
+  "Scram Book/Explorer Tab/Scaper_Dedup_Spec.md": {
+    "mtime": 1790934634.761288,
+    "ast_hash": "6b239d789fdb79b7e9c00d44329db7bf",
+    "semantic_hash": ""
+  },
+  "graphify-out/converted/Rovvy_Wayra_AI_Scrum_Book_9ce10bd4.md": {
+    "mtime": 1790589542.9141119,
+    "ast_hash": "085fa06d0963a240f5777598c1e6ae13",
+    "semantic_hash": ""
+  },
+  ".pnpm-store/v11/projects/fd6d05dc4491862fa25c817de2934f5f/lib/wayra/settings.ts": {
+    "mtime": 1790504743.541237,
+    "ast_hash": "f3fedd30841c38e849057dcb03b4ecfd",
+    "semantic_hash": ""
+  },
+  "app/routes/wayra_settings.py": {
+    "mtime": 1790504622.0277722,
+    "ast_hash": "66ce27b3f9381e4f05498d70e71771c1",
+    "semantic_hash": ""
+  },
+  "app/services/wayra_settings_service.py": {
+    "mtime": 1790505124.5996835,
+    "ast_hash": "80c9b338eb283f06d933b277696afbf0",
+    "semantic_hash": ""
+  },
+  "frontend/lib/wayra/settings.ts": {
+    "mtime": 1790504743.541237,
+    "ast_hash": "f3fedd30841c38e849057dcb03b4ecfd",
+    "semantic_hash": ""
+  },
+  "tests/test_wayra_settings.py": {
+    "mtime": 1790505124.6291082,
+    "ast_hash": "3570927f66dc3909b47615804dab90ae",
+    "semantic_hash": ""
+  },
+  "graphify-out/converted/Rovvy_Seats_Scrum_Book_404a0133.md": {
+    "mtime": 1790589542.481172,
+    "ast_hash": "b0a9fabb9c957df9ed6660afbbb08dd4",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/profile/ProfileTravelMap.tsx": {
+    "mtime": 1790848331.2260923,
+    "ast_hash": "067c5b4a7ba65755d329bd56e06a9fa3",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/profile/__tests__/profile-page.test.tsx": {
+    "mtime": 1790934319.7675292,
+    "ast_hash": "64601b47d84dec39c58d5196d1e22f91",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/profile/profile-map-types.ts": {
+    "mtime": 1790848306.199289,
+    "ast_hash": "bb11c3924e913d1af27516983a47e3e8",
+    "semantic_hash": ""
+  },
+  "frontend/lib/profile/__tests__/profile-cover-url.test.ts": {
+    "mtime": 1790589509.2479658,
+    "ast_hash": "2a2d2eac8bfc66db2f425cbbb1d394f9",
+    "semantic_hash": ""
+  },
+  "frontend/lib/profile/__tests__/profile-model.test.ts": {
+    "mtime": 1790591403.7331207,
+    "ast_hash": "81c1d838a2e51992ae034348495d39c0",
+    "semantic_hash": ""
+  },
+  "frontend/lib/profile/profile-cover-url.ts": {
+    "mtime": 1790589478.3239102,
+    "ast_hash": "097af5503a41b85acffdd13319c064cf",
+    "semantic_hash": ""
+  },
+  "frontend/lib/profile/profile-model.ts": {
+    "mtime": 1790848807.0030725,
+    "ast_hash": "54aa4aaea9dde5a7fb66a8340da4855e",
+    "semantic_hash": ""
+  },
+  "frontend/lib/profile/profile-personality.ts": {
+    "mtime": 1790591541.726321,
+    "ast_hash": "5a263651bc4bcd4c2f0c71ac0ac06458",
+    "semantic_hash": ""
+  },
+  "scratch/update_scrumbooks_cursor_plans.py": {
+    "mtime": 1790507931.4454155,
+    "ast_hash": "4a6856cb938f798c5e483a04919af90a",
+    "semantic_hash": ""
+  },
+  "scripts/build_master_sprint.py": {
+    "mtime": 1790589477.6234205,
+    "ast_hash": "1601a9d80a33cddd21aa9896d989a09d",
+    "semantic_hash": ""
+  },
+  "tests/test_trip_list_member_count.py": {
+    "mtime": 1790587144.344262,
+    "ast_hash": "b1d38dd8a1e784e9bf0f95e0b2e56e9f",
+    "semantic_hash": ""
+  },
+  "Scram Book/Lounge Tab/README.md": {
+    "mtime": 1790508906.0613542,
+    "ast_hash": "5cb5878dfa432cc26342b4b502db742f",
+    "semantic_hash": ""
+  },
+  "Scram Book/Profile Tab/README.md": {
+    "mtime": 1790934143.4266896,
+    "ast_hash": "c56b7e4269606c65a1871f1ccd48055e",
+    "semantic_hash": ""
+  },
+  "graphify-out/converted/Rovvy_Collection_Scrum_Book_eedde677.md": {
+    "mtime": 1790589541.827789,
+    "ast_hash": "53d81235386f47b8991b254da71ec42c",
+    "semantic_hash": ""
+  },
+  "graphify-out/converted/Rovvy_Lounge_Scrum_Book_423453c1.md": {
+    "mtime": 1790589541.976928,
+    "ast_hash": "857c77b6ca7037ac012acf4d69de73f4",
+    "semantic_hash": ""
+  },
+  "graphify-out/converted/Rovvy_Master_Sprint_Plan_9e76f56e.md": {
+    "mtime": 1790847981.2735608,
+    "ast_hash": "7545c027ec3c138a0dd479967e690b2c",
+    "semantic_hash": ""
+  },
+  "graphify-out/converted/Rovvy_Profile_Scrum_Book_3d339031.md": {
+    "mtime": 1790589542.1164525,
+    "ast_hash": "c610e6c2d79df60d44cc1254a6b2a05c",
+    "semantic_hash": ""
+  },
+  "app/routes/explore_place_photos.py": {
+    "mtime": 1790849956.1167376,
+    "ast_hash": "558f31094047ffd3263b108197b18819",
+    "semantic_hash": ""
+  },
+  "app/services/place_photo_upload_service.py": {
+    "mtime": 1790934504.455156,
+    "ast_hash": "28245accfd5a3bbbe6be0d10f46bb297",
+    "semantic_hash": ""
+  },
+  "app/services/profile_privacy_service.py": {
+    "mtime": 1790848769.278585,
+    "ast_hash": "73eb360aef2a3df1f6cbc406928472a6",
+    "semantic_hash": ""
+  },
+  "app/services/scaper_event_visibility.py": {
+    "mtime": 1790934162.904149,
+    "ast_hash": "bda8450994359eaec8d48dff695a9a01",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/__tests__/explore-card-display.test.ts": {
+    "mtime": 1791538287.6865625,
+    "ast_hash": "7e2dde67620221c6e39f79a2fa53c276",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/__tests__/explore-feed-phase1.test.ts": {
+    "mtime": 1791537147.6992018,
+    "ast_hash": "6131243251a035034b06e9e91cc0cd7e",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/__tests__/explore-location-scope-geo.test.ts": {
+    "mtime": 1791535071.8749497,
+    "ast_hash": "e1c9c934921dca89fd09210d49f4c67c",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/__tests__/explore-place-actions.test.ts": {
+    "mtime": 1791193040.225947,
+    "ast_hash": "52ad8e1bf335326810a2df817e999acd",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/__tests__/explore-plan-picks.test.ts": {
+    "mtime": 1791799593.0481033,
+    "ast_hash": "c2ed419ed4784547952bce969b0550e1",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/__tests__/explore-prompt-recent.test.ts": {
+    "mtime": 1791799287.5924985,
+    "ast_hash": "1a5267e159cd5d129625a97ad7445655",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/__tests__/explore-scaper-metro.test.ts": {
+    "mtime": 1791535051.4392488,
+    "ast_hash": "eb6458d85b10f1f396dcb65c1e7448f8",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/__tests__/explore-static-map.test.ts": {
+    "mtime": 1791537889.0461054,
+    "ast_hash": "e9a69d378493fcff30231052dd4323ce",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/components/ExploreDrawerMap.tsx": {
+    "mtime": 1791537889.0441961,
+    "ast_hash": "d02f048255a449c7394e0189f5f7a087",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/components/ExploreDrawerPhotoUpload.tsx": {
+    "mtime": 1790933616.7410216,
+    "ast_hash": "c8a5a7efc228a5186e6c6c4dad7289dc",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/explore-card-display.ts": {
+    "mtime": 1791538263.5602045,
+    "ast_hash": "0dda1fe4e1b8412f9664e7b0de9c8cf2",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/explore-card-reason.ts": {
+    "mtime": 1791534319.2247941,
+    "ast_hash": "21aed352f2630291f4433abfb1d61c84",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/explore-distance-label.ts": {
+    "mtime": 1791534273.321367,
+    "ast_hash": "16a21a39def2a642235f88dcd4d558c8",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/explore-event-interleave.ts": {
+    "mtime": 1791534386.6788416,
+    "ast_hash": "1b176c095d1906e556b850f077655ce8",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/explore-feed-quality.ts": {
+    "mtime": 1791534273.3263352,
+    "ast_hash": "b8b1439e2313fa1112fd12fcec5699dd",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/explore-hero-scope.ts": {
+    "mtime": 1791535033.9830744,
+    "ast_hash": "d1cc86f35e376b4409ad69487c4f6ec8",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/explore-hub-source-fetch.ts": {
+    "mtime": 1791539837.9592686,
+    "ast_hash": "99269cb582cd7fb6db1fa78e21a6e70d",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/explore-listing-media.ts": {
+    "mtime": 1791537137.3404243,
+    "ast_hash": "616eefb4d4fb12229eccc82c734f1b9f",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/explore-photo-credit.ts": {
+    "mtime": 1790848616.0554543,
+    "ast_hash": "ea4b70f2119a4d464ba9b39945da73d1",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/explore-place-actions.ts": {
+    "mtime": 1791193026.8384278,
+    "ast_hash": "82e4534c40d2c62485aeccb2f43615e1",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/explore-plan-picks.ts": {
+    "mtime": 1791799589.3404307,
+    "ast_hash": "4e4358d0a460f20d4cff9c68fec6b1b3",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/explore-prompt-recent.ts": {
+    "mtime": 1791799270.6234558,
+    "ast_hash": "a9a09c4740065f429c4e1ddd28c78c23",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/explore-scaper-metro.ts": {
+    "mtime": 1791534998.6896522,
+    "ast_hash": "9d3b4caa10d113d13ce355eb479b1184",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/explore/explore-static-map.ts": {
+    "mtime": 1791537889.0441961,
+    "ast_hash": "717d050325c982061f5fa07196e815c2",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/live/__tests__/live-explore-deeplink.test.ts": {
+    "mtime": 1791193527.874397,
+    "ast_hash": "d9fe13896c55cdf8b7171c5143de0a29",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/live/live-explore-deeplink.ts": {
+    "mtime": 1791193525.069498,
+    "ast_hash": "9775698aedca9f4c1504b8e3a5e6a28e",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/profile/__tests__/profile-map-flag-styles.test.ts": {
+    "mtime": 1790848058.342029,
+    "ast_hash": "30fcd92fadb7afbb52dee66488fa734e",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/profile/__tests__/profile-map-merge.test.ts": {
+    "mtime": 1790848334.7838094,
+    "ast_hash": "0cf527667faa27f80c24266999ef9b47",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/profile/__tests__/use-profile-map-live-location.test.ts": {
+    "mtime": 1790763490.9523335,
+    "ast_hash": "a2b563bcf812c967a7f9914920a4844f",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/profile/profile-map-flag-styles.ts": {
+    "mtime": 1790848306.199289,
+    "ast_hash": "c239b7a9d7d15898cb9686854c5f15f9",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/profile/profile-map-live-marker.ts": {
+    "mtime": 1790848330.5186267,
+    "ast_hash": "f0304894a204941f71e1e71bcb92871b",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/profile/profile-map-merge.ts": {
+    "mtime": 1790848307.2672236,
+    "ast_hash": "c8c13977086e38b3ae6d0ce88612b46f",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/profile/profile-map-pin-marker.ts": {
+    "mtime": 1790848038.1503074,
+    "ast_hash": "5ae2f6e2c3e07579c062762d664bd5ea",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/profile/profile-map-popup.ts": {
+    "mtime": 1790848330.51264,
+    "ast_hash": "94553b6ea0e1d631dfab38a6f0519935",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/profile/use-profile-map-live-location.ts": {
+    "mtime": 1790763478.8019395,
+    "ast_hash": "b0e753b0f9a02be502af98cf324b73af",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/settings/privacy/__tests__/privacy-page.test.tsx": {
+    "mtime": 1790849292.7981777,
+    "ast_hash": "c08a95f506b99294ac724a55fafa63c2",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/u/[username]/__tests__/public-profile.test.tsx": {
+    "mtime": 1790848977.6552165,
+    "ast_hash": "01f76ae275fdfb4d86f9d5ac0395ccc3",
+    "semantic_hash": ""
+  },
+  "frontend/app/(dashboard)/u/[username]/page.tsx": {
+    "mtime": 1790848806.02784,
+    "ast_hash": "3ad84a5982075f70a34985c5462d19ca",
+    "semantic_hash": ""
+  },
+  "frontend/app/legal/data/page.tsx": {
+    "mtime": 1791451782.3299272,
+    "ast_hash": "e939a88dc7a03d1652e6a1e85a984dcf",
+    "semantic_hash": ""
+  },
+  "frontend/lib/__tests__/contact-config.test.ts": {
+    "mtime": 1791451993.1542513,
+    "ast_hash": "53459b8bddbd088ada934a4edb76dd88",
+    "semantic_hash": ""
+  },
+  "frontend/lib/__tests__/firebase-client-config.test.ts": {
+    "mtime": 1790760748.8445249,
+    "ast_hash": "c594a51bc14685ba02e959bd2902cceb",
+    "semantic_hash": ""
+  },
+  "frontend/lib/contact-config.ts": {
+    "mtime": 1791451791.9859338,
+    "ast_hash": "68ef0a8652978962b9aa7a15898c67b7",
+    "semantic_hash": ""
+  },
+  "frontend/lib/profile/__tests__/profile-trust.test.ts": {
+    "mtime": 1790761140.319494,
+    "ast_hash": "3a3e930cdf67cf65e7138ea54d020de7",
+    "semantic_hash": ""
+  },
+  "frontend/lib/profile/profile-snapshot.ts": {
+    "mtime": 1790848838.304051,
+    "ast_hash": "6ccec4de4b8d8034c05d883dbfefb65b",
+    "semantic_hash": ""
+  },
+  "frontend/lib/profile/profile-trust.ts": {
+    "mtime": 1790761140.3144615,
+    "ast_hash": "62c134dca6ed362afa93d9a2ce54bbac",
+    "semantic_hash": ""
+  },
+  "migrations/010_scaper_state.sql": {
+    "mtime": 1791193157.6595402,
+    "ast_hash": "0d67af278d9a2da6ce5a9d4220895530",
+    "semantic_hash": ""
+  },
+  "migrations/011_scaper_blocklist.sql": {
+    "mtime": 1791451722.0884962,
+    "ast_hash": "ad93843167b814beca8d3c094cba058b",
+    "semantic_hash": ""
+  },
+  "scaper/raw_purge.py": {
+    "mtime": 1791796129.6846843,
+    "ast_hash": "d154b0f38f6e1aba86141da9c16a0c9e",
+    "semantic_hash": ""
+  },
+  "scaper/slug.py": {
+    "mtime": 1791193157.5924695,
+    "ast_hash": "574aa44ac2ac09f0d46bbbdd7c4c3812",
+    "semantic_hash": ""
+  },
+  "scaper/ticketmaster_overlap.py": {
+    "mtime": 1791193157.6595402,
+    "ast_hash": "79c33800ab645e645f1c6406629ba930",
+    "semantic_hash": ""
+  },
+  "scaper/ticketmaster_venue_backfill.py": {
+    "mtime": 1791794142.1007867,
+    "ast_hash": "a7d45acc1a9c37374d1a0b75a179d6a1",
+    "semantic_hash": ""
+  },
+  "scaper/venue_place_media.py": {
+    "mtime": 1791794081.4737754,
+    "ast_hash": "b74ae3b70a7b4ed3fe9daf2b79800cd0",
+    "semantic_hash": ""
+  },
+  "scratch/_photo_inv_part1.json": {
+    "mtime": 1791795010.9718955,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "scratch/apply_scaper_migrations.py": {
+    "mtime": 1791454294.235955,
+    "ast_hash": "4449f3309620e1b78ecf46b83eed8a85",
+    "semantic_hash": ""
+  },
+  "scratch/run_scaper_pg_tests.py": {
+    "mtime": 1791194927.6527953,
+    "ast_hash": "b1da413596ac60ef9ee76c706a0671a7",
+    "semantic_hash": ""
+  },
+  "scratch/update_explorer_workbook_f47_20261012.py": {
+    "mtime": 1791794152.2691941,
+    "ast_hash": "44048682b24ace16db871e42f8462cf3",
+    "semantic_hash": ""
+  },
+  "scratch/update_explorer_workbook_f47_20261012_apply.py": {
+    "mtime": 1791794390.6379337,
+    "ast_hash": "c0c8cf743ce5923f2aa9a2fd7dcfea20",
+    "semantic_hash": ""
+  },
+  "scratch/update_explorer_workbook_f47_orlando.py": {
+    "mtime": 1791191921.4116645,
+    "ast_hash": "220b1b273dc3549d6673bd1312896d19",
+    "semantic_hash": ""
+  },
+  "scratch/update_explorer_workbook_f48.py": {
+    "mtime": 1791193302.2919383,
+    "ast_hash": "8c34433ba77303d1369186784528ace7",
+    "semantic_hash": ""
+  },
+  "scratch/update_explorer_workbook_feed_phase1.py": {
+    "mtime": 1791534435.2916927,
+    "ast_hash": "c38bc6b8543c53631cbf04c6641b7968",
+    "semantic_hash": ""
+  },
+  "scratch/update_explorer_workbook_g12_deferred.py": {
+    "mtime": 1791537175.7824197,
+    "ast_hash": "90f0069c788652fd2696505ece9e0f41",
+    "semantic_hash": ""
+  },
+  "scratch/update_explorer_workbook_provider_compliance.py": {
+    "mtime": 1791195600.2243578,
+    "ast_hash": "495988d4c60a2c9890f84ec40fad82c2",
+    "semantic_hash": ""
+  },
+  "scratch/update_explorer_workbook_scaper_remove.py": {
+    "mtime": 1791451996.5853846,
+    "ast_hash": "82f16f52f8d97a32445e1bee5e592af6",
+    "semantic_hash": ""
+  },
+  "scratch/update_explorer_workbook_ticketmaster_state.py": {
+    "mtime": 1791193370.4584146,
+    "ast_hash": "3473b125c349870f52cf2ff764a0ac96",
+    "semantic_hash": ""
+  },
+  "scripts/07_enrich_wikimedia_photos.py": {
+    "mtime": 1790848778.0419426,
+    "ast_hash": "209a459c5a6e954bb370025f8d505284",
+    "semantic_hash": ""
+  },
+  "scripts/08_moderate_place_media.py": {
+    "mtime": 1790849956.2411535,
+    "ast_hash": "2120362a8f80779a9092e7a8ef49f33d",
+    "semantic_hash": ""
+  },
+  "scripts/deploy-scaper-job.ps1": {
+    "mtime": 1791538766.9450908,
+    "ast_hash": "3e2eef7d938eaa1269edd6169f18baa3",
+    "semantic_hash": ""
+  },
+  "scripts/verify_f27_provider_mix_live.py": {
+    "mtime": 1791965836.6173608,
+    "ast_hash": "12b164c81586beaf3c3e1453bbed7b77",
+    "semantic_hash": ""
+  },
+  "tests/test_explore_provider_mix_pg.py": {
+    "mtime": 1791965494.697163,
+    "ast_hash": "f8819e7f1e44caaf524052f57dbd5788",
+    "semantic_hash": ""
+  },
+  "tests/test_place_address_format.py": {
+    "mtime": 1790847689.412018,
+    "ast_hash": "1e96f6829a725423c00ab2cd9e0673b3",
+    "semantic_hash": ""
+  },
+  "tests/test_place_photo_upload.py": {
+    "mtime": 1791191443.2325077,
+    "ast_hash": "eb196a2ab2762e0757ebe45906b6e82b",
+    "semantic_hash": ""
+  },
+  "tests/test_profile_fast_endpoints.py": {
+    "mtime": 1790761135.8348453,
+    "ast_hash": "4690366f06fe135dbecbe7af792d3097",
+    "semantic_hash": ""
+  },
+  "tests/test_profile_privacy.py": {
+    "mtime": 1790848769.308066,
+    "ast_hash": "e22023398a065dafcd234a73d0a72d93",
+    "semantic_hash": ""
+  },
+  "tests/test_scaper_raw_purge.py": {
+    "mtime": 1791796139.3558195,
+    "ast_hash": "a6b77a741bcde2ce74e29ef83a163f2f",
+    "semantic_hash": ""
+  },
+  "tests/test_scaper_remove.py": {
+    "mtime": 1791452833.9321535,
+    "ast_hash": "ed873538dad3fb8b0bc2da980d1805c2",
+    "semantic_hash": ""
+  },
+  "tests/test_scaper_store.py": {
+    "mtime": 1791452835.5839853,
+    "ast_hash": "c126de72cd377e5e8c92fd5a9b0b88b9",
+    "semantic_hash": ""
+  },
+  "tests/test_ticketmaster_venue_media.py": {
+    "mtime": 1791797044.3588583,
+    "ast_hash": "e36b9aeb7478e538dc1e3b6b4bb8bf47",
+    "semantic_hash": ""
+  },
+  "tests/test_wikimedia_photos.py": {
+    "mtime": 1790848778.088546,
+    "ast_hash": "6256b5b77cf7ef1ed7779a374118aa2b",
+    "semantic_hash": ""
+  },
+  "Scram Book/Explorer Tab/Explore_Feed_Architecture_Spec.md": {
+    "mtime": 1791537427.0689907,
+    "ast_hash": "8fa751e5e7c30f9109db6f71c5cc4d61",
+    "semantic_hash": ""
+  },
+  "Scram Book/Explorer Tab/Explore_Feed_Phase1_Spec.md": {
+    "mtime": 1791534074.364757,
+    "ast_hash": "6e4eb4774063c4b40f505f7c5e572d65",
+    "semantic_hash": ""
+  },
+  "Scram Book/Explorer Tab/Explore_Place_Facts_Spec.md": {
+    "mtime": 1791965507.9773798,
+    "ast_hash": "38753b6d5e8b216e43663780ffe19ab2",
+    "semantic_hash": ""
+  },
+  "Scram Book/Explorer Tab/Photo_Sources_Inventory.md": {
+    "mtime": 1791795172.3347106,
+    "ast_hash": "f0bd226890be08ef09e26393ce1fa4b5",
+    "semantic_hash": ""
+  },
+  "Scram Book/Explorer Tab/Scaper_Ticketmaster_BulkFeed_Spec.md": {
+    "mtime": 1791964788.1474228,
+    "ast_hash": "2628f042912f34faa913e05f513406b4",
+    "semantic_hash": ""
+  },
+  "Scram Book/Explorer Tab/Scaper_Ticketmaster_National_Spec.md": {
+    "mtime": 1791796129.6856806,
+    "ast_hash": "07b326ff3d2e0b9dea0cc0c78fc20477",
     "semantic_hash": ""
   }
 }

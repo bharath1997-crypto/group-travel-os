@@ -6,7 +6,6 @@
 #   - grpcio / grpcio-status : no Python 3.13 wheels on ubuntu-latest for 1.66.x
 #   - geopandas              : heavy geo stack, unused in any app code
 #   - reverse_geocoder       : C extension, unused in any app code
-#   - duffel-api             : unpinned, CI-unstable
 #   - yt-dlp                 : media scraper, not tested
 #   - instaloader            : media scraper, not tested
 #   - pyright                : linter, not needed in CI
@@ -106,7 +105,6 @@ websockets==16.0
 rapidfuzz>=3.0.0
 beautifulsoup4>=4.12.0
 aiosqlite==0.20.0
-duffel-api
 yt-dlp
 instaloader
 reverse_geocoder

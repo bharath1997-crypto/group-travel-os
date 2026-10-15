@@ -11,9 +11,8 @@ function PlanHubContent() {
   const handoff = useMemo(() => parseTravelHandoff(searchParams), [searchParams]);
 
   const cards = [
-    { href: "/flights", emoji: "✈️", title: "Flights", desc: "Search fares & routes" },
     { href: "/hotels", emoji: "🏨", title: "Hotels", desc: "Stays & nightly rates" },
-    { href: "/routes", emoji: "🗺️", title: "Routes", desc: "Flights + ground options" },
+    { href: "/routes", emoji: "🗺️", title: "Routes", desc: "Transit & driving directions" },
     { href: "/buses", emoji: "🚌", title: "Buses", desc: "Bus routes & fares" },
     { href: "/trip-space", emoji: "🏕️", title: "Trip Space", desc: "Plan weekend trips" },
   ];
@@ -25,7 +24,7 @@ function PlanHubContent() {
           Plan Your Trip
         </h1>
         <p className="mt-2 max-w-xl text-sm text-slate-500">
-          Flights, stays, and how you move — start here.
+          Stays and how you move — start here.
         </p>
 
         {handoff ? (
@@ -37,9 +36,9 @@ function PlanHubContent() {
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map((c) => {
             const href =
-              handoff && (c.href === "/flights" || c.href === "/routes" || c.href === "/buses")
+              handoff && (c.href === "/routes" || c.href === "/buses")
                 ? buildTravelHandoffPath(
-                    c.href.slice(1) as "flights" | "routes" | "buses",
+                    c.href.slice(1) as "routes" | "buses",
                     {
                       name: handoff.destination.name,
                       city: handoff.destination.city,

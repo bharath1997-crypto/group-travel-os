@@ -15,6 +15,44 @@ from app.services.scaper_event_visibility import visible_events_cte
 # State names for the detail view; extend when a new Scaper city is added.
 _CITY_STATE = {"orlando": "Florida", "chicago": "Illinois"}
 
+# F27b provider mix across the whole date window (not per local day). Each provider's
+# events keep chronological rank_p; the largest provider uses mix_position = rank_p;
+# every other provider gets one slot per MIN_PROVIDER_SHARE_EVERY of its own ranks
+# (mix_position = rank_p * MIN_PROVIDER_SHARE_EVERY). Final order is mix_position,
+# start_time, id before LIMIT/OFFSET so paging stays duplicate- and gap-free.
+MIN_PROVIDER_SHARE_EVERY = 6
+PROVIDER_MIX_ORDER_BY = "mix_position ASC, start_time ASC, id ASC"
+
+
+def provider_mix_ranked_sql(source: str = "visible") -> str:
+    """SELECT over `source` adding rank_p + mix_position (window-wide provider share)."""
+    share = MIN_PROVIDER_SHARE_EVERY
+    return f"""
+        SELECT mixed.*
+        FROM (
+            SELECT r.*,
+                   CASE
+                     WHEN r.provider = dom.dominant_provider THEN r.rank_p
+                     ELSE r.rank_p * {share}
+                   END AS mix_position
+            FROM (
+                SELECT v.*,
+                       row_number() OVER (
+                           PARTITION BY v.provider
+                           ORDER BY v.start_time ASC, v.id ASC
+                       ) AS rank_p
+                FROM {source} AS v
+            ) AS r
+            CROSS JOIN (
+                SELECT provider AS dominant_provider
+                FROM {source}
+                GROUP BY provider
+                ORDER BY count(*) DESC, provider ASC
+                LIMIT 1
+            ) AS dom
+        ) AS mixed
+    """
+
 
 def city_slug(city: str) -> str:
     """'Chicago, IL' -> 'chicago'; 'New York' -> 'new-york' (matches ingest.sources.city_slug)."""
@@ -104,7 +142,11 @@ def scaper_events_for_city(
     page: int = 1,
     per_page: int = 200,
 ) -> dict[str, Any]:
-    """Use the source's city stamp, never a radius or browser GPS coordinate."""
+    """Use the source's city stamp, never a radius or browser GPS coordinate.
+
+    Page order (F27b): window-wide provider share via mix_position (see
+    MIN_PROVIDER_SHARE_EVERY and PROVIDER_MIX_ORDER_BY).
+    """
     if db.bind is None or db.bind.dialect.name != "postgresql":
         raise RuntimeError("Scaper events require PostgreSQL")
     slug = city_slug(city)
@@ -137,8 +179,8 @@ def scaper_events_for_city(
                 SELECT id, title, category, start_time, venue_name, image_url,
                        ticket_url, price_min, price_max, is_free, status, provider,
                        lat, lng, timezone, fetched_at
-                FROM visible
-                ORDER BY start_time ASC, id ASC
+                FROM ({provider_mix_ranked_sql()}) AS ranked
+                ORDER BY {PROVIDER_MIX_ORDER_BY}
                 LIMIT :limit OFFSET :offset
             """), params,
         ).mappings().all()

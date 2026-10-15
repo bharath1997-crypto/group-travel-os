@@ -1,4 +1,4 @@
-"""Multi-modal route discovery (flights + ground) — Pydantic only."""
+"""Ground route discovery (Google Routes) — Pydantic only."""
 
 from enum import StrEnum
 
@@ -6,7 +6,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class TransportMode(StrEnum):
-    FLIGHT = "flight"
     TRANSIT = "transit"
     BUS = "bus"
     TRAIN = "train"

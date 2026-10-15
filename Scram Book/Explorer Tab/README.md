@@ -2,6 +2,81 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-14 — Ground-only route intelligence (Live + Wayra)
+
+- **Change:** Route intelligence resolver is ground-only; no flight segment types in API or Live panel. Wayra seeds/copy updated so assistants do not suggest air travel.
+- **Verify:** pytest **987 passed**; vitest **549 passed**; tsc clean.
+
+## 2026-10-14 — Travel: flight product removed from app shell
+
+- **Context:** Owner decision (AGENTS.md §4); Explore/Live unaffected except copy/nav — no `/flights` routes or metasearch.
+- **Verification:** Same backend/frontend test counts as Travel Tab README entry (2026-10-14 flight removal); dashboard nav Plan/Trips links to Hotels, Routes, Buses only.
+- **Next:** None for Explorer; directions handoff remains Live → `/routes`.
+
+## 2026-10-14 — F27c: TypeScript clean + provider-mix SQL guard + Postgres test docs
+
+- **TS:** `explore-plan-picks` — removed dead `nightlife` branch (use `bar` with `PhotoTheme`); test fixture uses `theme: "music"`. `ProfileTravelMap` — MapLibre markers use `element.style.zIndex` (10 pins / 100 live GPS), not Leaflet `zIndexOffset`.
+- **Pytest:** `test_provider_mix_ranked_sql_no_duplicate_rank_columns` (sqlite CI) catches duplicate `rank_p`/`mix_position` in hub SELECT; hub query lists explicit event columns only. Postgres opt-in docs at top of `test_explore_provider_mix_pg.py` and `test_place_facts.py`; `pg_place_facts` skips unless `SCAPER_PG_TEST_URL` starts with `postgres`.
+- **Verify:** `npx tsc --noEmit` — 0 errors. `npx vitest run` — **616 passed** (flight multi-city test dates bumped to 2026-11 so legs stay in the future). `pytest -q` (sqlite CI env) — **998 passed, 36 skipped**.
+- **Scram:** workbook row F27c green; Context Log appended.
+
+## 2026-10-14 — F27b: window-wide provider mix (replaces per-day F27 ordering)
+
+- **Problem:** Chicago first 24 cards were all Ticketmaster when today had no Eventbrite rows; per-day round-robin cannot surface EB from later in the 14-day window.
+- **Change (`app/services/explore_scaper_events.py`):** `MIN_PROVIDER_SHARE_EVERY = 6`. Each provider gets `rank_p` by `(start_time, id)`. Dominant provider (largest count in window) uses `mix_position = rank_p`; others use `rank_p * 6`. Page order: `(mix_position, start_time, id)` before `LIMIT/OFFSET`. Visibility CTE + dedup unchanged.
+- **Tests:** `tests/test_explore_provider_mix_pg.py` rewritten (200 TM + 5 EB later → ≥3 EB on page 1; paging; single provider; three providers). `test_explore_scaper_events.py` SQL shape updated. **5 PG tests skipped** here (no `SCAPER_PG_TEST_URL`). Unit/scraper tests pass.
+- **Live:** `scripts/verify_f27_provider_mix_live.py` — **not run** (no `DATABASE_URL` in this session). Workbook F27 row → **Partial** (yellow) until Chicago/Orlando first-24 EB before/after logged.
+- **F50 fix:** OSM match uses ~100 m grid + 3×3 neighbour cells (`place_facts_match.py`); brute-force equivalence + <2s test on 5k POIs / 800 places.
+
+## 2026-10-14 — F50 built: place facts (Wikipedia + OSM, Chicago pilot)
+
+- **Context:** `Explore_Place_Facts_Spec.md` — provider-stated descriptions and hours without touching Overture `places.short_description`.
+- **Backend:** `migrations/012_place_facts.sql` (not applied). `place_facts` read path on `GET /api/v1/places/spine/{gers_id}` via `PlaceFactsService` + `facts[]` on `PlaceSpineDetail`. Fetch/match helpers: `place_facts_wikipedia.py`, `place_facts_match.py`, `place_facts_osm_extract.py` (Geofabrik PBF via optional `osmium`). Script `scripts/12_fetch_place_facts.py` defaults to **dry-run** (counts + 20 samples); `--write` + `--pbf` for owner-approved ingest only.
+- **Frontend:** Explore drawer loads spine facts for place listings (`explore-place-spine-facts.ts`, `ExploreDetailDrawer.tsx`) — Wikipedia “From Wikipedia” + link, raw hours/wheelchair, OSM credit. `/legal/data` adds Wikipedia (CC BY-SA 4.0) and OpenStreetMap (ODbL) sections. Did not modify `frontend/lib/api.ts` or `auth.ts`.
+- **Tests:** `tests/test_place_facts.py` — 12 passed, 1 skipped (`SCAPER_PG_TEST_URL` upsert/read). `explore-place-spine-facts.test.ts` — 4 passed. `tests/test_place_spine.py` — 7 passed.
+- **Scram:** workbook row **F50b** (task row 86) `Complete in code`, green; Cursor Context Log row 108; backup `Rovvy_Explorer_Scrum_Book.xlsx.bak-20261014-f50-place-facts`. (Workbook id F50 remains “Friends-going filter”; spec task tracked as F50b.) Migration **not** applied; no production DB writes; no push.
+- **Next:** owner approves migration + Chicago `--write` run with Illinois Geofabrik PBF; report match rate per spec §8.
+
+## 2026-10-14 — F27 built: server-side per-day provider round-robin in the Explore events reader
+
+- **Context:** the diagnosis entry below (Chicago next 14 days: Ticketmaster fills the first page because the reader sorted by `start_time`; the client interleave only reorders the 24 cards already loaded). Owner decision "1" = server-side mix before paging.
+- **Change (`app/services/explore_scaper_events.py`, reader behind `/api/v1/explore/events`, which is what the Explore hub calls):** page query now selects from the shared visibility CTE through a ranked subquery that adds `local_day` (`start_time AT TIME ZONE events.timezone`) and `provider_rank_in_day = row_number() OVER (PARTITION BY local_day, provider ORDER BY start_time, id)`, and orders by `(local_day, provider_rank_in_day, start_time, id)` before `LIMIT/OFFSET`. Effect: within one local day the providers take turns (soonest unseen event from each), nothing from a later day jumps ahead, one provider collapses to plain `start_time`, `id` is the final tiebreak, and the `total` count query is unchanged so pages have no gaps or duplicates. Generic over providers (no names in SQL). Dedup and `visible_events_cte` untouched. **Not touched:** `app/routers/explorer_v2.py` keyset feed; it serves `explore-v2/page.tsx` and the map hook, not the Explore hub, and a round-robin keyset cursor would need a 4-column cursor (separate task if that page is kept).
+- **Tests:** new `tests/test_explore_provider_mix_pg.py` (opt-in `SCAPER_PG_TEST_URL`, rolled back; rows seeded straight into `public.events` with a Scaper source id): 30 Ticketmaster early + 3 Eventbrite later on one day → page 1 of 12 holds all 3 Eventbrite, alternating `tm, eb, tm, eb…`, chronological within each provider; day 1 always before day 2 (12 rows, 6/6); single provider inserted in reverse = plain `start_time`; 45 rows over 2 days and 3 providers paged by 12 → every id exactly once, same page twice identical; 3-provider round-robin (rank 1 of each, then rank 2 of each). **5/5 passed** against Supabase in a rolled-back transaction. SQL-shape unit test in `tests/test_explore_scaper_events.py` (window function present, ORDER BY key, paged in SQL). CI-equivalent backend suite (sqlite): **983 passed, 35 skipped, 0 failed**. No frontend change.
+- **Live, read-only (2026-10-14, next 14 days after dedup):** Chicago **454** visible (Eventbrite **17** in the window, 53 upcoming overall; Ticketmaster 439). Per day: today **0** Eventbrite / 26 TM; tomorrow 1 / 34; Fri 1 / 48; Sat 3 / 49; Sun 2 / 40. Eventbrite in the **first 24 cards, before → after**: Tonight **0 → 0** (there is no Eventbrite event today, and by design nothing from tomorrow moves ahead of today); Tomorrow **1 → 1** (now card #2 instead of mid-list); This weekend **2 → 3** (cards #2, #4, #6); Next week 0 → 0 (no Eventbrite rows on those days); first 100 of the 14-day window 1 → 2. Orlando **110** visible: Tonight 1 → 1 (card #2), This weekend 1 → 1 (card #2), Next week **1 → 2**, 14-day first 24 **1 → 2**.
+- **Honest reading of the expectation:** "about 0 before and several after" for Chicago's first 24 does not materialise because the first 24 cards are all **today**, and Eventbrite has **no Chicago event today**. The mix is working wherever a day has rows from both providers (Eventbrite is now the 2nd card of every such day). If the owner wants Eventbrite to appear on days without Eventbrite rows, that is a cross-day rule, contradicts the "rank within each local day" design, and needs a separate decision.
+- **Scram:** workbook row F27 → `[2026-10-14]`, `Complete in code`, green; Evidence prepended; Cursor Context Log row added; backup `Rovvy_Explorer_Scrum_Book.xlsx.bak-20261014-f27-provider-mix`.
+- **Risks / next:** the window function runs over the visible set per city (hundreds of rows; fine). Browser QA `/explore` Chicago "This weekend" after deploy (expect Eventbrite at cards 2/4/6). Organizer expansion (option 2) still waits for approval.
+
+## 2026-10-14 — Review of Cursor F27b and F50 (Claude)
+
+- **Context:** Cursor delivered F27 (per-day mix) then F27b (window-wide mix) and F50 (place facts, Chicago pilot). Live check of F27 showed Chicago page 1 still 24 Ticketmaster / 0 Eventbrite (no Eventbrite events today), so F27b reserves a minimum share across the whole window.
+- **Defect found in review:** the F27b SQL selected `mix_position` twice, Postgres raised AmbiguousColumn and the Chicago/Orlando reader would have failed; Cursor's Postgres tests were skipped without `SCAPER_PG_TEST_URL`, so it was not caught. Fixed (`SELECT mixed.*`).
+- **Verification:** Postgres suites 27 passed; full backend 997 passed, 36 skipped; live read-only Chicago page 1 `TTTTTTETTTTTTETTTTTTETTT`, page 2 `TTTETTTTTTETTTTTTETTTTTT`, Orlando same pattern (1 Eventbrite per 7); totals unchanged (492 / 137). Workbook F27b row green.
+- **F50:** OSM matching now grid-indexed (parity + <2 s tests pass). Wikipedia dry-run not yet run; migration 012 not applied. `tsc --noEmit` shows 4 pre-existing errors outside these files (explore-plan-picks, ProfileTravelMap).
+- **Risks:** OSM matching untested against a real PBF; Wikipedia match count unknown until the dry-run. **Next:** owner approves push; run the Wikipedia dry-run; then owner approves migration 012 and the Chicago write.
+
+## 2026-10-14 — Eventbrite visibility diagnosis and place-facts spec
+
+- **Context:** owner reported "Eventbrite is not getting here." Read-only DB check: Eventbrite data is fresh (all 6 sources ran 2026-10-14 01:08 UTC; Chicago 54, Orlando 34 events) but Chicago's next 14 days hold 15 Eventbrite vs 442 Ticketmaster after dedup; the reader sorts by `start_time`, so the first 24 cards are Ticketmaster. Only Chicago and Orlando have Eventbrite organizers.
+- **Decision (owner "1"):** server-side per-day provider round-robin (F27), built by Cursor; prompt given in chat. Organizer expansion (option 2, seed from 2,093 legacy Eventbrite ids, stale, discovery only) is held until F27 lands and needs approval (production write).
+- **Owner asked how to get more sources like Google's results page.** Answer: no crawler, no Google Places; add free openly licensed facts. New spec `Explore_Place_Facts_Spec.md` (Wikipedia/Wikidata descriptions for 6,796 places with a QID; OSM hours/wheelchair via bounded extract; new `place_facts` table with license + attribution). Spec only; migration needs owner approval.
+- **Verification:** read-only SQL counts only; no code or data changed. **Next:** Cursor builds F27 then F50; Claude reviews and runs the CI-equivalent and Postgres suites.
+
+## 2026-10-14 — Ticketmaster Discovery Feed terms (Perplexity): findings and decisions
+
+- Source: Perplexity answer pasted by the owner, quoting developer.ticketmaster.com pages (General Terms of Use 2023-06-27, Discovery Feed page, FAQ, Partners pages, Contact Us). Not re-fetched by Claude.
+- **Eligibility unclear** (three pages disagree); no feed-specific agreement; the developer terms very likely apply. **Storage**: "reasonable periods", no schedule, 24 h removal. **Refresh**: no limit stated, hourly files. **Attribution**: none required; text credit, no logo, **do not alter feed URLs**. **Images**: hot-link only (unclear). **Revenue**: only through the Affiliate Program on Impact.
+- **Likely cause of the unanswered email:** Ticketmaster says partnership questions must use the **"Partner with Us" form**, not the developer support form. The bulk-feed spec §3 now holds a ready message.
+- Changes: bulk-feed spec §3 rewritten with these findings and gates; AGENTS.md §4 adds a Discovery Feed bullet. The design is unchanged (daily download, expire missing events, purge at end, hot-linked images).
+- Owner actions: send the Partner with Us message; decide whether the first live run waits for a reply; Affiliate Program application (Impact) when the business can receive payments.
+
+## 2026-10-12 — Push `edc5e59` deployed (verified via GitHub API and Cloud Run)
+
+- Owner pushed `0a02d26..edc5e59` (11 commits: Scaper pilot report, Instagram/Bandsintown decisions, F47 photo pipeline, purge at event end, bulk feed spec, CI fix).
+- Production CI/CD run 38230054413: **test = success, deploy = success**; the run concluded `success`. The jobs API listed only `test` and `deploy` (no separate `frontend-test` job).
+- Cloud Run `group-travel-os-api` revision `00311-fzr` was created 2026-10-12 09:36 UTC, serves 100% of traffic, and `/health` returns 200.
+- Not in this push: the frontend (rovvy.app deploys from `main` via the daily sync at 2 AM UTC or `scripts/sync-to-main.ps1`) and the Scaper Cloud Run **job** image, which is still `65b6a60` and does not yet contain the purge-at-end change or the Ticketmaster venue-photo pipeline; it needs a redeploy from a clean checkout.
+
 ## 2026-10-12 — Owner decisions after the pilot: bulk feed spec, purge at end, source registry
 
 - **0. Coordination (read-only, 09:16 UTC):** no runs in progress; all 5 Ticketmaster sources (chicago, orlando, state ak/tx/ca) enabled; the latest job executions completed; job timeout still 3,600 s. Another session has **uncommitted edits to the Ticketmaster purge** (`scaper/store.py`, `scaper/raw_purge.py`, two tests). That is owner decision 2 and was left alone to avoid conflicting edits. Claude added no sources, started no runs and changed no timeouts.
@@ -1227,7 +1302,7 @@ Workbook snapshot: 76 task rows = 18 gates + 58 capabilities. Complete in code 3
 Recorded complete gates: G01 G02 G07 G08 G09 G10 G11 G13 G14 G15 G16 G17.
 Recorded complete capabilities: F04 F06 F07 F08 F12 F14 F18 F19 F20 F21 F22 F26 F30 F31 F33 F35 F42 F43 F44 F45 F54.
 Partial: G18; F01 F02 F03 F05 F09 F10 F11 F13 F15 F16 F17 F23 F24 F27 F28 F32 F34 F36 F41 F46 F55 F56.
-Pending: F25 F29 F37 F38 F39 F40 F47 F48 F49 F50 F51 F52 F53 F57 F58.
+Pending: F25 F29 F37 F38 F39 F40 F47 F48 F49 F51 F52 F53 F57 F58.
 Not started: G03 G04 G05 G06 G12.
 
 Reconciliation findings:

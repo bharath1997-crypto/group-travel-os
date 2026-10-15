@@ -88,8 +88,6 @@ _LOCATION_HARD_PATTERNS: list[re.Pattern[str]] = [
         r"\bway to reach\b",
         r"\bhow do i get there\b",
         r"\bget over there\b",
-        r"\bwhat flight\b",
-        r"\bwhich flight\b",
         r"\bwhen should i (?:go|visit|plan|travel|leave)\b",
         r"\bhow many days\b",
         r"\b\d+\s*(?:k|000)?\s*(?:dollars|\$|usd|budget)\b",
@@ -101,7 +99,7 @@ _LOCATION_HARD_PATTERNS: list[re.Pattern[str]] = [
 _TRIP_LOGISTICS_RE = re.compile(
     r"\b("
     r"how to reach|way to reach|how do i get there|get over there|"
-    r"what flight|which flight|fly from|when should i (?:go|visit|plan|travel|leave)|"
+    r"when should i (?:go|visit|plan|travel|leave)|"
     r"how many days|what day|what should i plan|help me plan|"
     r"\$\d|\d+\s*(?:k|000)\s*(?:dollars|usd|budget)|budget of|\bon my hand\b"
     r")\b",

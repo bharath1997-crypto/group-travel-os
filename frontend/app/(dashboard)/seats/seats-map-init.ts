@@ -1,6 +1,6 @@
 import maplibregl from "maplibre-gl";
 import {
-  getFlightPickerBasemapStyle,
+  getSeatsMapBasemapStyle,
   getLiveMapLibreLayerStyles,
   resolveOpenFreeMapCleanStyleUrlForLiveMap,
   rewriteRovvyTileWorkerRequestUrl,
@@ -43,7 +43,7 @@ export function seatShareMapOptions({
 }: SeatShareMapOptions): maplibregl.MapOptions {
   return {
     container,
-    style: getFlightPickerBasemapStyle() as maplibregl.StyleSpecification,
+    style: getSeatsMapBasemapStyle() as maplibregl.StyleSpecification,
     center,
     zoom,
     ...(attributionControl ? {} : { attributionControl: false as const }),

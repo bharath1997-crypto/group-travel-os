@@ -50,7 +50,7 @@ _PLAN_QUESTION_RE = re.compile(
     r"trip plan|"
     r"visit plan|"
     r"how to reach|way to reach|how do i get there|"
-    r"what flight|which flight|when should i (?:go|visit|plan|travel)|"
+    r"when should i (?:go|visit|plan|travel)|"
     r"how many days|what should i plan|"
     r"\$\d|\d+\s*(?:k|000)\s*(?:dollars|usd)|budget"
     r")\b",

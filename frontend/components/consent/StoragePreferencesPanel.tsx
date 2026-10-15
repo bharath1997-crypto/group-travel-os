@@ -15,7 +15,7 @@ export default function StoragePreferencesPanel() {
     <div className="rounded-xl border border-stone-200 bg-white p-4">
       <h3 className="text-sm font-semibold text-stone-900">Device storage preferences</h3>
       <p className="mt-1 text-sm text-stone-600">
-        Control whether Rovvy may remember recent airport selections on this device across visits.
+        Control whether Rovvy may remember recent search selections on this device across visits.
       </p>
       <div className="mt-3 space-y-2">
         <label className="flex min-h-11 items-start gap-2 text-sm text-stone-700">
@@ -28,7 +28,7 @@ export default function StoragePreferencesPanel() {
             }}
             className="mt-1 h-4 w-4 rounded border-stone-300 text-primary focus:ring-primary"
           />
-          <span>Remember recent airport selections (preference storage)</span>
+          <span>Remember recent search selections (preference storage)</span>
         </label>
         <label className="flex min-h-11 items-start gap-2 text-sm text-stone-700">
           <input

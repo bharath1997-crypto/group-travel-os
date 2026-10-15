@@ -41,7 +41,6 @@ const TRAVEL_KEYWORDS = [
   "sports",
   "art",
   "beach",
-  "flight",
   "trip",
   "stay",
   "visit",

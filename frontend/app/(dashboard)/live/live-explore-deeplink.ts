@@ -5,6 +5,7 @@ export type LiveExploreDeepLink = {
   lat: number;
   lng: number;
   name: string;
+  address: string | null;
 };
 
 /** Overture spine ids are UUIDs; legacy rows may be plain hex. */
@@ -39,6 +40,7 @@ export function buildLiveDirectionsHref(input: {
   lat?: number | null;
   lng?: number | null;
   name?: string | null;
+  address?: string | null;
 }): string | null {
   const lat = typeof input.lat === "number" ? input.lat : null;
   const lng = typeof input.lng === "number" ? input.lng : null;
@@ -50,6 +52,8 @@ export function buildLiveDirectionsHref(input: {
   params.set("lng", String(lng));
   const name = input.name?.trim();
   if (name) params.set("name", name);
+  const address = input.address?.trim();
+  if (address) params.set("address", address);
   const gers = normalizeGersId(input.gersId);
   if (gers) params.set("gers_id", gers);
   return `/live?${params.toString()}`;
@@ -61,7 +65,13 @@ type SearchParamsLike = Pick<URLSearchParams, "get">;
 export function parseLiveDeepLink(params: SearchParamsLike): LiveExploreDeepLink | null {
   const latRaw = params.get("lat");
   const lngRaw = params.get("lng");
-  if (latRaw == null && lngRaw == null && !params.get("gers_id") && !params.get("name")) {
+  if (
+    latRaw == null &&
+    lngRaw == null &&
+    !params.get("gers_id") &&
+    !params.get("name") &&
+    !params.get("address")
+  ) {
     return null;
   }
   const lat = parseCoord(latRaw);
@@ -70,6 +80,8 @@ export function parseLiveDeepLink(params: SearchParamsLike): LiveExploreDeepLink
 
   const name = (params.get("name") ?? "").trim();
   const gersId = normalizeGersId(params.get("gers_id"));
+  const addressRaw = (params.get("address") ?? "").trim();
+  const address = addressRaw || null;
 
-  return { gersId, lat, lng, name };
+  return { gersId, lat, lng, name, address };
 }

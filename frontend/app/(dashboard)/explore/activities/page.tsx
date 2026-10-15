@@ -170,7 +170,7 @@ export default function SeeAllActivitiesPage() {
       { id: "int-ac-2", name: "Tokyo City Immersive Digital Art", category: "Activities", venue: "teamLab Borderless", city: "Tokyo", price_min: 32, price_max: 42 },
       { id: "int-ac-3", name: "Colosseum Arena Floor Guided Tour", category: "Activities", venue: "Colosseum", city: "Rome", price_min: 40, price_max: 65 },
       { id: "int-ac-4", name: "Grand Canal Historic Gondola Ride", category: "Activities", venue: "Grand Canal", city: "Venice", price_min: 35, price_max: 50 },
-      { id: "int-ac-5", name: "London Eye VIP Flight Experience", category: "Activities", venue: "London Eye", city: "London", price_min: 45, price_max: 80 },
+      { id: "int-ac-5", name: "London Eye VIP Experience", category: "Activities", venue: "London Eye", city: "London", price_min: 45, price_max: 80 },
       { id: "int-ac-6", name: "Sagrada Familia Towers Access", category: "Activities", venue: "Sagrada Familia", city: "Barcelona", price_min: 30, price_max: 50 },
       { id: "int-ac-7", name: "Acropolis Hill Archeological Walk", category: "Activities", venue: "Acropolis", city: "Athens", price_min: 22, price_max: 35 },
       { id: "int-ac-8", name: "Sydney Harbour Sunset Dinner Cruise", category: "Activities", venue: "Sydney Harbour", city: "Sydney", price_min: 85, price_max: 120 },

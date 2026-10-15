@@ -34,8 +34,7 @@ def _locked_trip(*, creator_id: uuid.UUID | None = None) -> Trip:
     )
 
 
-@patch("app.services.booking_service._resolve_duffel_offer", return_value="https://duffel.example/offer")
-def test_create_booking_success(mock_resolve, db, mock_user):
+def test_create_booking_success(db, mock_user):
     mock_user.id = uuid.uuid4()
     trip = _locked_trip()
     db.execute.side_effect = [
@@ -43,20 +42,38 @@ def test_create_booking_success(mock_resolve, db, mock_user):
         exec_result(scalar_one_or_none=_member(trip.group_id, mock_user.id)),
     ]
 
+    booking_url = "https://partner.example/checkout/abc"
     data = BookingCreate(
-        provider_reference="off_123",
+        provider_reference=booking_url,
         amount=450.0,
         currency="USD",
     )
     out = BookingService.create_booking(db, trip.id, mock_user, data)
 
     assert out.status == BookingStatus.pending
-    assert out.provider == BookingProvider.duffel
-    assert out.provider_reference == "off_123"
-    assert out.booking_url == "https://duffel.example/offer"
+    assert out.provider == BookingProvider.manual_link
+    assert out.provider_reference == booking_url
+    assert out.booking_url == booking_url
     assert out.created_by == mock_user.id
-    mock_resolve.assert_called_once_with("off_123")
     db.commit.assert_called_once()
+
+
+def test_create_booking_requires_https_reference(db, mock_user):
+    mock_user.id = uuid.uuid4()
+    trip = _locked_trip()
+    db.execute.side_effect = [
+        exec_result(scalar_one_or_none=trip),
+        exec_result(scalar_one_or_none=_member(trip.group_id, mock_user.id)),
+    ]
+
+    with pytest.raises(HTTPException) as ei:
+        BookingService.create_booking(
+            db,
+            trip.id,
+            mock_user,
+            BookingCreate(provider_reference="off_123", amount=100.0),
+        )
+    assert ei.value.status_code == 400
 
 
 def test_create_booking_requires_locked_trip(db, mock_user):
@@ -112,7 +129,7 @@ async def test_confirm_booking_forbidden_non_admin(db, mock_user):
                 id=booking_id,
                 trip_id=trip_id,
                 created_by=creator_id,
-                provider=BookingProvider.duffel,
+                provider=BookingProvider.manual_link,
                 provider_reference="off_1",
                 amount=100.0,
                 currency="USD",
@@ -140,10 +157,10 @@ def test_confirm_booking_success_creates_expense(mock_add_expense, db, mock_user
         id=uuid.uuid4(),
         trip_id=trip_id,
         created_by=initiator_id,
-        provider=BookingProvider.duffel,
+        provider=BookingProvider.manual_link,
         provider_reference="off_99",
         status=BookingStatus.pending,
-        booking_url="https://duffel.example/offer",
+        booking_url="https://example.com/offer",
         amount=320.0,
         currency="USD",
     )
@@ -176,10 +193,10 @@ def test_confirm_booking_conflict_not_pending(db, mock_user):
         id=uuid.uuid4(),
         trip_id=uuid.uuid4(),
         created_by=uuid.uuid4(),
-        provider=BookingProvider.duffel,
+        provider=BookingProvider.manual_link,
         provider_reference="off_1",
         status=BookingStatus.confirmed,
-        booking_url="https://duffel.example/offer",
+        booking_url="https://example.com/offer",
         amount=100.0,
         currency="USD",
     )
@@ -197,10 +214,10 @@ def test_list_bookings_for_trip(db, mock_user):
         id=uuid.uuid4(),
         trip_id=trip.id,
         created_by=mock_user.id,
-        provider=BookingProvider.duffel,
+        provider=BookingProvider.manual_link,
         provider_reference="off_1",
         status=BookingStatus.pending,
-        booking_url="https://duffel.example/offer",
+        booking_url="https://example.com/offer",
         amount=200.0,
         currency="USD",
     )

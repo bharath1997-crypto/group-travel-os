@@ -12,7 +12,7 @@ import {
   MapPin,
   MessageCircle,
   Navigation,
-  Plane,
+  Route,
   Users,
   Wallet,
 } from "lucide-react";
@@ -843,10 +843,10 @@ export default function TripDetailPage() {
           })}
           <span className="mx-1 h-7 w-px bg-[#DCE7E3]" aria-hidden />
           <Link
-            href="/flights"
+            href="/routes"
             className="flex min-h-11 items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-slate-500 transition hover:bg-[#F4F7F5] hover:text-[#102521]"
           >
-            <Plane size={16} aria-hidden /> Bookings
+            <Route size={16} aria-hidden /> Routes
           </Link>
           <Link
             href={`/travel-hub?group_id=${encodeURIComponent(trip.group_id)}`}

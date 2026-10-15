@@ -1591,7 +1591,7 @@ export default function LivePageClient() {
   );
 
   const handleOpenTravelTab = useCallback(
-    (kind: "plan" | "flights" | "routes" | "buses" = "plan") => {
+    (kind: "plan" | "routes" | "buses" = "plan") => {
       const target = destination ?? selectedPlace;
       const origin = userRegionToLocationSummary(userRegion, userLocation);
       if (!target) {

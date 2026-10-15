@@ -92,6 +92,10 @@ After verified work, in the same tab folder:
     owner decision 2026-10-12, with raw payloads**; delisted events expire; remove owner-requested content within 24 hours; hot-link images, never
     re-host; no revenue from the API without written approval; scheduled crawls not tied to
     user actions may be throttled. Label "Tickets via Ticketmaster".
+  - Ticketmaster Discovery Feed (Perplexity 2026-10-12): feed eligibility is **unclear** (pages contradict;
+    our key works). Storing follows the developer terms ("reasonable periods"). Text credit only, **no logo**;
+    **keep feed event URLs unchanged** (affiliate tracking); revenue only through the **Affiliate Program on
+    Impact**; written confirmation via the **"Partner with Us" form**, not the developer support form.
   - Ticketmaster national coverage: **no state-by-state search rollout.** Use the bulk Discovery Feed
     connector (spec `Scram Book/Explorer Tab/Scaper_Ticketmaster_BulkFeed_Spec.md`); AK/TX/CA/city
     sources stay until it is verified, then are disabled.

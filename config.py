@@ -157,66 +157,15 @@ class Settings(BaseSettings):
         validation_alias="GEOAPIFY_API_KEY",
     )
 
-    # ── Kiwi.com Tequila (flight search) ─────────────────────────────────────────
-    kiwi_api_key: str | None = Field(
+    # ── Google Routes API (Directions v2 computeRoutes) ─────────────────────────
+    google_routes_api_key: str | None = Field(
         default=None,
-        validation_alias="KIWI_API_KEY",
+        validation_alias="GOOGLE_ROUTES_API_KEY",
     )
 
-    # ── Duffel & Amadeus (Flight Search API) ─────────────────────────────────────
-    duffel_api_key: str | None = Field(
+    # Travelpayouts affiliate marker (Agoda, GetYourGuide, Busbud deep links)
+    travelpayouts_marker: str | None = Field(
         default=None,
-        validation_alias="DUFFEL_API_KEY",
-    )
-
-    # duffel = production-safe Duffel-only search (recommended)
-    # discovery = estimates only when ALLOW_ESTIMATED_FLIGHTS=true
-    flight_live_provider: str = Field(
-        default="duffel",
-        validation_alias="FLIGHT_LIVE_PROVIDER",
-    )
-
-    flight_enabled_providers: str = Field(
-        default="duffel",
-        validation_alias="FLIGHT_ENABLED_PROVIDERS",
-        description="Comma-separated authorized flight provider adapters to enable",
-    )
-
-    amadeus_client_id: str | None = Field(
-        default=None,
-        validation_alias="AMADEUS_CLIENT_ID",
-    )
-    amadeus_client_secret: str | None = Field(
-        default=None,
-        validation_alias="AMADEUS_CLIENT_SECRET",
-    )
-    amadeus_environment: str = Field(
-        default="test",
-        validation_alias="AMADEUS_ENVIRONMENT",
-        description="Amadeus Self-Service environment: test or production",
-    )
-    amadeus_base_url: str = Field(
-        default="https://test.api.amadeus.com",
-        validation_alias="AMADEUS_BASE_URL",
-    )
-    amadeus_timeout_seconds: int = Field(
-        default=15,
-        ge=1,
-        le=120,
-        validation_alias="AMADEUS_TIMEOUT_SECONDS",
-    )
-
-    allow_estimated_flights: bool = Field(
-        default=False,
-        validation_alias="ALLOW_ESTIMATED_FLIGHTS",
-        description="When false, discovery/estimated flight results are never returned",
-    )
-
-
-
-    # ── Travelpayouts (tp.media affiliate marker / trs) ──────────────────────────
-    travelpayouts_marker: str = Field(
-        default="727732",
         validation_alias="TRAVELPAYOUTS_MARKER",
     )
     travelpayouts_api_token: str | None = Field(

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.place_facts import PlaceFactOut
+
 
 class PlaceSpinePhoto(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -69,3 +71,4 @@ class PlaceSpineDetail(BaseModel):
     next_slot: str | None = None
     slots_tonight: int | None = None
     updated_at: str = ""
+    facts: list[PlaceFactOut] = Field(default_factory=list)

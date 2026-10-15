@@ -1172,7 +1172,7 @@ export default function DashboardPage() {
     const desc = tripExpensesList.map((e) => e.description.toLowerCase()).join(" ");
     const hotel = /hotel|stay|lodg|resort/.test(desc);
     const transport =
-      /flight|train|bus ticket|uber|cab|\b(bus)\b/.test(desc);
+      /train|bus ticket|uber|cab|\b(bus)\b|\btransport\b/.test(desc);
     const membersOk = (smartTrip?.member_count ?? 0) >= 2;
     const settled =
       tripBalanceSummary.length === 0 ||

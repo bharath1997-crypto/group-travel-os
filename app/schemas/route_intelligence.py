@@ -16,8 +16,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class RouteOptionType(StrEnum):
     ROAD_TRIP = "road_trip"
-    FLIGHT_CONNECTION = "flight_connection"
-    FLIGHT_MULTIMODAL = "flight_multimodal"
     TRAIN_ROUTE = "train_route"
     BUS_ROUTE = "bus_route"
     BUDGET_ROUTE = "budget_route"
@@ -28,7 +26,6 @@ class RouteOptionType(StrEnum):
 class RouteSegmentType(StrEnum):
     DRIVE = "drive"
     WALK = "walk"
-    FLIGHT = "flight"
     TRAIN = "train"
     BUS = "bus"
     TRANSFER = "transfer"
@@ -103,3 +100,4 @@ class RouteIntelligenceResponse(BaseModel):
     is_international: bool = False
     requires_border_crossing: bool = False
     rovi_explanation: str | None = None
+    ground_unavailable_reason: str | None = None

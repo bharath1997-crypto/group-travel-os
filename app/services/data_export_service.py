@@ -100,7 +100,6 @@ def _collect_profile(db: Session, user_id: UUID) -> dict:
         "bio": getattr(user, "bio", None),
         "avatar_url": getattr(user, "avatar_url", None),
         "home_city": getattr(user, "home_city", None),
-        "home_airport": getattr(user, "home_airport", None),
         "nationality": getattr(user, "nationality", None),
         "date_of_birth": str(getattr(user, "date_of_birth", "") or ""),
         "created_at": user.created_at.isoformat() if getattr(user, "created_at", None) else None,

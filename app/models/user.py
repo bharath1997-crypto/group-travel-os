@@ -119,16 +119,6 @@ class User(Base):
         nullable=True,
         index=True,
     )
-    home_airport: Mapped[str | None] = mapped_column(
-        String(3),
-        nullable=True,
-    )
-    deal_price_threshold: Mapped[float | None] = mapped_column(Float, nullable=True)
-    deal_alerts_enabled: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=False,
-    )
 
     # ── Flags ─────────────────────────────────────────────────────────────────
     is_active: Mapped[bool] = mapped_column(
