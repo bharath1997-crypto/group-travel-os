@@ -2,6 +2,13 @@
 
 Authoritative planning and activity record for Rovvy Flights / Travel search.
 
+## 2026-10-15 — Flight product removal: pushed, deployed, database cleaned
+
+- **Push:** `7e7c8d2` pushed by the owner; Production CI run 38547985895: test = success, deploy = success; `/health` returns ok (database connected). Live Chicago events feed shows the provider mix (1 Eventbrite per 7 cards, total 489).
+- **Migration 013 applied by the owner in the Supabase SQL editor** (the tool classifier blocked Claude from production DB writes). Dropped `flight_bookings` + `flight_booking_status`, `users.home_airport/deal_price_threshold/deal_alerts_enabled`; `booking_provider` enum is now `manual_link` only.
+- **Verified (read-only, Claude):** `flight_bookings` gone, no flight columns on `users`, enum = ['manual_link'], no leftover flight types, `users` readable (70 rows), events endpoint 200. Tables were empty before the drop.
+- **Risks:** none open; Alembic history (20260512_*, 20260808_*) kept unchanged. **Next:** F50 Wikipedia dry-run and owner approval of migration 012.
+
 ## Artifacts
 
 | File | Description |

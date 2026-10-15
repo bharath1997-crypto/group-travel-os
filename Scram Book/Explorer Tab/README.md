@@ -47,6 +47,13 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 - **Scram:** workbook row F27 → `[2026-10-14]`, `Complete in code`, green; Evidence prepended; Cursor Context Log row added; backup `Rovvy_Explorer_Scrum_Book.xlsx.bak-20261014-f27-provider-mix`.
 - **Risks / next:** the window function runs over the visible set per city (hundreds of rows; fine). Browser QA `/explore` Chicago "This weekend" after deploy (expect Eventbrite at cards 2/4/6). Organizer expansion (option 2) still waits for approval.
 
+## 2026-10-15 — Flight product removal: pushed, deployed, database cleaned
+
+- **Push:** `7e7c8d2` pushed by the owner; Production CI run 38547985895: test = success, deploy = success; `/health` returns ok (database connected). Live Chicago events feed shows the provider mix (1 Eventbrite per 7 cards, total 489).
+- **Migration 013 applied by the owner in the Supabase SQL editor** (the tool classifier blocked Claude from production DB writes). Dropped `flight_bookings` + `flight_booking_status`, `users.home_airport/deal_price_threshold/deal_alerts_enabled`; `booking_provider` enum is now `manual_link` only.
+- **Verified (read-only, Claude):** `flight_bookings` gone, no flight columns on `users`, enum = ['manual_link'], no leftover flight types, `users` readable (70 rows), events endpoint 200. Tables were empty before the drop.
+- **Risks:** none open; Alembic history (20260512_*, 20260808_*) kept unchanged. **Next:** F50 Wikipedia dry-run and owner approval of migration 012.
+
 ## 2026-10-14 — Review of Cursor F27b and F50 (Claude)
 
 - **Context:** Cursor delivered F27 (per-day mix) then F27b (window-wide mix) and F50 (place facts, Chicago pilot). Live check of F27 showed Chicago page 1 still 24 Ticketmaster / 0 Eventbrite (no Eventbrite events today), so F27b reserves a minimum share across the whole window.
