@@ -202,3 +202,41 @@ def test_upload_missing_file_is_422(client) -> None:
     c, recorded, _ = client
     assert c.post(URL, data={"caption": "no file"}).status_code == 422
     assert recorded == []
+
+
+# ── single JSON secret (production: CLOUDFLARE_R2_CONFIG) ─────────────────
+
+JSON_CFG = (
+    '{\r\n  "account_id": "acct",\r\n  "bucket_name": "rovvy-place-media",\r\n'
+    '  "endpoint_url": "https://acct.r2.cloudflarestorage.com",\r\n'
+    '  "access_key_id": "akid\r\n",\r\n  "secret_access_key": "sekret\r\n",\r\n'
+    '  "public_url": "https://pub-x.r2.dev/"\r\n}'
+)
+
+
+def test_r2_config_reads_json_secret_and_trims_stray_line_breaks(monkeypatch) -> None:
+    _clear_r2(monkeypatch)
+    monkeypatch.setenv(photos.R2_JSON_ENV, JSON_CFG)
+    cfg = photos.r2_config()
+    assert cfg == {
+        "R2_ENDPOINT_URL": "https://acct.r2.cloudflarestorage.com",
+        "R2_ACCESS_KEY_ID": "akid",  # no trailing CRLF
+        "R2_SECRET_ACCESS_KEY": "sekret",
+        "R2_MEDIA_BUCKET": "rovvy-place-media",
+        "R2_MEDIA_PUBLIC_BASE_URL": "https://pub-x.r2.dev",  # no trailing slash
+    }
+
+
+def test_r2_config_individual_variables_win_over_json(monkeypatch) -> None:
+    _clear_r2(monkeypatch)
+    monkeypatch.setenv(photos.R2_JSON_ENV, JSON_CFG)
+    for key in photos.R2_ENV:
+        monkeypatch.setenv(key, f"direct-{key}")
+    assert photos.r2_config()["R2_MEDIA_BUCKET"] == "direct-R2_MEDIA_BUCKET"
+
+
+@pytest.mark.parametrize("raw", ["not json", "[1, 2]", '{"bucket_name": "only-bucket"}', ""])
+def test_r2_config_bad_json_secret_is_not_configured(monkeypatch, raw) -> None:
+    _clear_r2(monkeypatch)
+    monkeypatch.setenv(photos.R2_JSON_ENV, raw)
+    assert photos.r2_config() is None

@@ -2,6 +2,17 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-18 — R2 connected for production uploads (single JSON secret; pending deploy)
+
+- Context: the owner added the R2 configuration to Secret Manager as **one** secret, `CLOUDFLARE_R2_CONFIG` (JSON: account_id, bucket_name, endpoint_url, access_key_id, secret_access_key, public_url), not the five `R2_*` secrets the code expected.
+- Finding: `access_key_id` and `secret_access_key` each contain a stray line break inside the quoted value, so the secret is not strict JSON, and an untrimmed key would break R2 request signing. The secret was left as is.
+- Change: `r2_config()` (`place_photo_upload_service.py`) falls back to `CLOUDFLARE_R2_CONFIG` when the five `R2_*` variables are absent. It parses leniently, trims every value and drops a trailing `/` from URLs. The `R2_*` variables win when set. The deploy workflow's `--update-secrets` gains `CLOUDFLARE_R2_CONFIG=CLOUDFLARE_R2_CONFIG:latest`. The API's runtime identity already has project-level secretAccessor.
+- Verification:
+  - Upload tests: 23 passed (4 new: CRLF inside values, variables win, bad JSON, missing keys).
+  - Full CI-mode suite: 997 passed, 0 failed.
+  - **Real check with the actual secret and no local `R2_*` variables:** config parsed, bucket reachable, write OK, public URL served the test object (HTTP 200), and the test object was deleted.
+- Not done: production not redeployed yet, so uploads on the live site still say "not configured" until the next push deploys. Optional cleanup for the owner: save the secret again as clean JSON; roll the R2 secret key (it was pasted into a chat); move the public URL to a custom domain (`media.rovvy.app`) before launch.
+
 ## 2026-10-18 — F09: "Select the date" month calendar replaces the scrolling day strip
 
 - **Context (owner request):** the 14-day calendar strip under the When chips (with its horizontal scroll bar) is removed. A single **"Select the date"** chip in the When row opens a month calendar: date in **big black** type, dated-event count in **small dark green**, month **and year** navigation, past days muted, past months blocked (providers purge ended events).
