@@ -612,25 +612,10 @@
   background: transparent !important;
 }
 
-.calendarStrip {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 28px 12px;
-}
-
-.calendarStripHead {
-  display: flex;
+.dateSelectBtn {
+  display: inline-flex !important;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.calendarStripHead small {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-body-muted);
+  gap: 8px;
 }
 
 .calendarClear {
@@ -642,59 +627,189 @@
   cursor: pointer;
 }
 
-.calendarRow {
+/* "Select the date" month calendar (replaces the scrolling day strip). */
+.dateCalAnchor {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
+  justify-content: center;
+  margin-top: 12px;
 }
 
-.calendarDay {
-  flex: 0 0 auto;
-  min-width: 56px;
-  padding: 8px 10px;
+.dateCal {
+  width: min(100%, 360px);
+  padding: 14px 14px 12px;
   border: 1px solid rgba(15, 22, 20, 0.12);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.85);
-  cursor: pointer;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 40px rgba(15, 22, 20, 0.14);
+  text-align: left;
+}
+
+.dateCalHead {
   display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.dateCalNavGroup {
+  display: flex;
   gap: 2px;
 }
 
-.calendarDaySelected {
-  border-color: var(--color-text);
-  background: var(--color-text);
-  color: var(--color-text-on-dark);
+.dateCalNav {
+  width: 30px;
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
 }
 
-.calendarWeekday {
-  font-size: 11px;
+.dateCalNav:hover:not(:disabled) {
+  border-color: rgba(15, 22, 20, 0.14);
+  background: rgba(15, 22, 20, 0.04);
+}
+
+.dateCalNav:disabled {
+  color: rgba(15, 22, 20, 0.28);
+  cursor: default;
+}
+
+.dateCalTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-align: center;
+}
+
+.dateCalWeekdays,
+.dateCalGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.dateCalWeekdays {
+  margin-bottom: 4px;
+}
+
+.dateCalWeekdays span {
+  font-size: 10.5px;
   font-weight: 600;
-  opacity: 0.85;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--color-body-muted);
 }
 
-.calendarDayNum {
-  font-size: 16px;
+.dateCalPad {
+  min-height: 44px;
+}
+
+.dateCalDay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-height: 44px;
+  padding: 4px 2px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+
+.dateCalDay:hover:not(:disabled) {
+  border-color: rgba(15, 22, 20, 0.16);
+  background: rgba(15, 22, 20, 0.04);
+}
+
+.dateCalDayNum {
+  font-size: 17px;
   font-weight: 700;
   line-height: 1.1;
+  color: var(--color-text);
 }
 
-.calendarCount {
-  font-size: 11px;
-  font-weight: 600;
+.dateCalCount {
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.2;
   color: var(--color-primary);
 }
 
-.calendarDaySelected .calendarCount {
+.dateCalCountEmpty {
+  font-size: 10.5px;
+  line-height: 1.2;
+}
+
+.dateCalDayEmpty {
+  cursor: default;
+}
+
+.dateCalDayEmpty .dateCalDayNum {
+  color: rgba(15, 22, 20, 0.45);
+  font-weight: 600;
+}
+
+.dateCalDayPast {
+  cursor: default;
+}
+
+.dateCalDayPast .dateCalDayNum {
+  color: rgba(15, 22, 20, 0.22);
+  font-weight: 500;
+}
+
+.dateCalDayToday .dateCalDayNum {
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary);
+  text-underline-offset: 3px;
+}
+
+.dateCalDaySelected,
+.dateCalDaySelected:hover:not(:disabled) {
+  border-color: var(--color-text);
+  background: var(--color-text);
+}
+
+.dateCalDaySelected .dateCalDayNum {
+  color: var(--color-text-on-dark);
+}
+
+.dateCalDaySelected .dateCalCount {
   color: #a7f3d0;
 }
 
-.calendarHint {
-  margin: 8px 0 0;
+.dateCalFoot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(15, 22, 20, 0.08);
+}
+
+.dateCalHint {
+  margin: 0;
   font-size: 11.5px;
+  line-height: 1.4;
   color: var(--color-body-muted);
+}
+
+.dateCalActions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
 }
 
 .drawerMapPreviewLabel {

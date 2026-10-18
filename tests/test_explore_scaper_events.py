@@ -143,6 +143,125 @@ def test_hub_routes_any_scaper_city_to_scaper_feed(monkeypatch):
     assert calls == ["Chicago"]
 
 
+class _CountRows:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def mappings(self):
+        return self
+
+    def all(self):
+        return self.rows
+
+
+class CountDb:
+    bind = SimpleNamespace(dialect=SimpleNamespace(name="postgresql"))
+
+    def __init__(self, rows):
+        self.rows = rows
+        self.sql = []
+
+    def begin_nested(self):
+        return nullcontext()
+
+    def execute(self, statement, params):
+        self.sql.append((str(statement), params))
+        return _CountRows(self.rows)
+
+
+def test_day_counts_group_in_sql_over_visibility_cte_without_page_cap():
+    from datetime import date
+
+    from app.services.explore_scaper_events import scaper_event_day_counts
+
+    db = CountDb([{"day": date(2026, 11, 3), "n": 4}, {"day": date(2026, 11, 7), "n": 1}])
+    result = scaper_event_day_counts(db, city="Chicago", date_from="2026-11-01", date_to="2026-11-30")
+    assert result["days"] == [{"date": "2026-11-03", "count": 4}, {"date": "2026-11-07", "count": 1}]
+    assert result["total"] == 5
+    assert result["fetch_mode"] == "scaper_city"
+    sql, params = db.sql[-1]
+    normalized = " ".join(sql.split())
+    assert "WITH visible AS" in normalized
+    assert "duplicate_of" in normalized
+    assert "GROUP BY 1" in normalized
+    assert "LIMIT" not in normalized
+    assert params["city"] == "chicago"
+    assert (params["from_day"], params["to_day"]) == (date(2026, 11, 1), date(2026, 11, 30))
+
+
+def test_day_counts_reject_reversed_or_oversized_window():
+    import pytest
+
+    from app.services.explore_scaper_events import scaper_event_day_counts
+
+    with pytest.raises(ValueError):
+        scaper_event_day_counts(CountDb([]), city="Chicago", date_from="2026-11-30", date_to="2026-11-01")
+    with pytest.raises(ValueError):
+        scaper_event_day_counts(CountDb([]), city="Chicago", date_from="2026-01-01", date_to="2027-06-01")
+
+
+def test_calendar_route_returns_day_counts_for_scaper_city(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    monkeypatch.setattr("app.services.explore_scaper_events.scaper_city_enabled", lambda db, city: city == "Chicago")
+    monkeypatch.setattr(
+        "app.services.explore_scaper_events.scaper_event_day_counts",
+        lambda db, **kw: {
+            "city": kw["city"], "date_from": kw["date_from"], "date_to": kw["date_to"],
+            "days": [{"date": "2026-11-03", "count": 4}], "total": 4, "fetch_mode": "scaper_city",
+        },
+    )
+    response = TestClient(app).get(
+        "/api/v1/explore/events/calendar",
+        params={"city": "Chicago, IL", "date_from": "2026-11-01", "date_to": "2026-11-30"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["supported"] is True
+    assert body["days"] == [{"date": "2026-11-03", "count": 4}]
+    assert body["total"] == 4
+
+
+def test_calendar_route_unsupported_city_returns_empty_not_error(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    monkeypatch.setattr("app.services.explore_scaper_events.scaper_city_enabled", lambda db, city: False)
+    response = TestClient(app).get(
+        "/api/v1/explore/events/calendar",
+        params={"city": "Naperville", "date_from": "2026-11-01", "date_to": "2026-11-30"},
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "city": "Naperville", "date_from": "2026-11-01", "date_to": "2026-11-30",
+        "days": [], "total": 0, "supported": False,
+    }
+
+
+def test_calendar_route_validates_dates(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    client = TestClient(app)
+    # Missing required params / wrong format → 422 from validation.
+    assert client.get("/api/v1/explore/events/calendar", params={"city": "Chicago"}).status_code == 422
+    assert client.get(
+        "/api/v1/explore/events/calendar",
+        params={"city": "Chicago", "date_from": "11/01/2026", "date_to": "2026-11-30"},
+    ).status_code == 422
+    # Well-formed but impossible window → service ValueError → 422.
+    monkeypatch.setattr("app.services.explore_scaper_events.scaper_city_enabled", lambda db, city: True)
+    response = client.get(
+        "/api/v1/explore/events/calendar",
+        params={"city": "Chicago", "date_from": "2026-11-30", "date_to": "2026-11-01"},
+    )
+    assert response.status_code == 422
+
+
 def test_scaper_city_enabled_true_when_inventory_exists(monkeypatch):
     from app.services.explore_scaper_events import scaper_city_enabled
 

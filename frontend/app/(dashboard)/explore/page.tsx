@@ -18,7 +18,7 @@ import { ExploreDetailDrawer } from "./components/ExploreDetailDrawer";
 
 import { ExploreFilterChip } from "./components/ExploreFilterChip";
 
-import { ExploreHubCalendarStrip } from "./components/ExploreHubCalendarStrip";
+import { ExploreHubDateCalendar } from "./components/ExploreHubDateCalendar";
 
 import { ExploreRankingRow } from "./components/ExploreRankingRow";
 
@@ -86,6 +86,18 @@ import {
   filterSlotsByTimeScope,
   formatCalendarSelectedLabel,
 } from "./explore-hub-time-scope";
+import {
+  calendarFetchDateRange,
+  calendarMonthFromIso,
+  calendarMonthRange,
+  currentCalendarMonth,
+  dayCountsFromSummaries,
+  formatCalendarChipLabel,
+  hubFetchRangeForSelectedDay,
+  type ExploreCalendarMonth,
+} from "./explore-hub-calendar-month";
+import { useExploreCalendarCounts } from "./use-explore-calendar-counts";
+
 
 import styles from "./explore.module.css";
 
@@ -112,6 +124,14 @@ export default function ExplorePage() {
   const [when, setWhen] = useState("Tonight");
 
   const [calendarDayIso, setCalendarDayIso] = useState<string | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState<ExploreCalendarMonth>(() => currentCalendarMonth());
+
+  // Picking a day narrows the hub events window to that day (When chips are inactive meanwhile).
+  const calendarFetchRange = useMemo(() => hubFetchRangeForSelectedDay(calendarDayIso), [calendarDayIso]);
+  // Window the calendar counts cover: open month from today onwards.
+  const calendarCountsRange = useMemo(() => calendarFetchDateRange(calendarMonth), [calendarMonth]);
+
 
   const {
     city,
@@ -123,7 +143,7 @@ export default function ExplorePage() {
     unexpectedError,
     data,
     retry,
-  } = useExploreHub(when);
+  } = useExploreHub(when, calendarFetchRange);
 
   const [pickedCityBanner, setPickedCityBanner] = useState<string | null>(null);
 
@@ -194,22 +214,38 @@ export default function ExplorePage() {
       ...slot,
       reason:
         exploreCardReasonLabel(slot, {
-          when,
+          // A picked calendar day replaces the When chip; never label those cards "Tonight".
+          when: calendarDayIso ? "calendar" : when,
           savedPlaceSlots,
           anchorLat: data.placesAnchor?.lat ?? locationScope?.lat,
           anchorLon: data.placesAnchor?.lng ?? locationScope?.lon,
         }) ?? slot.reason,
     }));
-  }, [loading, data, when, hubSaves.savedSlotIds, locationScope?.lat, locationScope?.lon]);
+  }, [loading, data, when, calendarDayIso, hubSaves.savedSlotIds, locationScope?.lat, locationScope?.lon]);
   const timeScopedSlots = useMemo(
     () => filterSlotsByTimeScope(loadedScopeSlots, when, calendarDayIso),
     [loadedScopeSlots, when, calendarDayIso],
   );
   const showInventorySections = timeScopedSlots.length > 0;
-  const calendarDays = useMemo(
-    () => buildCalendarDaySummaries(loadedScopeSlots, when),
-    [loadedScopeSlots, when],
+  // Per-day counts: SQL counts from /explore/events/calendar; fall back to the loaded pool when
+  // the city has no Scaper index or the request failed.
+  const calendarCounts = useExploreCalendarCounts({
+    city: data?.city ?? null,
+    range: calendarCountsRange,
+    enabled: calendarOpen,
+  });
+  const calendarUsesApiCounts = Boolean(calendarCounts.counts?.supported);
+  const poolDayCounts = useMemo(
+    () => dayCountsFromSummaries(buildCalendarDaySummaries(loadedScopeSlots, when, calendarMonthRange(calendarMonth))),
+    [loadedScopeSlots, when, calendarMonth],
   );
+  const calendarDayCounts = calendarUsesApiCounts ? calendarCounts.counts!.countsByIso : poolDayCounts;
+  const calendarLoadedRange = calendarUsesApiCounts
+    ? calendarCountsRange
+    : !loading && data
+      ? (calendarFetchRange ?? calendarCountsRange)
+      : null;
+  const calendarLoading = loading || calendarCounts.loading;
   const hubPartial = !loading && data?.hubLoadState === "partial";
 
   const paginationResetKey = `${city}|${locationScope?.label ?? ""}|${when}|${calendarDayIso ?? ""}|${chips.join("\u0000")}|${data?.loadedAt ?? ""}`;
@@ -523,6 +559,20 @@ export default function ExplorePage() {
 
               ))}
 
+              <button
+                type="button"
+                className={`${styles.dateSelectBtn} ${calendarDayIso ? styles.whenSelected : ""}`}
+                aria-expanded={calendarOpen}
+                aria-controls="explore-date-calendar"
+                onClick={() => setCalendarOpen((v) => !v)}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <rect x="3" y="5" width="18" height="16" rx="2" />
+                  <path d="M3 10h18M8 3v4M16 3v4" />
+                </svg>
+                {calendarDayIso ? formatCalendarChipLabel(calendarDayIso) : "Select the date"}
+              </button>
+
               <button type="button" className={styles.refineBtn} onClick={() => setFiltersOpen((v) => !v)}>
 
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -537,15 +587,24 @@ export default function ExplorePage() {
 
             </div>
 
-            {!loading && loadedScopeSlots.length > 0 ? (
-              <ExploreHubCalendarStrip
-                days={calendarDays}
-                selectedDayIso={calendarDayIso}
-                onSelectDay={(iso) => {
-                  setCalendarDayIso(iso);
-                }}
-                onClearDay={() => setCalendarDayIso(null)}
-              />
+            {calendarOpen ? (
+              <div id="explore-date-calendar" className={styles.dateCalAnchor}>
+                <ExploreHubDateCalendar
+                  month={calendarMonth}
+                  onMonthChange={setCalendarMonth}
+                  countsByIso={calendarDayCounts}
+                  loadedRange={calendarLoadedRange}
+                  loading={calendarLoading}
+                  selectedDayIso={calendarDayIso}
+                  onSelectDay={(iso) => {
+                    setCalendarDayIso(iso);
+                    setCalendarMonth(calendarMonthFromIso(iso));
+                    setCalendarOpen(false);
+                  }}
+                  onClearDay={() => setCalendarDayIso(null)}
+                  onClose={() => setCalendarOpen(false)}
+                />
+              </div>
             ) : null}
 
           </div>

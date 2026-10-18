@@ -2,6 +2,23 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-18 — F09: "Select the date" month calendar replaces the scrolling day strip
+
+- **Context (owner request):** the 14-day calendar strip under the When chips (with its horizontal scroll bar) is removed. A single **"Select the date"** chip in the When row opens a month calendar: date in **big black** type, dated-event count in **small dark green**, month **and year** navigation, past days muted, past months blocked (providers purge ended events).
+- **Data (the fix that made counts honest):** the strip counted the hub's events page, which is capped at `per_page=100`, so a busy day showed "1" while the index had 54. New `GET /api/v1/explore/events/calendar?city&date_from&date_to` (`app/routes/explore.py` → `scaper_event_day_counts` in `app/services/explore_scaper_events.py`) groups the same visibility CTE by **venue-local day** in SQL; no page cap, windows > 366 days or reversed → 422; cities without a Scaper index → `supported: false` and the client falls back to counting its loaded pool. Counts are cached per city + month in the browser for the session.
+- **Feed:** picking a day refetches the hub for **exactly that day** (`hubFetchRangeForSelectedDay`), so the picked day never competes with Tonight's 100-event page; places stay in the feed. Cards no longer carry the "Tonight" reason label while a calendar day is active (F24 honesty). Clearing the day or tapping a When chip restores the default 14-day window.
+- **Files:** `explore-hub-calendar-month.ts` (pure month math + grid), `explore-hub-calendar-counts.ts` (network), `use-explore-calendar-counts.ts` (hook), `components/ExploreHubDateCalendar.tsx` (UI; `ExploreHubCalendarStrip.tsx` deleted), `use-explore-hub.ts` (exact-day window), `page.tsx`, `explore.module.css`.
+- **Verification:** browser on `/explore` (Hermosa, Chicago, GPS scope): October shows SQL counts (Oct 18 = 43, Oct 23 = 54, 438 this month); November nav → 15 events across 10 days; picking Nov 14 → chip "Sat, Nov 14", request `date_from=2026-11-14&date_to=2026-11-14`, feed = 3 events + 96 places, no "Tonight" pills. Backend `pytest -q` **991 passed, 36 skipped** (5 new tests: SQL shape, window validation, route 200 / unsupported / 422). Explore Vitest **156 passed / 30 files**; full Vitest **557 / 122**; `tsc --noEmit` 0 errors.
+- **Risks / notes:** the endpoint is public like `/explore/events` (no 401 case). The hub reload on day pick re-requests the two places sources too (same as a When-chip change). Local dev backend verified; production backend gets the route on the next Production-main push.
+- **Status:** F09 **Partial** (yellow). Remaining gap: the When-chip ranges (`dateRangeForWhen`) still use the browser clock, not the destination timezone; calendar day counts already group by venue-local day.
+
+## 2026-10-18 — Owner decisions: no revenue for now; coverage + image priorities
+
+- **No revenue from ticket sellers (owner, 2026-10-18):** Rovvy only lists events and links to the seller's page. The Ticketmaster Affiliate Program (Impact) application and any ticket-price comparison are **dropped for now**. Rules that still apply: no ads or affiliate links on Ticketmaster listings; keep event URLs unchanged; label "Tickets via Ticketmaster". The bulk-feed gate (3) in `Scaper_Ticketmaster_BulkFeed_Spec.md` (revenue waits for the Affiliate Program) is therefore moot. Gate (2), the Partner with Us confirmation of feed eligibility, remains.
+- **Ticketmaster state coverage today (Claude, live check):** the bulk Discovery Feed is **not built** (no `ticketmaster_feed` connector, no `ingest.feed_state` or staging tables), so **0 states are on the bulk setup**. The search-based sources cover **IL (Chicago), FL (Orlando), AK, TX and CA**: 8,000+ future events, with nightly runs for AK/TX/CA.
+- **Eventbrite (Claude, live check):** 6 organizers produce 87 future events (Chicago 24 and Orlando 8 in the next 14 days); no other city has any. Eventbrite has no search API, so coverage equals the organizers we add. The feed interleaves Eventbrite correctly (every 7th card in Chicago). The gap is input, not a bug.
+- **Images (Claude, live check):** events 100% have images (Ticketmaster 9,633 of 9,633; Eventbrite 93 of 93); places only ~2–8% (Chicago top 48: 4 attractions and 1 restaurant with photos). The "empty half" of the feed is places. The owner flagged this as the biggest issue.
+
 ## 2026-10-14 — Ground-only route intelligence (Live + Wayra)
 
 - **Change:** Route intelligence resolver is ground-only; no flight segment types in API or Live panel. Wayra seeds/copy updated so assistants do not suggest air travel.
