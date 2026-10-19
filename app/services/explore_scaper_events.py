@@ -204,6 +204,67 @@ def scaper_events_for_city(
     }
 
 
+def _local_day_window_where() -> str:
+    """Visibility filter for one city + local-day window (shared by feed and day counts)."""
+    return """
+        AND source_id IS NOT NULL AND city_slug = :city
+        AND (CAST(:from_day AS date) IS NULL
+             OR (start_time AT TIME ZONE COALESCE(NULLIF(timezone, ''), 'UTC'))::date >= :from_day)
+        AND (CAST(:to_day AS date) IS NULL
+             OR (start_time AT TIME ZONE COALESCE(NULLIF(timezone, ''), 'UTC'))::date <= :to_day)
+    """
+
+
+def scaper_event_day_counts(
+    db: Session,
+    *,
+    city: str,
+    date_from: str,
+    date_to: str,
+) -> dict[str, Any]:
+    """Dated-event counts per local calendar day for the Explore "Select the date" calendar.
+
+    Counts come from a SQL GROUP BY over the same visibility CTE as the feed, so they are
+    never truncated by the feed's page size. Days without events are omitted.
+    """
+    from_day = date.fromisoformat(date_from)
+    to_day = date.fromisoformat(date_to)
+    if to_day < from_day:
+        raise ValueError("date_to before date_from")
+    if (to_day - from_day).days > 366:
+        raise ValueError("calendar window longer than one year")
+    if db.bind is None or db.bind.dialect.name != "postgresql":
+        raise RuntimeError("Scaper events require PostgreSQL")
+    params = {
+        "city": city_slug(city),
+        "now": datetime.now(timezone.utc),
+        "from_day": from_day,
+        "to_day": to_day,
+    }
+    cte = visible_events_cte(_local_day_window_where())
+    with db.begin_nested():
+        rows = db.execute(
+            text(f"""
+                {cte}
+                SELECT (start_time AT TIME ZONE COALESCE(NULLIF(timezone, ''), 'UTC'))::date AS day,
+                       count(*) AS n
+                FROM visible
+                GROUP BY 1
+                ORDER BY 1
+            """),
+            params,
+        ).mappings().all()
+    days = [{"date": row["day"].isoformat(), "count": int(row["n"])} for row in rows]
+    return {
+        "city": city,
+        "date_from": date_from,
+        "date_to": date_to,
+        "days": days,
+        "total": sum(d["count"] for d in days),
+        "fetch_mode": "scaper_city",
+    }
+
+
 def scaper_event_detail(db: Session, event_id: str) -> dict[str, Any] | None:
     """Resolve a Scaper card without inventing rating, distance, time or price."""
     if db.bind is None or db.bind.dialect.name != "postgresql":

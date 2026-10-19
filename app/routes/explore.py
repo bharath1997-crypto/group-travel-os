@@ -673,6 +673,43 @@ def _similar_event_card(row: ExploreContent, rating: float) -> dict[str, Any]:
     }
 
 
+@router.get("/events/calendar", status_code=status.HTTP_200_OK)
+def explore_events_calendar(
+    city: str = Query(..., min_length=1, max_length=120),
+    date_from: str = Query(..., description="YYYY-MM-DD", pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    date_to: str = Query(..., description="YYYY-MM-DD", pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """
+    Per-day dated-event counts for the Explore "Select the date" calendar.
+    Counts are grouped in SQL over the city's Scaper inventory (no page cap). Cities without
+    Scaper inventory return `supported: false` and no days; the client then counts its loaded pool.
+    """
+    from app.services.explore_scaper_events import scaper_city_enabled, scaper_event_day_counts
+
+    scaper_city = city.split(",")[0].strip()
+    if not scaper_city_enabled(db, scaper_city):
+        return {
+            "city": scaper_city,
+            "date_from": date_from,
+            "date_to": date_to,
+            "days": [],
+            "total": 0,
+            "supported": False,
+        }
+    try:
+        payload = scaper_event_day_counts(
+            db, city=scaper_city.title(), date_from=date_from, date_to=date_to,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Invalid calendar date window") from exc
+    except Exception as exc:
+        logger.exception("Scaper calendar counts unavailable for %s", scaper_city)
+        raise HTTPException(status_code=503, detail=f"{scaper_city.title()} event index unavailable") from exc
+    payload["supported"] = True
+    return payload
+
+
 @router.get("/events/similar/{event_id}", status_code=status.HTTP_200_OK)
 def get_similar_explore_events(
     event_id: str,

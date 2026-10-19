@@ -2,6 +2,34 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-18 — R2 connected for production uploads (single JSON secret; pending deploy)
+
+- Context: the owner added the R2 configuration to Secret Manager as **one** secret, `CLOUDFLARE_R2_CONFIG` (JSON: account_id, bucket_name, endpoint_url, access_key_id, secret_access_key, public_url), not the five `R2_*` secrets the code expected.
+- Finding: `access_key_id` and `secret_access_key` each contain a stray line break inside the quoted value, so the secret is not strict JSON, and an untrimmed key would break R2 request signing. The secret was left as is.
+- Change: `r2_config()` (`place_photo_upload_service.py`) falls back to `CLOUDFLARE_R2_CONFIG` when the five `R2_*` variables are absent. It parses leniently, trims every value and drops a trailing `/` from URLs. The `R2_*` variables win when set. The deploy workflow's `--update-secrets` gains `CLOUDFLARE_R2_CONFIG=CLOUDFLARE_R2_CONFIG:latest`. The API's runtime identity already has project-level secretAccessor.
+- Verification:
+  - Upload tests: 23 passed (4 new: CRLF inside values, variables win, bad JSON, missing keys).
+  - Full CI-mode suite: 997 passed, 0 failed.
+  - **Real check with the actual secret and no local `R2_*` variables:** config parsed, bucket reachable, write OK, public URL served the test object (HTTP 200), and the test object was deleted.
+- Not done: production not redeployed yet, so uploads on the live site still say "not configured" until the next push deploys. Optional cleanup for the owner: save the secret again as clean JSON; roll the R2 secret key (it was pasted into a chat); move the public URL to a custom domain (`media.rovvy.app`) before launch.
+
+## 2026-10-18 — F09: "Select the date" month calendar replaces the scrolling day strip
+
+- **Context (owner request):** the 14-day calendar strip under the When chips (with its horizontal scroll bar) is removed. A single **"Select the date"** chip in the When row opens a month calendar: date in **big black** type, dated-event count in **small dark green**, month **and year** navigation, past days muted, past months blocked (providers purge ended events).
+- **Data (the fix that made counts honest):** the strip counted the hub's events page, which is capped at `per_page=100`, so a busy day showed "1" while the index had 54. New `GET /api/v1/explore/events/calendar?city&date_from&date_to` (`app/routes/explore.py` → `scaper_event_day_counts` in `app/services/explore_scaper_events.py`) groups the same visibility CTE by **venue-local day** in SQL; no page cap, windows > 366 days or reversed → 422; cities without a Scaper index → `supported: false` and the client falls back to counting its loaded pool. Counts are cached per city + month in the browser for the session.
+- **Feed:** picking a day refetches the hub for **exactly that day** (`hubFetchRangeForSelectedDay`), so the picked day never competes with Tonight's 100-event page; places stay in the feed. Cards no longer carry the "Tonight" reason label while a calendar day is active (F24 honesty). Clearing the day or tapping a When chip restores the default 14-day window.
+- **Files:** `explore-hub-calendar-month.ts` (pure month math + grid), `explore-hub-calendar-counts.ts` (network), `use-explore-calendar-counts.ts` (hook), `components/ExploreHubDateCalendar.tsx` (UI; `ExploreHubCalendarStrip.tsx` deleted), `use-explore-hub.ts` (exact-day window), `page.tsx`, `explore.module.css`.
+- **Verification:** browser on `/explore` (Hermosa, Chicago, GPS scope): October shows SQL counts (Oct 18 = 43, Oct 23 = 54, 438 this month); November nav → 15 events across 10 days; picking Nov 14 → chip "Sat, Nov 14", request `date_from=2026-11-14&date_to=2026-11-14`, feed = 3 events + 96 places, no "Tonight" pills. Backend `pytest -q` **991 passed, 36 skipped** (5 new tests: SQL shape, window validation, route 200 / unsupported / 422). Explore Vitest **156 passed / 30 files**; full Vitest **557 / 122**; `tsc --noEmit` 0 errors.
+- **Risks / notes:** the endpoint is public like `/explore/events` (no 401 case). The hub reload on day pick re-requests the two places sources too (same as a When-chip change). Local dev backend verified; production backend gets the route on the next Production-main push.
+- **Status:** F09 **Partial** (yellow). Remaining gap: the When-chip ranges (`dateRangeForWhen`) still use the browser clock, not the destination timezone; calendar day counts already group by venue-local day.
+
+## 2026-10-18 — Owner decisions: no revenue for now; coverage + image priorities
+
+- **No revenue from ticket sellers (owner, 2026-10-18):** Rovvy only lists events and links to the seller's page. The Ticketmaster Affiliate Program (Impact) application and any ticket-price comparison are **dropped for now**. Rules that still apply: no ads or affiliate links on Ticketmaster listings; keep event URLs unchanged; label "Tickets via Ticketmaster". The bulk-feed gate (3) in `Scaper_Ticketmaster_BulkFeed_Spec.md` (revenue waits for the Affiliate Program) is therefore moot. Gate (2), the Partner with Us confirmation of feed eligibility, remains.
+- **Ticketmaster state coverage today (Claude, live check):** the bulk Discovery Feed is **not built** (no `ticketmaster_feed` connector, no `ingest.feed_state` or staging tables), so **0 states are on the bulk setup**. The search-based sources cover **IL (Chicago), FL (Orlando), AK, TX and CA**: 8,000+ future events, with nightly runs for AK/TX/CA.
+- **Eventbrite (Claude, live check):** 6 organizers produce 87 future events (Chicago 24 and Orlando 8 in the next 14 days); no other city has any. Eventbrite has no search API, so coverage equals the organizers we add. The feed interleaves Eventbrite correctly (every 7th card in Chicago). The gap is input, not a bug.
+- **Images (Claude, live check):** events 100% have images (Ticketmaster 9,633 of 9,633; Eventbrite 93 of 93); places only ~2–8% (Chicago top 48: 4 attractions and 1 restaurant with photos). The "empty half" of the feed is places. The owner flagged this as the biggest issue.
+
 ## 2026-10-14 — Ground-only route intelligence (Live + Wayra)
 
 - **Change:** Route intelligence resolver is ground-only; no flight segment types in API or Live panel. Wayra seeds/copy updated so assistants do not suggest air travel.
@@ -46,6 +74,13 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 - **Honest reading of the expectation:** "about 0 before and several after" for Chicago's first 24 does not materialise because the first 24 cards are all **today**, and Eventbrite has **no Chicago event today**. The mix is working wherever a day has rows from both providers (Eventbrite is now the 2nd card of every such day). If the owner wants Eventbrite to appear on days without Eventbrite rows, that is a cross-day rule, contradicts the "rank within each local day" design, and needs a separate decision.
 - **Scram:** workbook row F27 → `[2026-10-14]`, `Complete in code`, green; Evidence prepended; Cursor Context Log row added; backup `Rovvy_Explorer_Scrum_Book.xlsx.bak-20261014-f27-provider-mix`.
 - **Risks / next:** the window function runs over the visible set per city (hundreds of rows; fine). Browser QA `/explore` Chicago "This weekend" after deploy (expect Eventbrite at cards 2/4/6). Organizer expansion (option 2) still waits for approval.
+
+## 2026-10-15 — Flight product removal: pushed, deployed, database cleaned
+
+- **Push:** `7e7c8d2` pushed by the owner; Production CI run 38547985895: test = success, deploy = success; `/health` returns ok (database connected). Live Chicago events feed shows the provider mix (1 Eventbrite per 7 cards, total 489).
+- **Migration 013 applied by the owner in the Supabase SQL editor** (the tool classifier blocked Claude from production DB writes). Dropped `flight_bookings` + `flight_booking_status`, `users.home_airport/deal_price_threshold/deal_alerts_enabled`; `booking_provider` enum is now `manual_link` only.
+- **Verified (read-only, Claude):** `flight_bookings` gone, no flight columns on `users`, enum = ['manual_link'], no leftover flight types, `users` readable (70 rows), events endpoint 200. Tables were empty before the drop.
+- **Risks:** none open; Alembic history (20260512_*, 20260808_*) kept unchanged. **Next:** F50 Wikipedia dry-run and owner approval of migration 012.
 
 ## 2026-10-14 — Review of Cursor F27b and F50 (Claude)
 

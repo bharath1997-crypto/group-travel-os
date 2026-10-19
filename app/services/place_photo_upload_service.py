@@ -12,6 +12,7 @@ R2_MEDIA_PUBLIC_BASE_URL are set; else the local disk in development only.
 from __future__ import annotations
 
 import io
+import json
 import os
 import uuid
 from dataclasses import dataclass
@@ -87,9 +88,41 @@ def _local_uploads_allowed() -> bool:
 R2_ENV = ("R2_ENDPOINT_URL", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_MEDIA_BUCKET", "R2_MEDIA_PUBLIC_BASE_URL")
 
 
+# One Secret Manager secret holding all R2 settings as JSON (what production uses).
+R2_JSON_ENV = "CLOUDFLARE_R2_CONFIG"
+_R2_JSON_KEYS = {
+    "R2_ENDPOINT_URL": "endpoint_url",
+    "R2_ACCESS_KEY_ID": "access_key_id",
+    "R2_SECRET_ACCESS_KEY": "secret_access_key",
+    "R2_MEDIA_BUCKET": "bucket_name",
+    "R2_MEDIA_PUBLIC_BASE_URL": "public_url",
+}
+
+
 def r2_config() -> dict[str, str] | None:
-    """All R2 settings, or None when any is missing (same credential names as 06_publish_places_r2.py)."""
+    """
+    All R2 settings, or None when any is missing.
+
+    Order: the five R2_* variables (local .env; same names as 06_publish_places_r2.py), else
+    the JSON secret CLOUDFLARE_R2_CONFIG. JSON is parsed leniently and every value is trimmed:
+    a pasted secret often carries a stray line break inside a quoted value, which strict JSON
+    rejects and which would break request signing if kept.
+    """
     values = {key: (os.environ.get(key) or "").strip() for key in R2_ENV}
+    if all(values.values()):
+        return values
+    raw = (os.environ.get(R2_JSON_ENV) or "").strip()
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw, strict=False)
+    except ValueError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    values = {env: str(data.get(field) or "").strip().rstrip("/") if env.endswith("_URL") or env.endswith("_BASE_URL")
+              else str(data.get(field) or "").strip()
+              for env, field in _R2_JSON_KEYS.items()}
     return values if all(values.values()) else None
 
 

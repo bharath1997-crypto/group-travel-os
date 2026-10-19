@@ -436,6 +436,8 @@ After every feature change, update this section in .cursorrules:
 | Explore G08 unknown field states (price/photo/hours/availability; no stock photos on inventory) | Complete | 2026-09-24 |
 | Scaper owner removal CLI + ingest blocklist (migration 011; pipeline skip before upsert) | Complete | 2026-10-08 |
 | Legal `/legal/data` (sources, attribution, independence, CONTACT_EMAIL removal) + Explore drawer link | Complete | 2026-10-08 |
+| Explore Feed Phase 1 (hero places anchor, TM/EB interleave, photo-first + map crop, reasons) | Complete | 2026-10-09 |
+| Explore F09 "Select the date" month calendar (`/explore/events/calendar` SQL day counts, month/year nav, exact-day feed; strip removed) | Complete | 2026-10-18 |
 | Explore F14 ratings cleanup (Explore tree only; no pseudoRating on inventory surfaces) | Complete | 2026-09-24 |
 | Browse-first auth (Phase 1 — explorer default, no login wall) | Modified | 2026-07 |
 | Live POI category icons (churches, libraries, schools, parks, landmarks) | Complete | 2026-07 |
@@ -532,7 +534,7 @@ Never hand-count; regenerate from the suites:
 
 | Suite | Modules | Tests | Result | Last Verified |
 |---|---|---|---|---|
-| Backend (pytest, tests/) | 80 | 698 | 698 passed, 0 failed | 2026-09-17 |
-| Frontend (vitest) | 75 | 349 | 349 passed, 0 failed | 2026-09-17 |
-| Explore hub Vitest (`app/(dashboard)/explore/__tests__`) | 20 | 113 | 113 passed, 0 failed | 2026-09-25 |
-| Frontend types (`npx tsc --noEmit`) | — | — | 0 errors | 2026-09-23 |
+| Backend (pytest, tests/) | — | 1027 | 991 passed, 36 skipped, 0 failed | 2026-10-18 |
+| Frontend (vitest) | 122 | 557 | 557 passed, 0 failed | 2026-10-18 |
+| Explore hub Vitest (`app/(dashboard)/explore/__tests__`) | 30 | 156 | 156 passed, 0 failed | 2026-10-18 |
+| Frontend types (`npx tsc --noEmit`) | — | — | 0 errors | 2026-10-18 |

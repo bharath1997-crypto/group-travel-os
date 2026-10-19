@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { dateRangeForWhen, mergeWithCalendarFetchRange } from "./explore-hub-dates";
 import { fetchExploreHub, type ExploreHubPayload } from "./explore-hub-data";
 import { shouldApplyExploreHubResponse } from "./explore-hub-fetch-state";
@@ -17,17 +17,26 @@ function readSavedCity(): string {
   return localStorage.getItem(LS_CITY)?.trim() || "Chicago";
 }
 
+export type ExploreCalendarFetchRange = { dateFrom: string; dateTo: string };
+
+/**
+ * @param calendarRange Exact events window when a calendar day is picked (that day only). When
+ * omitted, the When chip range is widened to the default 14-day calendar window.
+ */
 export function buildExploreHubFetchInput(
   city: string,
   locationScope: ExploreLocationScope | null,
   when: string,
+  calendarRange?: ExploreCalendarFetchRange,
 ): ExploreHubFetchInput {
-  const dates = mergeWithCalendarFetchRange(dateRangeForWhen(when));
+  const dates = calendarRange ?? mergeWithCalendarFetchRange(dateRangeForWhen(when));
   const base = locationScope ? fetchInputFromScope(locationScope) : { city: city.split(",")[0].trim() || "Chicago" };
   return { ...base, dateFrom: dates.dateFrom, dateTo: dates.dateTo };
 }
 
-export function useExploreHub(when: string = "Tonight") {
+export function useExploreHub(when: string = "Tonight", calendarRange?: ExploreCalendarFetchRange) {
+  const calendarFrom = calendarRange?.dateFrom;
+  const calendarTo = calendarRange?.dateTo;
   const [city, setCityState] = useState(readSavedCity);
   const [locationScope, setLocationScope] = useState<ExploreLocationScope | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,13 +85,18 @@ export function useExploreHub(when: string = "Tonight") {
     }
   }, []);
 
+  const calendarInput = useMemo(
+    () => (calendarFrom && calendarTo ? { dateFrom: calendarFrom, dateTo: calendarTo } : undefined),
+    [calendarFrom, calendarTo],
+  );
+
   const retry = useCallback(() => {
-    void reload(buildExploreHubFetchInput(city, locationScope, when));
-  }, [city, locationScope, when, reload]);
+    void reload(buildExploreHubFetchInput(city, locationScope, when, calendarInput));
+  }, [city, locationScope, when, calendarInput, reload]);
 
   useEffect(() => {
-    void reload(buildExploreHubFetchInput(city, locationScope, when));
-  }, [city, locationScope, when, reload]);
+    void reload(buildExploreHubFetchInput(city, locationScope, when, calendarInput));
+  }, [city, locationScope, when, calendarInput, reload]);
 
   return {
     city,
