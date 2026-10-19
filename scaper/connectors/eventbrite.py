@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from datetime import datetime
+from math import asin, cos, radians, sin, sqrt
 from typing import Any, ClassVar, Literal
 
 import httpx
@@ -56,10 +57,19 @@ _STATUS: dict[str, EventStatus] = {
 }
 
 
+class NearArea(BaseModel):
+    lat: float = Field(ge=-90, le=90)
+    lng: float = Field(ge=-180, le=180)
+    radius_km: float = Field(gt=0, le=500)
+
+
 class EventbriteSourceConfig(BaseModel):
     kind: Literal["organizer", "venue"]
     id: str = Field(pattern=r"^\d+$")
     max_pages: int = Field(default=10, ge=1, le=50)
+    # Organizers can run events in many cities. With `near`, only events whose
+    # venue lies inside the circle are kept, so they land in the source's city.
+    near: NearArea | None = None
 
 
 class EventbriteConnector(Connector):
@@ -92,6 +102,8 @@ class EventbriteConnector(Connector):
             body = self._client.get_json(url, params=params)
             for event in body.get("events") or []:
                 if isinstance(event, dict) and event.get("id"):
+                    if cfg.near is not None and not _inside(cfg.near, event.get("venue")):
+                        continue
                     yield RawItem(external_id=str(event["id"]), payload=event)
             pagination = body.get("pagination") or {}
             if not pagination.get("has_more_items"):
@@ -151,6 +163,18 @@ class EventbriteConnector(Connector):
             image_url=_image(payload.get("logo")),
             venue=venue,
         )
+
+
+def _inside(area: NearArea, venue: Any) -> bool:
+    """True when the event venue is within the circle. Unplaceable venues are kept
+    out: extract() would reject them anyway ("no venue coordinates")."""
+    placed = _venue(venue)
+    if placed is None:
+        return False
+    d_lat = radians(placed.lat - area.lat)
+    d_lng = radians(placed.lng - area.lng)
+    a = sin(d_lat / 2) ** 2 + cos(radians(area.lat)) * cos(radians(placed.lat)) * sin(d_lng / 2) ** 2
+    return 2 * 6371.0 * asin(sqrt(a)) <= area.radius_km
 
 
 def _text(value: Any) -> str:
