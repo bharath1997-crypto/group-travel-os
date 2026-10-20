@@ -178,3 +178,37 @@ def test_retries_exhausted_raises() -> None:
     )
     with pytest.raises(ConnectorError, match="gave up after 3 attempts"):
         client.get_json("https://x.test/a")
+
+
+# ── near (organizer events outside the source's city) ─────────────────────
+
+_CHICAGO = {"lat": 41.8781, "lng": -87.6298, "radius_km": 25}
+_ORLANDO = {"lat": 28.5417, "lng": -81.3776, "radius_km": 25}
+
+
+def _fetch_ids(near: dict | None) -> list[str]:
+    connector = _connector(
+        lambda r: httpx.Response(200, json=eventbrite_page([eventbrite_event(id="1")]))
+    )
+    config: dict = {"kind": "organizer", "id": "5550001"}
+    if near is not None:
+        config["near"] = near
+    return [i.external_id for i in connector.fetch(config)]
+
+
+def test_fetch_near_keeps_events_inside_the_circle() -> None:
+    assert _fetch_ids(_CHICAGO) == ["1"]
+
+
+def test_fetch_near_drops_events_outside_the_circle() -> None:
+    assert _fetch_ids(_ORLANDO) == []
+
+
+def test_fetch_without_near_keeps_everything() -> None:
+    assert _fetch_ids(None) == ["1"]
+
+
+def test_fetch_rejects_bad_near() -> None:
+    connector = _connector(lambda r: httpx.Response(200, json=eventbrite_page([])))
+    with pytest.raises(ValidationError):
+        list(connector.fetch({"kind": "organizer", "id": "5550001", "near": {"lat": 99, "lng": 0, "radius_km": 5}}))
