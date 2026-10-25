@@ -212,3 +212,47 @@ def test_fetch_rejects_bad_near() -> None:
     connector = _connector(lambda r: httpx.Response(200, json=eventbrite_page([])))
     with pytest.raises(ValidationError):
         list(connector.fetch({"kind": "organizer", "id": "5550001", "near": {"lat": 99, "lng": 0, "radius_km": 5}}))
+
+
+# ── 403 handling ──────────────────────────────────────────────────────────
+
+def test_html_403_block_page_is_retried_then_succeeds() -> None:
+    calls = {"n": 0}
+    sleeps: list[float] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if calls["n"] <= 2:
+            return httpx.Response(403, headers={"content-type": "text/html"}, text="<!DOCTYPE HTML><html>blocked")
+        return httpx.Response(200, json={"ok": True})
+
+    client = RetryingClient(httpx.Client(transport=httpx.MockTransport(handler)), sleep=sleeps.append)
+    assert client.get_json("https://x.test/a") == {"ok": True}
+    assert sleeps == [5.0, 10.0]
+
+
+def test_html_403_that_never_clears_gives_up() -> None:
+    client = RetryingClient(
+        httpx.Client(
+            transport=httpx.MockTransport(
+                lambda r: httpx.Response(403, headers={"content-type": "text/html"}, text="<html>no")
+            )
+        ),
+        max_attempts=3,
+        sleep=lambda _: None,
+    )
+    with pytest.raises(ConnectorError, match=r"gave up after 3 attempts \(HTTP 403 \(HTML block page\)\)"):
+        client.get_json("https://x.test/a")
+
+
+def test_json_403_permission_error_still_fails_fast() -> None:
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        return httpx.Response(403, json={"error": "PERMISSION_DENIED"})
+
+    client = RetryingClient(httpx.Client(transport=httpx.MockTransport(handler)), sleep=lambda _: None)
+    with pytest.raises(ConnectorError, match="HTTP 403"):
+        client.get_json("https://x.test/a")
+    assert calls["n"] == 1
