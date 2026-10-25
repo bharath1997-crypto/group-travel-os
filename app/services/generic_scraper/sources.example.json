@@ -1,0 +1,23 @@
+{
+  "sources": [
+    {
+      "name": "example_events",
+      "url": "https://example.com/events/{city_slug}",
+      "default_city": "New York",
+      "request_delay_seconds": 1.0,
+      "request_jitter_seconds": 0.2,
+      "link_pattern": "(event|events|tickets)",
+      "selectors": {
+        "card_selectors": [
+          "article.event-card",
+          "li.event-item"
+        ],
+        "link_selector": "a[href]",
+        "title_selector": ".event-title",
+        "date_selector": "time",
+        "venue_selector": ".event-venue",
+        "image_selector": "img"
+      }
+    }
+  ]
+}
