@@ -285,11 +285,8 @@ export default function CityEventsPage() {
       <div className="mx-0 max-w-none px-6">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <Link
-              href={`/explore/${cityEncoded}`}
-              className="text-sm font-medium text-primary hover:text-white"
-            >
-              ← {displayCity} Travel Guide
+            <Link href="/explore" className="text-sm font-medium text-primary hover:text-white">
+              ← Explore hub
             </Link>
             <h1 className="mt-2 text-2xl font-bold text-white">
               Events in {displayCity}

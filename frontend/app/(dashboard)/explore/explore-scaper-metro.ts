@@ -15,7 +15,12 @@ export function resolveScaperMetroCity(input: {
   lat?: number | null;
   lon?: number | null;
   fallbackCity?: string | null;
+  /** When set (directory GPS pick), skip the legacy 80 km metro snap. */
+  directoryCity?: string | null;
 }): string {
+  const directoryCity = input.directoryCity?.split(",")[0].trim();
+  if (directoryCity) return directoryCity;
+
   const fallback = (input.fallbackCity || "Chicago").split(",")[0].trim() || "Chicago";
   const lat = input.lat;
   const lon = input.lon;

@@ -96,7 +96,7 @@ describe("G07/F04 — no AI in Explore inventory", () => {
   });
 
   it("city events page does not request seasonal-events-ai", () => {
-    const page = readFileSync(join(EXPLORE_ROOT, "[city]/events/page.tsx"), "utf8");
+    const page = readFileSync(join(EXPLORE_ROOT, "city/[city]/events/page.tsx"), "utf8");
     expect(page).not.toContain("/explore/seasonal-events-ai");
     expect(page).not.toContain("seasonalAiRowToTrend");
   });

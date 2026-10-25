@@ -1,0 +1,7 @@
+[
+  {"kind": "state", "slug": "illinois", "name": "Illinois", "state_code": "IL", "state_slug": "", "lat": null, "lng": null, "population": null, "source": "us_census"},
+  {"kind": "city", "slug": "chicago", "name": "Chicago", "state_code": "IL", "state_slug": "illinois", "lat": 41.8781, "lng": -87.6298, "population": 2746388},
+  {"kind": "city", "slug": "springfield", "name": "Springfield", "state_code": "IL", "state_slug": "illinois", "lat": 39.7817, "lng": -89.6501, "population": 114394},
+  {"kind": "state", "slug": "missouri", "name": "Missouri", "state_code": "MO", "state_slug": "", "lat": null, "lng": null, "population": null, "source": "us_census"},
+  {"kind": "city", "slug": "springfield", "name": "Springfield", "state_code": "MO", "state_slug": "missouri", "lat": 37.2089, "lng": -93.2923, "population": 169176}
+]
