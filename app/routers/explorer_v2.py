@@ -15,6 +15,7 @@ from app.models.user import User
 from app.schemas.explorer_v2 import (
     ExploreNearbyResponse,
     ExploreViewportResponse,
+    CoverageState,
     EventResult,
     ExternalCallsRemainingResponse,
     GeocodingQuotaResponse,
@@ -23,6 +24,7 @@ from app.schemas.explorer_v2 import (
     SearchLogRequest,
 )
 from app.services.explorer.explorer_v2_service import explorer_v2_service
+from app.services.explore_scaper_events import scaper_coverage
 from app.services.scaper_event_visibility import visible_events_cte
 from app.utils.auth import get_current_user
 from app.utils.database import get_db
@@ -327,6 +329,15 @@ def get_city(
     city = address.get("city") or address.get("town") or address.get("village") or "Chicago"
     country = address.get("country") or "United States"
     return {"city": city, "country": country}
+
+
+@router.get("/events/coverage", response_model=list[CoverageState])
+def get_events_coverage(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[dict]:
+    """Every state and city that has events right now, with counts (Explore browser)."""
+    return scaper_coverage(db)
 
 
 @router.get("/events", response_model=list[EventResult])

@@ -61,6 +61,22 @@ class GeocodingQuotaResponse(BaseModel):
     quotas: list[GeocodingQuotaRow]
 
 
+class CoverageCity(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    slug: str
+    name: str
+    events: int
+
+
+class CoverageState(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    state_code: str | None
+    events: int
+    cities: list[CoverageCity]
+
+
 class EventResult(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
