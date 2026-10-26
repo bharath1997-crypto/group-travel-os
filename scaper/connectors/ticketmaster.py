@@ -77,6 +77,24 @@ class TicketmasterStateConfig(BaseModel):
         return code
 
 
+class TicketmasterCountryConfig(BaseModel):
+    """Every listing in one country (ISO 3166-1 alpha-2), e.g. GB. Use state_code for the US."""
+
+    country_code: str = Field(min_length=2, max_length=2)
+    days_ahead: int = Field(default=14, ge=1, le=60)
+    segment_id: str | None = None
+
+    @field_validator("country_code")
+    @classmethod
+    def _country(cls, value: str) -> str:
+        code = value.strip().upper()
+        if not code.isalpha() or len(code) != 2:
+            raise ValueError(f"invalid country code: {value}")
+        if code == "US":
+            raise ValueError("use state_code sources for the US (per-state paging)")
+        return code
+
+
 class TicketmasterSourceConfig(BaseModel):
     """Either geo (lat/lng) or state_code — validated by TicketmasterConnector.parse_config."""
 
@@ -104,12 +122,16 @@ class TicketmasterConnector(Connector):
         self._page_delay = page_delay
         self.api_calls_used = 0
 
-    def parse_config(self, config: dict[str, Any]) -> TicketmasterGeoConfig | TicketmasterStateConfig:
+    def parse_config(
+        self, config: dict[str, Any]
+    ) -> TicketmasterGeoConfig | TicketmasterStateConfig | TicketmasterCountryConfig:
+        if config.get("country_code") is not None:
+            return TicketmasterCountryConfig.model_validate(config)
         if config.get("state_code") is not None:
             return TicketmasterStateConfig.model_validate(config)
         if "lat" in config or "lng" in config:
             return TicketmasterGeoConfig.model_validate(config)
-        raise ValueError("ticketmaster config requires geo (lat/lng) or state_code")
+        raise ValueError("ticketmaster config requires geo (lat/lng), state_code or country_code")
 
     def fetch(self, config: dict[str, Any]) -> Iterator[RawItem]:
         cfg = self.parse_config(config)
@@ -126,6 +148,12 @@ class TicketmasterConnector(Connector):
                 "size": PAGE_SIZE,
                 "sort": "date,asc",
             }
+            if cfg.segment_id:
+                base["segmentId"] = cfg.segment_id
+            complete = yield from self._fetch_window(base, window_start, window_end)
+            self.last_fetch_complete = complete
+        elif isinstance(cfg, TicketmasterCountryConfig):
+            base = {"countryCode": cfg.country_code, "size": PAGE_SIZE, "sort": "date,asc"}
             if cfg.segment_id:
                 base["segmentId"] = cfg.segment_id
             complete = yield from self._fetch_window(base, window_start, window_end)

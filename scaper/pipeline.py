@@ -16,7 +16,8 @@ EXTRACT_CHUNK_SIZE = 200
 
 
 def _is_state_source(source: Source) -> bool:
-    return bool(source.state_code or source.config.get("state_code"))
+    """Sources spanning many cities (US state or whole country): city comes from each venue."""
+    return bool(source.state_code or source.config.get("state_code") or source.config.get("country_code"))
 
 
 def _event_location(source: Source, event: EventRecord, payload: dict) -> tuple[str | None, str | None]:

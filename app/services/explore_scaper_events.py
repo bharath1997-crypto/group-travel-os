@@ -54,6 +54,12 @@ def provider_mix_ranked_sql(source: str = "visible") -> str:
     """
 
 
+def _country_param(country: str | None) -> str:
+    """ISO 3166-1 alpha-2, default US. City slugs repeat across countries (Birmingham, London)."""
+    code = (country or "US").strip().upper()
+    return code if len(code) == 2 and code.isalpha() else "US"
+
+
 def city_slug(city: str) -> str:
     """'Chicago, IL' -> 'chicago'; 'New York' -> 'new-york' (matches ingest.sources.city_slug)."""
     return "-".join(city.split(",")[0].strip().lower().split())
@@ -115,7 +121,7 @@ def _event_row(row: dict[str, Any], city: str) -> dict[str, Any]:
         "time": start.strftime("%H:%M"),
         "venue": row["venue_name"] or "Venue unknown",
         "city": city,
-        "country": "US",
+        "country": row.get("country_code") or "US",
         "image_url": row["image_url"],
         "ticket_url": row["ticket_url"] or "",
         "price_min": price_min,
@@ -141,6 +147,7 @@ def scaper_events_for_city(
     date_to: str | None = None,
     page: int = 1,
     per_page: int = 200,
+    country: str | None = None,
 ) -> dict[str, Any]:
     """Use the source's city stamp, never a radius or browser GPS coordinate.
 
@@ -156,6 +163,7 @@ def scaper_events_for_city(
     page = max(1, page)
     params = {
         "city": slug,
+        "country": _country_param(country),
         "now": datetime.now(timezone.utc),
         "category": category.lower() if category else None,
         "from_day": from_day,
@@ -165,6 +173,7 @@ def scaper_events_for_city(
     }
     cte = visible_events_cte("""
         AND source_id IS NOT NULL AND city_slug = :city
+        AND COALESCE(country_code, 'US') = :country
         AND (CAST(:category AS text) IS NULL OR lower(category) = :category)
         AND (CAST(:from_day AS date) IS NULL
              OR (start_time AT TIME ZONE COALESCE(NULLIF(timezone, ''), 'UTC'))::date >= :from_day)
@@ -178,7 +187,7 @@ def scaper_events_for_city(
                 {cte}
                 SELECT id, title, category, start_time, venue_name, image_url,
                        ticket_url, price_min, price_max, is_free, status, provider,
-                       lat, lng, timezone, fetched_at
+                       lat, lng, timezone, fetched_at, country_code
                 FROM ({provider_mix_ranked_sql()}) AS ranked
                 ORDER BY {PROVIDER_MIX_ORDER_BY}
                 LIMIT :limit OFFSET :offset
@@ -208,6 +217,7 @@ def _local_day_window_where() -> str:
     """Visibility filter for one city + local-day window (shared by feed and day counts)."""
     return """
         AND source_id IS NOT NULL AND city_slug = :city
+        AND COALESCE(country_code, 'US') = :country
         AND (CAST(:from_day AS date) IS NULL
              OR (start_time AT TIME ZONE COALESCE(NULLIF(timezone, ''), 'UTC'))::date >= :from_day)
         AND (CAST(:to_day AS date) IS NULL
@@ -221,6 +231,7 @@ def scaper_event_day_counts(
     city: str,
     date_from: str,
     date_to: str,
+    country: str | None = None,
 ) -> dict[str, Any]:
     """Dated-event counts per local calendar day for the Explore "Select the date" calendar.
 
@@ -237,6 +248,7 @@ def scaper_event_day_counts(
         raise RuntimeError("Scaper events require PostgreSQL")
     params = {
         "city": city_slug(city),
+        "country": _country_param(country),
         "now": datetime.now(timezone.utc),
         "from_day": from_day,
         "to_day": to_day,
@@ -277,7 +289,7 @@ def scaper_event_detail(db: Session, event_id: str) -> dict[str, Any] | None:
         text("""
             SELECT id, title, category, start_time, venue_name, image_url,
                    ticket_url, price_min, price_max, is_free, status, provider,
-                   lat, lng, city_slug, timezone
+                   lat, lng, city_slug, timezone, country_code
             FROM public.events
             WHERE id = :id AND source_id IS NOT NULL
               AND status IN ('scheduled', 'sold_out', 'postponed')
@@ -320,7 +332,7 @@ def scaper_coverage(db: Session) -> list[dict]:
         return []
     rows = db.execute(
         text(
-            visible_events_cte("AND source_id IS NOT NULL AND city_slug IS NOT NULL")
+            visible_events_cte("AND source_id IS NOT NULL AND city_slug IS NOT NULL AND COALESCE(country_code, 'US') = 'US'")
             + """
             SELECT COALESCE(state_code, '') AS state_code, city_slug, count(*) AS events
             FROM visible
