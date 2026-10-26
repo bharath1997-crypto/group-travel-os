@@ -2,6 +2,21 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-25 — Explore dynamic state/city directory pages (phase 1 review fixes, Partial)
+
+- **Context:** Phase 1 review fixes — no live Wikipedia on requests, Postgres savepoints, directory query/cache/rate limits, file grouping for commits.
+- **Fixes:** Migration 014 extended with `wikipedia_extract`, `wikipedia_url`, `wikipedia_fetched_at` (not applied). Service reads About text from DB only; import `--write` fetches Wikipedia (30-day refresh, `--refresh-wikipedia`). `_count_places_near` + search use `begin_nested()`; 5-minute in-memory cache for `event_counts_by_city_slug()` with `clear_event_counts_cache_for_tests()`; `list_states()` one cities query grouped by state; in-memory per-IP limiter `explore_directory_rate_limit.py` (120/min — **no shared app-wide HTTP limiter existed**). Tests: 12 directory tests (was 7).
+- **Verification:** `pytest -q` **1028 passed, 36 skipped**; Vitest **570 passed**; `tsc --noEmit` **0 errors**. Import `--dry-run`: 5 rows, IL 2 / MO 1 cities (fixture fallback without `CENSUS_API_KEY`).
+- **Not done:** Migration apply + full Census import; MapLibre state map; place_media photos; hub GPS wiring; browser QA; workbook (owner/Codex).
+- **Next:** Owner approves 014; `CENSUS_API_KEY` + import `--write`; stage directory vs PIN-fix commits separately (see engineering report).
+
+## 2026-10-25 — Explorer Scrum Book correction, Part A
+
+- **Context / goal:** Correct stale task counts, incomplete 2026-10-14 rows, the place-facts ID, and Ticketmaster purge wording before separate feature rows are added.
+- **Result:** Row 3 now builds its summary from status formulas; row 5 covers rows 9–500 and counts IDs dynamically. ExplorerTasks extends through row 87. The place-facts task became F76, leaving F50 as Friends-going filter. F76 and F27c gained workstream, priority, difficulty, acceptance, and 2026-10-25 title prefixes. Existing Status values stayed unchanged; 45 Task-cell fills were aligned to Complete in code/Partial. Historical README and spec wording now states the 2026-10-12 Ticketmaster purge rule: event end (+6 h when no end time).
+- **Verification:** Workbook reopened with openpyxl after save; 79 task IDs; manual statuses: 42 Complete in code, 20 Partial, 13 Pending, 3 Not started, 1 Partial in product. Row 5 formulas correspond to those counts (Pending / not started = 16). Table range A8:I87, formulas, data validation, conditional formatting, and column widths were compared with the backup. No code or live data changed.
+- **Risks / next action:** F76 priority/difficulty copy F47; F27c priority/difficulty copy F27, pending product review. Spreadsheet formulas recalculate when opened in Excel; openpyxl does not evaluate them. Separate tool adds new feature rows afterwards.
+
 ## 2026-10-18 — R2 connected for production uploads (single JSON secret; pending deploy)
 
 - Context: the owner added the R2 configuration to Secret Manager as **one** secret, `CLOUDFLARE_R2_CONFIG` (JSON: account_id, bucket_name, endpoint_url, access_key_id, secret_access_key, public_url), not the five `R2_*` secrets the code expected.
@@ -56,13 +71,13 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 - **Live:** `scripts/verify_f27_provider_mix_live.py` — **not run** (no `DATABASE_URL` in this session). Workbook F27 row → **Partial** (yellow) until Chicago/Orlando first-24 EB before/after logged.
 - **F50 fix:** OSM match uses ~100 m grid + 3×3 neighbour cells (`place_facts_match.py`); brute-force equivalence + <2s test on 5k POIs / 800 places.
 
-## 2026-10-14 — F50 built: place facts (Wikipedia + OSM, Chicago pilot)
+## 2026-10-14 — F76 built: place facts (Wikipedia + OSM, Chicago pilot)
 
 - **Context:** `Explore_Place_Facts_Spec.md` — provider-stated descriptions and hours without touching Overture `places.short_description`.
 - **Backend:** `migrations/012_place_facts.sql` (not applied). `place_facts` read path on `GET /api/v1/places/spine/{gers_id}` via `PlaceFactsService` + `facts[]` on `PlaceSpineDetail`. Fetch/match helpers: `place_facts_wikipedia.py`, `place_facts_match.py`, `place_facts_osm_extract.py` (Geofabrik PBF via optional `osmium`). Script `scripts/12_fetch_place_facts.py` defaults to **dry-run** (counts + 20 samples); `--write` + `--pbf` for owner-approved ingest only.
 - **Frontend:** Explore drawer loads spine facts for place listings (`explore-place-spine-facts.ts`, `ExploreDetailDrawer.tsx`) — Wikipedia “From Wikipedia” + link, raw hours/wheelchair, OSM credit. `/legal/data` adds Wikipedia (CC BY-SA 4.0) and OpenStreetMap (ODbL) sections. Did not modify `frontend/lib/api.ts` or `auth.ts`.
 - **Tests:** `tests/test_place_facts.py` — 12 passed, 1 skipped (`SCAPER_PG_TEST_URL` upsert/read). `explore-place-spine-facts.test.ts` — 4 passed. `tests/test_place_spine.py` — 7 passed.
-- **Scram:** workbook row **F50b** (task row 86) `Complete in code`, green; Cursor Context Log row 108; backup `Rovvy_Explorer_Scrum_Book.xlsx.bak-20261014-f50-place-facts`. (Workbook id F50 remains “Friends-going filter”; spec task tracked as F50b.) Migration **not** applied; no production DB writes; no push.
+- **Scram:** workbook row **F76** (task row 86) `Complete in code`, green; Cursor Context Log row 108; backup `Rovvy_Explorer_Scrum_Book.xlsx.bak-20261014-f50-place-facts`. (Workbook id F50 remains “Friends-going filter”; spec task tracked as F76.) Migration **not** applied; no production DB writes; no push.
 - **Next:** owner approves migration + Chicago `--write` run with Illinois Geofabrik PBF; report match rate per spec §8.
 
 ## 2026-10-14 — F27 built: server-side per-day provider round-robin in the Explore events reader
@@ -122,7 +137,7 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
     - **`eventId` equals the Discovery v2 id**: 68% (1,003 of 1,469) of sampled next-60-day events in states we already ingest already exist under the same id, and the rest are outside today's geographic reach. Cutover will not duplicate events.
   - Design: one index call, a stream with incremental MD5 and no temp file, COPY into UNLOGGED staging, set-based upsert, a venue-matching batch for new venues only, expiry guarded at −30%, a dedup queue, and a single transaction committed only after the MD5 matches. There is a `--dry-run` and a supervised-run gate before the old sources are disabled.
   - Open owner decisions: horizon (365 days proposed), prices cleared, first-load timeout.
-- **2. Ticketmaster purge at event end (+6 h without end time):** the code and tests are in another session's uncommitted work. Claude reviewed the diff: `raw_payload_past` and `purge_past_events` drop the 7-day grace, and the time-bomb fixtures in `test_scaper_ticketmaster.py` move to 2099. AGENTS.md §4 now states the rule.
+- **2. Ticketmaster purge at event end (+6 h without end time):** the code and tests are in another session's uncommitted work. Claude reviewed the diff: `raw_payload_past` and `purge_past_events` implement purge at event end (+6 h when no end time), and the time-bomb fixtures in `test_scaper_ticketmaster.py` move to 2099. AGENTS.md §4 now states the rule.
 - **3. Source registry:** `ingest.provider_registry` is specified in the bulk-feed spec §5 (additive migration 012 with seed rows from AGENTS.md §4). The personal account owner is recorded as "owner (personal)" without an address.
 - **4. Pre-push verification (clean checkout of `08983c9`, requirements-ci environment):**
   - CI-equivalent suite (sqlite): **952 passed, 30 skipped, 0 failed, 0 errors.**
@@ -136,8 +151,8 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 - Done by Claude:
   - Sources `ticketmaster:state:ak|tx|ca` registered with `interval_minutes=1440` (nightly). The hourly trigger runs them when due, about 08:38 UTC each day.
   - First run results are in the pilot entry above: 9,977 events total, +50 MB in the database, and the hub shows events for Austin, Anchorage and San Diego.
-  - **Ticketmaster purge changed from event end + 7 days to event end** (`scaper/store.py`, `scaper/raw_purge.py` SQL and Python rule). It applies to events and to their raw payloads.
-- Tests: Ticketmaster raw-purge unit test added; Scaper fixtures moved to 2099 (a 2026-10-03 fixture was hidden by the 7-day grace and would now be purged as past). Supabase suite 15/15.
+  - **Ticketmaster purge changed to event end (+6 h when no end time), owner decision 2026-10-12** (`scaper/store.py`, `scaper/raw_purge.py` SQL and Python rule). It applies to events and to their raw payloads.
+- Tests: Ticketmaster raw-purge unit test added; Scaper fixtures moved to 2099 (a 2026-10-03 fixture was hidden by the former grace period and would now be purged as past). Supabase suite 15/15.
 - **Found (not mine, Cursor's F47 commit `9146ed3`, unpushed):** `tests/test_ticketmaster_venue_media.py` uses a `pg` fixture that exists only in `test_scaper_postgres.py`. In CI it errors ("fixture 'pg' not found"), which would block the deploy. Needs the fixture moved to `conftest.py`, or a skip when the Postgres URL is unset.
 - Not deployed yet: the Scaper job image needs the purge change. The F47 code from `9146ed3` is unreviewed and is **not** going into the job image until Claude reviews it.
 - Storage note: Supabase extra database storage is $0.125/GB per the docs as quoted by Perplexity (the owner said $1/GB; not verified by Claude). A full 50-state refresh is estimated at ~250–300 MB.
@@ -158,7 +173,7 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
   - Runtime: ~29 min for the two big states, while the job's task timeout is 60 min. Sequential runs of 47 states may not fit one execution. The hourly trigger would pick up the rest (the lease protects runs), but the timeout should be raised (e.g. 3 h) or the sources run in parallel before nightly all-state runs.
   - Dedup groups per state run are high (406 and 436): the series rule collapses timed-entry slots as designed.
   - Nightly cadence for all states is the "scheduled crawl" the Ticketmaster terms warn about; their written reply is still pending (owner emailed; no answer). Per the spec, **STOP here until the owner approves the other 47 states.**
-- Next action: owner decision on the other 47 states (and on purge at event end vs 7 days after); Claude to raise the job timeout if approved.
+- Next action: owner decision on the other 47 states (purge timing was decided later on 2026-10-12: event end, +6 h without an end time); Claude to raise the job timeout if approved.
 
 ## 2026-10-12 — Instagram and Bandsintown research (Perplexity): decisions
 
@@ -202,7 +217,7 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
   - Cloud Run Job `scaper-run-due` (us-west1, next to Supabase us-west-2). It's deployed from a clean checkout of `65b6a60`, built into a new us-west1 Artifact Registry repo `cloud-run-source-deploy` (~$0.05/month, which avoids ~$10–20/month of cross-region image pulls).
   - Hourly Cloud Scheduler trigger `scaper-run-due-hourly` (`5 * * * *` UTC), using the dedicated invoker service account `scaper-scheduler`.
 - Verification:
-  - First execution: **8/8 sources succeeded**; Ticketmaster 1,455 events and Eventbrite 93, refreshed 2026-10-09 09:57 UTC (stale since 2026-09-27); 285 Ticketmaster events more than 7 days past their end were purged.
+  - First execution: **8/8 sources succeeded**; Ticketmaster 1,455 events and Eventbrite 93, refreshed 2026-10-09 09:57 UTC (stale since 2026-09-27); 285 past Ticketmaster events were purged under the rule in force at the time; the 2026-10-12 owner rule is event end (+6 h when no end time).
   - A forced trigger run at 10:12 UTC started a new execution (scheduler → job permission works).
   - Production CI/CD runs for `cdf2d1e` and `6b45c59` passed both test and deploy, so the backend deploys again after the duckdb fix.
 - Fixes: `deploy-scaper-job.ps1` (`4fa6466`) — `--args=` form, and PowerShell 5.1 stderr handling.
@@ -285,7 +300,7 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 ### Done and committed (local `Production-main`, 7 commits ahead of origin, NOT pushed)
 - `9bdbf37`: Explore drawer **Directions opens the Live tab** (not Google Maps). The UUID place-ID and address fixes are included.
 - `472b8fe`, `4e169ba`, `d7bc037`: Ticketmaster **state mode** (window bisect), migration 010 file, batched writes, hub works for any city with events.
-- `759f985`, `bcd984a`: **Eventbrite purge at event end** (raw payloads and orphan venues too; Ticketmaster after 7 days); "View on Eventbrite" / "Tickets via Ticketmaster" real `<a href>` links; independence note.
+- `759f985`, `bcd984a`: **Eventbrite purge at event end** (raw payloads and orphan venues too; Ticketmaster purge later changed by owner decision 2026-10-12 to event end (+6 h when no end time)); "View on Eventbrite" / "Tickets via Ticketmaster" real `<a href>` links; independence note.
 - `1b0d4e6`: AGENTS.md §4 provider-terms rules and national-spec items 8–11.
 - Claude reviewed all of them: CI 971 passed / 0 failed; rolled-back Supabase suite 13/13; Explore + Live Vitest 127/127.
 - **CORRECTION 2026-10-08:** NOT in production. Every Production CI/CD run since `c726d13` (2026-09-27) failed (tests that import `duckdb`, which is missing from `requirements-ci.txt`, cause a collection error and exit 2), so the deploy job was skipped for `c726d13`, `14788d4`, `19f1974`, `86447c4` and `ab1e3f2`. Claude had reported `86447c4` as deploying without confirming the run. Fixed by adding `duckdb==1.5.5` to `requirements-ci.txt`, verified in a fresh venv built from requirements-ci.txt only: 946 passed, 0 failed. Pushed but not yet deployed: photos (Wikimedia + uploads), faster places, address/phone/map drawer, Scaper events in hub, series dedup, events pagination, shared rule book, flight tests removed.
@@ -322,7 +337,7 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 ## 2026-10-05 — Eventbrite/Ticketmaster compliance (purge + provider links)
 
 - **Context:** AGENTS.md §4 + `Scaper_Ticketmaster_National_Spec.md` items 10–11 (Eventbrite API terms: no past-event storage; crawlable outbound links; independence disclosure).
-- **Result:** `purge_past_events` deletes matching `ingest.raw_records`, Eventbrite-specific orphan **created** venue cleanup (scoped `place_id`s from `DELETE … RETURNING`), Ticketmaster 7-day post-end retention. Explore drawer: real `<a href>` CTAs **View on Eventbrite** / **Tickets via Ticketmaster** plus footer independence note.
+- **Result:** `purge_past_events` deletes matching `ingest.raw_records`, Eventbrite-specific orphan **created** venue cleanup (scoped `place_id`s from `DELETE … RETURNING`), Ticketmaster retention later changed by owner decision 2026-10-12 to purge at event end (+6 h when no end time). Explore drawer: real `<a href>` CTAs **View on Eventbrite** / **Tickets via Ticketmaster** plus footer independence note.
 - **Verification:** `pytest -q` (CI sqlite) **971 passed**, 27 skipped; `tests/test_scaper_postgres.py` **13 passed** rolled-back Postgres; Vitest `explore-unknown-field-states` **14 passed**; `tests/test_scaper_store.py` asserts `PostgresStore.dedupe_city` / `relink_created_places` on class.
 - **Risks:** Supabase still holds ended Eventbrite rows until Claude runs one-off cleanup (not done in this pass).
 - **Next action:** Production DB cleanup; Ticketmaster 50-state pilot unchanged (migration 010 + owner approval).

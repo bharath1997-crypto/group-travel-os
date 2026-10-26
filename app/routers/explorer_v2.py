@@ -7,14 +7,21 @@ import uuid as _uuid
 from datetime import datetime, timezone
 import logging
 import httpx
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.models.user import User
+from app.schemas.explore_directory import (
+    DirectoryCityPage,
+    DirectorySearchHit,
+    DirectoryStatePage,
+    DirectoryStateSummary,
+)
 from app.schemas.explorer_v2 import (
     ExploreNearbyResponse,
     ExploreViewportResponse,
+    CoverageState,
     EventResult,
     ExternalCallsRemainingResponse,
     GeocodingQuotaResponse,
@@ -22,7 +29,16 @@ from app.schemas.explorer_v2 import (
     PlaceResult,
     SearchLogRequest,
 )
+from app.services.explore_directory_rate_limit import check_directory_rate_limit
+from app.services.explore_directory_service import (
+    get_city_page,
+    get_state_page,
+    list_states,
+    nearest_directory_city,
+    search_directory,
+)
 from app.services.explorer.explorer_v2_service import explorer_v2_service
+from app.services.explore_scaper_events import scaper_coverage
 from app.services.scaper_event_visibility import visible_events_cte
 from app.utils.auth import get_current_user
 from app.utils.database import get_db
@@ -31,6 +47,19 @@ from app.utils.exceptions import AppException
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["explorer_v2"])
+
+
+def _directory_client_ip(request: Request) -> str | None:
+    forwarded = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+    if forwarded:
+        return forwarded
+    if request.client:
+        return request.client.host
+    return None
+
+
+def enforce_directory_rate_limit(request: Request) -> None:
+    check_directory_rate_limit(_directory_client_ip(request))
 
 MAX_RADIUS_M = 50000
 MAX_NEARBY_LIMIT = 200
@@ -327,6 +356,74 @@ def get_city(
     city = address.get("city") or address.get("town") or address.get("village") or "Chicago"
     country = address.get("country") or "United States"
     return {"city": city, "country": country}
+
+
+@router.get("/events/coverage", response_model=list[CoverageState])
+def get_events_coverage(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[dict]:
+    """Every state and city that has events right now, with counts (Explore browser)."""
+    return scaper_coverage(db)
+
+
+@router.get(
+    "/directory/states",
+    response_model=list[DirectoryStateSummary],
+    dependencies=[Depends(enforce_directory_rate_limit)],
+)
+def get_directory_states(db: Session = Depends(get_db)) -> list[dict]:
+    """All US states in the directory (public, browse-first)."""
+    return list_states(db)
+
+
+@router.get(
+    "/directory/search",
+    response_model=list[DirectorySearchHit],
+    dependencies=[Depends(enforce_directory_rate_limit)],
+)
+def get_directory_search(
+    q: str = Query(..., min_length=2, max_length=120),
+    limit: int = Query(10, ge=1, le=10),
+    db: Session = Depends(get_db),
+) -> list[dict]:
+    return search_directory(db, q, limit=limit)
+
+
+@router.get("/directory/nearest", dependencies=[Depends(enforce_directory_rate_limit)])
+def get_directory_nearest(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+    db: Session = Depends(get_db),
+) -> DirectorySearchHit | None:
+    """Resolve browser GPS to the nearest directory city (coordinates are not stored)."""
+    hit = nearest_directory_city(db, lat=lat, lng=lng)
+    return hit
+
+
+@router.get(
+    "/directory/{state_slug}",
+    response_model=DirectoryStatePage,
+    dependencies=[Depends(enforce_directory_rate_limit)],
+)
+def get_directory_state_page(
+    state_slug: str,
+    db: Session = Depends(get_db),
+) -> dict:
+    return get_state_page(db, state_slug)
+
+
+@router.get(
+    "/directory/{state_slug}/{city_slug}",
+    response_model=DirectoryCityPage,
+    dependencies=[Depends(enforce_directory_rate_limit)],
+)
+def get_directory_city_page(
+    state_slug: str,
+    city_slug: str,
+    db: Session = Depends(get_db),
+) -> dict:
+    return get_city_page(db, state_slug, city_slug)
 
 
 @router.get("/events", response_model=list[EventResult])

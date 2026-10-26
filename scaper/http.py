@@ -11,6 +11,17 @@ import httpx
 logger = logging.getLogger(__name__)
 
 RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
+# A 403 that answers with an HTML page is a CDN/WAF block (seen from Cloud Run egress
+# IPs on Eventbrite), not an API permission error, and usually clears on retry.
+WAF_BLOCK_BASE_DELAY = 5.0
+
+
+def _is_waf_block(response: httpx.Response) -> bool:
+    if response.status_code != 403:
+        return False
+    kind = response.headers.get("content-type", "").lower()
+    head = response.text[:64].lstrip().lower()
+    return "html" in kind or head.startswith(("<!doctype", "<html"))
 
 
 class ConnectorError(Exception):
@@ -47,12 +58,17 @@ class RetryingClient:
                     if not isinstance(body, dict):
                         raise ConnectorError(f"GET {url}: expected JSON object")
                     return body
-                if response.status_code not in RETRYABLE_STATUS:
+                waf_block = _is_waf_block(response)
+                if response.status_code not in RETRYABLE_STATUS and not waf_block:
                     raise ConnectorError(
                         f"GET {url}: HTTP {response.status_code} {response.text[:200]}"
                     )
-                last_error = f"HTTP {response.status_code}"
-                delay = self._retry_after(response) or self._backoff(attempt)
+                last_error = f"HTTP {response.status_code}" + (" (HTML block page)" if waf_block else "")
+                delay = self._retry_after(response) or (
+                    min(WAF_BLOCK_BASE_DELAY * 2 ** (attempt - 1), self._max_delay)
+                    if waf_block
+                    else self._backoff(attempt)
+                )
             if attempt < self._max_attempts:
                 logger.warning("GET %s failed (%s); retry %d in %.1fs", url, last_error, attempt, delay)
                 self._sleep(delay)

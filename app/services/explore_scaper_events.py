@@ -307,3 +307,39 @@ def scaper_event_detail(db: Session, event_id: str) -> dict[str, Any] | None:
         "rating": None,
         "distance_miles": None,
     }
+
+
+def scaper_coverage(db: Session) -> list[dict]:
+    """States -> cities that currently have visible Scaper events, with counts.
+
+    Feeds the Explore state/city browser. Uses the same visibility rules as the
+    event feed (one row per dedup group, nothing past its end), so counts match
+    what a city page will show. Non-Postgres databases have no Scaper data.
+    """
+    if db.bind is None or db.bind.dialect.name != "postgresql":
+        return []
+    rows = db.execute(
+        text(
+            visible_events_cte("AND source_id IS NOT NULL AND city_slug IS NOT NULL")
+            + """
+            SELECT COALESCE(state_code, '') AS state_code, city_slug, count(*) AS events
+            FROM visible
+            GROUP BY 1, 2
+            ORDER BY 1, events DESC, city_slug
+            """
+        ),
+        {"now": datetime.now(timezone.utc)},
+    ).mappings().all()
+    states: dict[str, dict] = {}
+    for row in rows:
+        code = row["state_code"] or None
+        state = states.setdefault(code or "", {"state_code": code, "events": 0, "cities": []})
+        state["events"] += int(row["events"])
+        state["cities"].append(
+            {
+                "slug": row["city_slug"],
+                "name": str(row["city_slug"]).replace("-", " ").title(),
+                "events": int(row["events"]),
+            }
+        )
+    return sorted(states.values(), key=lambda s: (-s["events"], s["state_code"] or ""))
