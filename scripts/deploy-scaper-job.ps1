@@ -56,7 +56,7 @@ Invoke-Gcloud @(
     "--args=-m,scaper,run-due",  # '=' form: a value starting with '-' is otherwise read as a flag
     "--memory", "512Mi",
     "--cpu", "1",
-    "--task-timeout", "3600s",
+    "--task-timeout", "14400s",  # 4 h: the 60-day ramp step loads ~59k events (about 2 h)
     "--max-retries", "0",
     "--set-secrets", "DATABASE_URL=DATABASE_URL:latest,EVENTBRITE_TOKEN=EVENTBRITE_TOKEN:latest,TICKETMASTER_API_KEY=TICKETMASTER_API_KEY:latest"
 )
