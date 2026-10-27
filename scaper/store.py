@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -18,6 +19,8 @@ from scaper.venue_place_media import (
 )
 from scaper.raw_purge import orphan_past_raw_delete_sql
 from scaper.ticketmaster_overlap import city_slugs_for_state
+
+logger = logging.getLogger(__name__)
 
 # Venue -> places matching thresholds. Conservative: a wrong link attaches an
 # event to the wrong venue, a missed link only creates a duplicate place row.
@@ -89,6 +92,18 @@ def _country_code(venue: Any) -> str | None:
     """ISO 3166-1 alpha-2 from the provider venue; None when the provider did not state it."""
     code = str(getattr(venue, "country", None) or "").strip().upper()
     return code if len(code) == 2 and code.isalpha() else None
+
+
+def _event_country_code(venue: Any, source: Any) -> str:
+    """Venue ISO code when stated; else source.config country_code; else US."""
+    from_venue = _country_code(venue)
+    if from_venue:
+        return from_venue
+    cfg = getattr(source, "config", None) or {}
+    raw = str(cfg.get("country_code") or "").strip().upper()
+    if len(raw) == 2 and raw.isalpha():
+        return raw
+    return "US"
 
 
 class PostgresStore:
@@ -229,6 +244,52 @@ class PostgresStore:
             raise RunInProgress(source.name) from exc
         return RunHandle(id=row.id, started_at=row.started_at)
 
+    def record_api_calls(self, run: RunHandle, calls: int) -> None:
+        """Best effort: needs migration 016; a missing column must never fail a run."""
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(
+                    text("UPDATE ingest.runs SET api_calls = :n WHERE id = :id"),
+                    {"n": int(calls), "id": run.id},
+                )
+        except Exception:
+            logger.warning("could not record api_calls (apply migrations/016_run_api_calls.sql)")
+
+    def api_calls_last_24h(self, connector: str) -> int:
+        """Rolling 24h total, the conservative reading of a per-day provider quota."""
+        try:
+            with self.engine.connect() as conn:
+                return int(
+                    conn.execute(
+                        text(
+                            """
+                            SELECT COALESCE(sum(r.api_calls), 0)
+                            FROM ingest.runs r JOIN ingest.sources s ON s.id = r.source_id
+                            WHERE s.connector = :connector AND r.started_at > now() - interval '24 hours'
+                            """
+                        ),
+                        {"connector": connector},
+                    ).scalar()
+                    or 0
+                )
+        except Exception:
+            logger.warning("api_calls budget unavailable (apply migrations/016_run_api_calls.sql); not enforcing it")
+            return 0
+
+    def set_days_ahead(self, source_id: uuid.UUID, days: int) -> None:
+        with self.engine.begin() as conn:
+            conn.execute(
+                text(
+                    """
+                    UPDATE ingest.sources
+                    SET config = jsonb_set(config, '{days_ahead}', to_jsonb(CAST(:days AS integer))),
+                        updated_at = now()
+                    WHERE id = :sid
+                    """
+                ),
+                {"days": int(days), "sid": source_id},
+            )
+
     def finish_run(self, run: RunHandle, status: RunStatus, stats: RunStats, error: str | None) -> None:
         with self.engine.begin() as conn:
             source_id = conn.execute(
@@ -243,7 +304,7 @@ class PostgresStore:
                     RETURNING source_id
                     """
                 ),
-                {"id": run.id, "status": status, "error": error, **stats.model_dump()},
+                {"id": run.id, "status": status, "error": error, **stats.model_dump(exclude={"api_calls"})},
             ).scalar_one()
             conn.execute(
                 text("UPDATE ingest.sources SET last_run_at = now(), updated_at = now() WHERE id = :sid"),
@@ -479,7 +540,7 @@ class PostgresStore:
                         "lng": venue.lng if venue else None,
                         "city_slug": row.city_slug,
                         "state_code": row.state_code,
-                        "country_code": _country_code(venue),
+                        "country_code": _event_country_code(venue, source),
                         "source_id": source.id,
                         "raw_id": row.raw_id,
                     },

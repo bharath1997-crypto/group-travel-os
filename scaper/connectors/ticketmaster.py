@@ -63,10 +63,25 @@ class TicketmasterGeoConfig(BaseModel):
     max_pages: int = Field(default=DEEP_PAGING_LIMIT // PAGE_SIZE, ge=1, le=DEEP_PAGING_LIMIT // PAGE_SIZE)
 
 
+def _check_ramp(value: list[int] | None) -> list[int] | None:
+    if value is None:
+        return None
+    if not value or any(not 1 <= d <= 60 for d in value) or value != sorted(set(value)):
+        raise ValueError("ramp must be increasing day counts between 1 and 60, e.g. [3, 14, 60]")
+    return value
+
+
 class TicketmasterStateConfig(BaseModel):
     state_code: str = Field(min_length=2, max_length=2)
     days_ahead: int = Field(default=60, ge=1, le=60)
     segment_id: str | None = None
+    # After each succeeded run days_ahead moves to the next step (3 -> 14 -> 60).
+    ramp: list[int] | None = None
+
+    @field_validator("ramp")
+    @classmethod
+    def _ramp(cls, value: list[int] | None) -> list[int] | None:
+        return _check_ramp(value)
 
     @field_validator("state_code")
     @classmethod
@@ -83,6 +98,12 @@ class TicketmasterCountryConfig(BaseModel):
     country_code: str = Field(min_length=2, max_length=2)
     days_ahead: int = Field(default=14, ge=1, le=60)
     segment_id: str | None = None
+    ramp: list[int] | None = None
+
+    @field_validator("ramp")
+    @classmethod
+    def _ramp(cls, value: list[int] | None) -> list[int] | None:
+        return _check_ramp(value)
 
     @field_validator("country_code")
     @classmethod

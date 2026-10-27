@@ -106,6 +106,7 @@ class RunStats(BaseModel):
     failed: int = 0
     purged: int = 0
     deduped: int = 0
+    api_calls: int = 0
 
 
 class RunReport(BaseModel):

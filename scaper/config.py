@@ -14,3 +14,5 @@ class ScaperSettings(BaseSettings):
     )
     eventbrite_token: str = Field(default="", validation_alias="EVENTBRITE_TOKEN")
     ticketmaster_api_key: str = Field(default="", validation_alias="TICKETMASTER_API_KEY")
+    # Ticketmaster allows 5,000 calls per day per key; keep headroom for the app's own use.
+    ticketmaster_daily_call_budget: int = Field(default=4000, ge=0, validation_alias="SCAPER_TICKETMASTER_DAILY_CALLS")

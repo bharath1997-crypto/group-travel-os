@@ -223,6 +223,7 @@ def test_first_run_inserts_and_links_venue() -> None:
     assert report.status == "succeeded"
     assert report.stats.model_dump() == {
         "fetched": 2, "unchanged": 0, "inserted": 2, "updated": 0, "rejected": 0, "failed": 0, "purged": 0, "deduped": 0,
+        "api_calls": 0,
     }
     place_ids = {e["place_id"] for e in store.events.values()}
     assert place_ids == {store.links[("eventbrite", "7770001")]}
