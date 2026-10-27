@@ -96,9 +96,14 @@ After verified work, in the same tab folder:
     our key works). Storing follows the developer terms ("reasonable periods"). Text credit only, **no logo**;
     **keep feed event URLs unchanged** (affiliate tracking); revenue only through the **Affiliate Program on
     Impact**; written confirmation via the **"Partner with Us" form**, not the developer support form.
-  - Ticketmaster national coverage: **no state-by-state search rollout.** Use the bulk Discovery Feed
-    connector (spec `Scram Book/Explorer Tab/Scaper_Ticketmaster_BulkFeed_Spec.md`); AK/TX/CA/city
-    sources stay until it is verified, then are disabled.
+  - Ticketmaster national coverage: **owner decision 2026-10-26 overrides the earlier "no state-by-state
+    rollout".** Ticketmaster has not answered; the Discovery API terms allow storing events for reasonable
+    periods, so the 48 remaining US states/DC and non-US countries are loaded through the normal API
+    (`scripts/15_add_ticketmaster_world_sources.py`), in small windows first (3 days, then 14, then 60),
+    watching for errors/throttling after each step (limit 5,000 calls/day, ~300-600 for a full refresh).
+    Stop at the first sign of throttling or a revoked key. The bulk feed (spec
+    `Scram Book/Explorer Tab/Scaper_Ticketmaster_BulkFeed_Spec.md`) stays the cleaner replacement once
+    eligibility is confirmed; then the per-state sources are disabled.
   - Eventbrite (API terms last updated 2025-05-30): store content **only for future events**;
     after an event has occurred delete its event row, raw payload and any venue data taken from
     it (no grace period stated). Every Eventbrite listing shows the event title and a **direct,
@@ -121,6 +126,22 @@ After verified work, in the same tab folder:
     venues that have not connected.
   - Bandsintown: **not used** (artists-only API; commercial use needs written approval; session
     caching only; may not be mixed with other sources; conflicts with multi-seller tickets).
+  - YouTube (Perplexity + Gemini cross-check 2026-10-26; sources: YouTube API Developer Policies,
+    Required Minimum Functionality, Policies Guide, player parameters; pages dated 2026-10-15):
+    **allowed with limits**, official Data API v3 key only (default 10,000 units/day).
+    Read curated channels with `playlistItems.list` (1 unit); **never `search.list`**; cap our own use
+    at 1,000 units/day. Channels are approved by a person per place; no discovery by search.
+    Stored API data (title, thumbnail URL, duration, channel) is refreshed or deleted within **30 days**.
+    Hot-link thumbnails (do not alter or crop; a play button over the thumbnail is fine); show the full
+    image. Play only in YouTube's embedded player (>= 200x200, referrer policy
+    `strict-origin-when-cross-origin`), iframe loaded on tap, no autoplay with sound, no overlay in front
+    of the player, one player at a time; never separate audio/video. Label the source as YouTube with a
+    link; show the YouTube Terms of Service and Google Privacy Policy links wherever videos appear, and
+    our own terms/privacy must reference them. No custom scores or derived metrics; order by upload date
+    or curator pin. Do not label videos "Shorts" by length (policy bars inferring a video's type): call
+    the row "Videos". Store `embeddable` and skip videos that cannot be embedded. Honor owner removal
+    requests (our rule). **Open risk:** Developer Policies III.E.2 says "Do not aggregate API Data";
+    guide treats a curated, labeled list as allowed. State the use plainly if we ever apply for an audit.
   - Open-data feeds: per-feed approval only, after the license, endpoint and refresh are verified.
 - Infrastructure budget cap: USD 15–20/month (`data-spine.md` §8). Any new
   paid service or spend needs user approval with a cost estimate first.

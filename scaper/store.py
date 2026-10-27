@@ -85,6 +85,12 @@ _SOURCE_COLUMNS = (
 )
 
 
+def _country_code(venue: Any) -> str | None:
+    """ISO 3166-1 alpha-2 from the provider venue; None when the provider did not state it."""
+    code = str(getattr(venue, "country", None) or "").strip().upper()
+    return code if len(code) == 2 and code.isalpha() else None
+
+
 class PostgresStore:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
@@ -420,7 +426,7 @@ class PostgresStore:
                           id, provider, external_id, title, description, category,
                           start_time, end_time, timezone, status, is_free,
                           price_min, price_max, currency, ticket_url, image_url,
-                          venue_name, venue_place_id, lat, lng, geom, city_slug, state_code,
+                          venue_name, venue_place_id, lat, lng, geom, city_slug, state_code, country_code,
                           source_id, raw_record_id, fetched_at, expires_at,
                           first_seen_at, last_seen_at, updated_at
                         ) VALUES (
@@ -430,7 +436,7 @@ class PostgresStore:
                           :venue_name, :place_id, :lat, :lng,
                           CASE WHEN :lat IS NULL THEN NULL
                                ELSE ST_SetSRID(ST_MakePoint(:lng, :lat), 4326) END,
-                          :city_slug, :state_code, :source_id, :raw_id, now(),
+                          :city_slug, :state_code, :country_code, :source_id, :raw_id, now(),
                           COALESCE(:ends_at, :starts_at + interval '6 hours'),
                           now(), now(), now()
                         )
@@ -444,7 +450,7 @@ class PostgresStore:
                           image_url = EXCLUDED.image_url, venue_name = EXCLUDED.venue_name,
                           venue_place_id = EXCLUDED.venue_place_id, lat = EXCLUDED.lat,
                           lng = EXCLUDED.lng, geom = EXCLUDED.geom, city_slug = EXCLUDED.city_slug,
-                          state_code = EXCLUDED.state_code,
+                          state_code = EXCLUDED.state_code, country_code = EXCLUDED.country_code,
                           source_id = EXCLUDED.source_id, raw_record_id = EXCLUDED.raw_record_id,
                           fetched_at = now(), expires_at = EXCLUDED.expires_at,
                           last_seen_at = now(), updated_at = now()
@@ -473,6 +479,7 @@ class PostgresStore:
                         "lng": venue.lng if venue else None,
                         "city_slug": row.city_slug,
                         "state_code": row.state_code,
+                        "country_code": _country_code(venue),
                         "source_id": source.id,
                         "raw_id": row.raw_id,
                     },
