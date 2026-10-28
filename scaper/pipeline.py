@@ -123,6 +123,7 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
                 logger.exception("could not mark raw_record %s failed", raw_id)
 
     flush_chunk()
+    stats.api_calls = int(getattr(connector, "api_calls_used", 0) or 0)
 
     if fetch_error is None and connector.last_fetch_complete:
         expired = store.expire_unseen(source, run)
@@ -155,19 +156,71 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
         status = "succeeded"
     error = fetch_error or (f"{stats.failed} records failed extraction" if stats.failed else None)
     store.finish_run(run, status, stats, error)
+    record_calls = getattr(store, "record_api_calls", None)
+    if record_calls is not None and stats.api_calls:
+        record_calls(run, stats.api_calls)
     return RunReport(run_id=run.id, source=source.name, status=status, stats=stats, error_summary=error)
 
 
+# A failed fetch that says the provider is refusing us: stop that connector for this cycle
+# instead of hammering it (owner rule 2026-10-26: stop at the first sign of throttling).
+_REFUSAL_MARKERS = ("HTTP 429", "HTTP 403", "HTTP 401", "gave up after")
+
+
+def _within_budget(store: Store, connector: str, budget: int) -> bool:
+    used_fn = getattr(store, "api_calls_last_24h", None)
+    if used_fn is None:
+        return True
+    return int(used_fn(connector)) < budget
+
+
+def _advance_ramp(store: Store, source: Source, report: RunReport) -> None:
+    """Widen days_ahead one step after a clean run (3 -> 14 -> 60)."""
+    ramp = source.config.get("ramp")
+    setter = getattr(store, "set_days_ahead", None)
+    if not ramp or setter is None or report.status != "succeeded":
+        return
+    current = int(source.config.get("days_ahead") or ramp[0])
+    following = next((d for d in ramp if d > current), None)
+    if following is not None:
+        setter(source.id, following)
+        logger.info("scaper %s: days_ahead %d -> %d", source.name, current, following)
+
+
 def run_due(
-    store: Store, connector_for: Callable[[str], Connector], *, city_slug: str | None = None
+    store: Store,
+    connector_for: Callable[[str], Connector],
+    *,
+    city_slug: str | None = None,
+    daily_call_budgets: dict[str, int] | None = None,
 ) -> list[RunReport]:
     reports: list[RunReport] = []
     failures = 0
+    budgets = daily_call_budgets or {}
+    stopped: set[str] = set()
     for source in store.due_sources():
         if city_slug is not None and source.city_slug != city_slug:
             continue
+        if source.connector in stopped:
+            continue
+        budget = budgets.get(source.connector)
+        if budget is not None and not _within_budget(store, source.connector, budget):
+            logger.warning(
+                "scaper %s: daily %s call budget (%d) reached; skipped until tomorrow",
+                source.name, source.connector, budget,
+            )
+            stopped.add(source.connector)
+            continue
         try:
-            reports.append(run_source(store, connector_for(source.connector), source))
+            report = run_source(store, connector_for(source.connector), source)
+            reports.append(report)
+            _advance_ramp(store, source, report)
+            if report.status == "failed" and any(m in (report.error_summary or "") for m in _REFUSAL_MARKERS):
+                logger.error(
+                    "scaper: %s is refusing requests (%s); skipping its other sources this cycle",
+                    source.connector, report.error_summary,
+                )
+                stopped.add(source.connector)
         except RunInProgress:
             logger.info("scaper %s already running; skipped", source.name)
         except Exception:

@@ -12,7 +12,7 @@ support is deployed, otherwise country runs fail.
 
 Usage:
     python scripts/15_add_ticketmaster_world_sources.py                 # dry run
-    python scripts/15_add_ticketmaster_world_sources.py --apply --days-ahead 3
+    python scripts/15_add_ticketmaster_world_sources.py --apply            # 3 days, then ramps itself
 """
 from __future__ import annotations
 
@@ -39,13 +39,18 @@ COUNTRIES = (
 INTERVAL_MINUTES = 1440
 
 
-def planned_sources(days_ahead: int) -> list[dict]:
+RAMP = [3, 14, 60]
+
+
+def planned_sources(days_ahead: int, ramp: list[int] | None = None) -> list[dict]:
+    """ramp: the daily scheduler widens days_ahead one step after each clean run (3 -> 14 -> 60)."""
+    extra = {"ramp": ramp} if ramp else {}
     out: list[dict] = []
     for code in sorted(US_STATE_CODES - ALREADY_LOADED_STATES):
         out.append(
             {
                 "name": f"ticketmaster:state:{code.lower()}",
-                "config": {"state_code": code, "days_ahead": days_ahead},
+                "config": {"state_code": code, "days_ahead": days_ahead, **extra},
                 "state_code": code,
             }
         )
@@ -53,7 +58,7 @@ def planned_sources(days_ahead: int) -> list[dict]:
         out.append(
             {
                 "name": f"ticketmaster:country:{code.lower()}",
-                "config": {"country_code": code, "days_ahead": days_ahead},
+                "config": {"country_code": code, "days_ahead": days_ahead, **extra},
                 "state_code": None,
             }
         )
@@ -64,11 +69,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--apply", action="store_true", help="write to ingest.sources (default: dry run)")
     parser.add_argument("--days-ahead", type=int, default=3, choices=range(1, 61), metavar="1-60")
+    parser.add_argument("--no-ramp", action="store_true", help="keep days_ahead fixed instead of widening 3 -> 14 -> 60")
     args = parser.parse_args()
 
     settings = ScaperSettings()
     connector = build_connector("ticketmaster", settings)
-    plan = planned_sources(args.days_ahead)
+    plan = planned_sources(args.days_ahead, None if args.no_ramp else RAMP)
     for item in plan:
         connector.parse_config(item["config"])  # validate before anything is written
     states = sum(1 for p in plan if p["state_code"])

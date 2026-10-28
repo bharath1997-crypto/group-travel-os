@@ -171,7 +171,12 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
     if args.command == "run-due":
-        reports = run_due(store, lambda name: build_connector(name, settings), city_slug=args.city_slug)
+        reports = run_due(
+            store,
+            lambda name: build_connector(name, settings),
+            city_slug=args.city_slug,
+            daily_call_budgets={"ticketmaster": settings.ticketmaster_daily_call_budget},
+        )
         for report in reports:
             print(report.model_dump_json())
         return 1 if any(r.status == "failed" for r in reports) else 0
