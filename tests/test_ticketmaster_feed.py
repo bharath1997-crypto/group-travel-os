@@ -4,10 +4,11 @@ from __future__ import annotations
 import gzip
 import json
 import uuid
+from datetime import datetime, timezone
 
 import pytest
 
-from scaper.allocator import plan_connector_sources
+from scaper.allocator import plan_connector_sources, plan_spare_budget_sources
 from scaper.feed.stream import FeedMd5Mismatch, collect_with_md5, iter_events_from_bytes
 from scaper.feed.ticketmaster_map import map_feed_event
 from scaper.models import Source
@@ -44,3 +45,4 @@ def test_allocator_skips_ticketmaster_when_feed_fresh(monkeypatch) -> None:
     plan = plan_connector_sources([tm], connector="ticketmaster", store=store, engine=object(), budget=4000)
     assert plan.to_run == []
     assert plan.skipped[0][1].startswith("feed fresh")
+

@@ -105,14 +105,25 @@ def upsert_events_from_staging(
     result = conn.execute(
         text(
             """
-            WITH staged AS (
-              SELECT s.*, pl.place_id,
-                     COALESCE(s.end_time, s.start_time + interval '6 hours') AS expires_at
+            WITH raw_staged AS (
+              SELECT s.*
               FROM ingest.tm_feed_staging s
-              LEFT JOIN ingest.place_links pl
-                ON pl.connector = 'ticketmaster' AND pl.external_id = s.venue_id
               WHERE s.country_code = :cc
                 AND s.start_time <= :horizon
+            ),
+            staged AS (
+              SELECT DISTINCT ON (rs.event_id)
+                rs.*,
+                pl.place_id,
+                COALESCE(rs.end_time, rs.start_time + interval '6 hours') AS expires_at
+              FROM raw_staged rs
+              LEFT JOIN LATERAL (
+                SELECT place_id
+                FROM ingest.place_links
+                WHERE connector = 'ticketmaster' AND external_id = rs.venue_id
+                LIMIT 1
+              ) pl ON true
+              ORDER BY rs.event_id, rs.start_time DESC NULLS LAST
             ),
             upserted AS (
               INSERT INTO public.events (
@@ -232,7 +243,7 @@ def feed_fresh_within_hours(engine: Engine, country: str, *, hours: float = 26.0
                 """
                 SELECT 1 FROM ingest.feed_state
                 WHERE provider = 'ticketmaster_feed' AND country = :c
-                  AND status IN ('succeeded', 'partial')
+                  AND status IN ('succeeded', 'partial', 'unchanged')
                   AND loaded_at > now() - make_interval(hours => CAST(:h AS double precision))
                 """
             ),

@@ -46,6 +46,7 @@ class FeedLoadReport:
     md5: str | None = None
     dry_run: bool = False
     deduped: int = 0
+    venues_unlinked: int = 0
 
 
 def fetch_feed_index(client: RetryingClient, *, country: str) -> dict[str, Any]:
@@ -177,7 +178,7 @@ def load_ticketmaster_feed(
             report.staged += len(batch)
 
         report.md5 = md5_check.verify()
-        match_staging_venues(conn, store)
+        report.venues_unlinked = match_staging_venues(conn, store, dry_run=dry_run)
         enqueue_staging_cities(conn)
         inserted, updated = upsert_events_from_staging(
             conn, source_id=source.id, country_code=cc, horizon_cutoff=horizon_cutoff

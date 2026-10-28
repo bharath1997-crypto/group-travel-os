@@ -362,90 +362,94 @@ class PostgresStore:
     def resolve_place(self, connector: str, venue: VenueRecord, city_slug: str | None) -> uuid.UUID:
         """Provider venue -> public.places id: existing link, else geo+name match, else new row."""
         with self.engine.begin() as conn:
-            conn.execute(
-                text("SELECT pg_advisory_xact_lock(hashtext(:key))"),
-                {"key": f"scaper-venue:{connector}:{venue.external_id}"},
-            )
-            linked = conn.execute(
-                text(
-                    "SELECT place_id FROM ingest.place_links "
-                    "WHERE connector = :connector AND external_id = :external_id"
-                ),
-                {"connector": connector, "external_id": venue.external_id},
-            ).scalar()
-            if linked:
-                if connector == "ticketmaster" and venue.image_url:
-                    row = conn.execute(
-                        text(
-                            """
-                            SELECT l.method, p.gers_id::text
-                            FROM ingest.place_links l
-                            JOIN places p ON p.id = l.place_id
-                            WHERE l.connector = :connector AND l.external_id = :external_id
-                            """
-                        ),
-                        {"connector": connector, "external_id": venue.external_id},
-                    ).mappings().one_or_none()
-                    if row:
-                        sync_ticketmaster_venue_media_after_link(
-                            conn,
-                            connector=connector,
-                            method=str(row["method"] or ""),
-                            gers_id=row["gers_id"],
-                            venue_external_id=venue.external_id,
-                            image_url=venue.image_url,
-                        )
-                return linked
+            return self.resolve_place_connection(conn, connector, venue, city_slug)
 
-            point = {"lat": venue.lat, "lng": venue.lng, "name": venue.name}
-            match = _match_place(
-                conn, venue.name, venue.lat, venue.lng, city_slug,
-                street=venue.freeform, postcode=venue.postcode,
-            )
-            if match:
-                place_id, method, score = match
-            else:
-                # gers_id stays NULL: the Overture hot index (gers_id IS NOT NULL)
-                # never mixes these rows into place listings.
-                place_id = conn.execute(
+    def resolve_place_connection(
+        self, conn: Connection, connector: str, venue: VenueRecord, city_slug: str | None
+    ) -> uuid.UUID:
+        """Same as resolve_place but uses the caller's transaction (feed bulk load)."""
+        conn.execute(
+            text("SELECT pg_advisory_xact_lock(hashtext(:key))"),
+            {"key": f"scaper-venue:{connector}:{venue.external_id}"},
+        )
+        linked = conn.execute(
+            text(
+                "SELECT place_id FROM ingest.place_links "
+                "WHERE connector = :connector AND external_id = :external_id"
+            ),
+            {"connector": connector, "external_id": venue.external_id},
+        ).scalar()
+        if linked:
+            if connector == "ticketmaster" and venue.image_url:
+                row = conn.execute(
                     text(
                         """
-                        INSERT INTO places (name, geog, address, city_slug, depth_tier)
-                        VALUES (:name, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
-                                CAST(:address AS jsonb), :city_slug, 0)
-                        RETURNING id
+                        SELECT l.method, p.gers_id::text
+                        FROM ingest.place_links l
+                        JOIN places p ON p.id = l.place_id
+                        WHERE l.connector = :connector AND l.external_id = :external_id
                         """
                     ),
-                    {**point, "address": json.dumps(venue.overture_address()), "city_slug": city_slug},
-                ).scalar_one()
-                method, score = "created", None
-            conn.execute(
+                    {"connector": connector, "external_id": venue.external_id},
+                ).mappings().one_or_none()
+                if row:
+                    sync_ticketmaster_venue_media_after_link(
+                        conn,
+                        connector=connector,
+                        method=str(row["method"] or ""),
+                        gers_id=row["gers_id"],
+                        venue_external_id=venue.external_id,
+                        image_url=venue.image_url,
+                    )
+            return linked
+
+        point = {"lat": venue.lat, "lng": venue.lng, "name": venue.name}
+        match = _match_place(
+            conn, venue.name, venue.lat, venue.lng, city_slug,
+            street=venue.freeform, postcode=venue.postcode,
+        )
+        if match:
+            place_id, method, score = match
+        else:
+            place_id = conn.execute(
                 text(
                     """
-                    INSERT INTO ingest.place_links (connector, external_id, place_id, method, score)
-                    VALUES (:connector, :external_id, :place_id, :method, :score)
+                    INSERT INTO places (name, geog, address, city_slug, depth_tier)
+                    VALUES (:name, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
+                            CAST(:address AS jsonb), :city_slug, 0)
+                    RETURNING id
                     """
                 ),
-                {
-                    "connector": connector,
-                    "external_id": venue.external_id,
-                    "place_id": place_id,
-                    "method": method,
-                    "score": score,
-                },
-            )
-            gers_id = conn.execute(
-                text("SELECT gers_id::text FROM places WHERE id = :id"),
-                {"id": place_id},
-            ).scalar()
-            sync_ticketmaster_venue_media_after_link(
-                conn,
-                connector=connector,
-                method=method,
-                gers_id=gers_id,
-                venue_external_id=venue.external_id,
-                image_url=venue.image_url,
-            )
+                {**point, "address": json.dumps(venue.overture_address()), "city_slug": city_slug},
+            ).scalar_one()
+            method, score = "created", None
+        conn.execute(
+            text(
+                """
+                INSERT INTO ingest.place_links (connector, external_id, place_id, method, score)
+                VALUES (:connector, :external_id, :place_id, :method, :score)
+                """
+            ),
+            {
+                "connector": connector,
+                "external_id": venue.external_id,
+                "place_id": place_id,
+                "method": method,
+                "score": score,
+            },
+        )
+        gers_id = conn.execute(
+            text("SELECT gers_id::text FROM places WHERE id = :id"),
+            {"id": place_id},
+        ).scalar()
+        sync_ticketmaster_venue_media_after_link(
+            conn,
+            connector=connector,
+            method=method,
+            gers_id=gers_id,
+            venue_external_id=venue.external_id,
+            image_url=venue.image_url,
+        )
         return place_id
 
     # ── events ───────────────────────────────────────────────────────────
