@@ -25,6 +25,7 @@ from sqlalchemy import create_engine
 from scaper.config import ScaperSettings
 from scaper.connectors import CONNECTOR_NAMES, build_connector
 from scaper.models import Rejected
+from scaper.feed.run import run_feed_source
 from scaper.pipeline import run_due, run_source
 from scaper.store import PostgresStore
 
@@ -78,6 +79,13 @@ def main(argv: list[str] | None = None) -> int:
 
     p = sub.add_parser("run-due", help="run enabled sources whose interval has elapsed")
     p.add_argument("--city-slug", help="limit to one configured city, e.g. orlando")
+
+    p = sub.add_parser("feed-load", help="Ticketmaster Discovery Feed bulk load (disabled source by default)")
+    p.add_argument("--provider", choices=("ticketmaster",), default="ticketmaster")
+    p.add_argument("--country", default="US", help="ISO country code (32 available in index)")
+    p.add_argument("--dry-run", action="store_true", help="download/parse/stage then roll back")
+    p.add_argument("--force", action="store_true", help="ignore unchanged checksum skip")
+    p.add_argument("--source", default="ticketmaster:feed:us", help="ingest.sources name")
 
     p = sub.add_parser("set-city-interval", help="set enabled source intervals for a city")
     p.add_argument("--city-slug", required=True)
@@ -170,12 +178,26 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         return 0
+    if args.command == "feed-load":
+        source = store.get_source(args.source)
+        if source is None:
+            sys.exit(f"no source named {args.source}")
+        report = run_feed_source(
+            store,
+            source,
+            settings,
+            dry_run=bool(args.dry_run),
+            force=bool(args.force),
+        )
+        print(report.model_dump_json())
+        return 0 if report.status in ("succeeded", "partial") else 1
     if args.command == "run-due":
         reports = run_due(
             store,
             lambda name: build_connector(name, settings),
             city_slug=args.city_slug,
             daily_call_budgets={"ticketmaster": settings.ticketmaster_daily_call_budget},
+            feed_runner=lambda src: run_feed_source(store, src, settings),
         )
         for report in reports:
             print(report.model_dump_json())
