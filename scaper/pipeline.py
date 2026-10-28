@@ -5,6 +5,8 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from scaper.allocator import CyclePlan, log_cycle_summary, plan_connector_sources, plan_spare_budget_sources
+from scaper.budget import REFUSAL_MARKERS, within_budget
 from scaper.connectors.base import Connector
 from scaper.connectors.ticketmaster import venue_city_and_state
 from scaper.models import EventRecord, Rejected, RunReport, RunStats, RunStatus, Source
@@ -162,18 +164,6 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
     return RunReport(run_id=run.id, source=source.name, status=status, stats=stats, error_summary=error)
 
 
-# A failed fetch that says the provider is refusing us: stop that connector for this cycle
-# instead of hammering it (owner rule 2026-10-26: stop at the first sign of throttling).
-_REFUSAL_MARKERS = ("HTTP 429", "HTTP 403", "HTTP 401", "gave up after")
-
-
-def _within_budget(store: Store, connector: str, budget: int) -> bool:
-    used_fn = getattr(store, "api_calls_last_24h", None)
-    if used_fn is None:
-        return True
-    return int(used_fn(connector)) < budget
-
-
 def _advance_ramp(store: Store, source: Source, report: RunReport) -> None:
     """Widen days_ahead one step after a clean run (3 -> 14 -> 60)."""
     ramp = source.config.get("ramp")
@@ -193,39 +183,76 @@ def run_due(
     *,
     city_slug: str | None = None,
     daily_call_budgets: dict[str, int] | None = None,
+    feed_runner: Callable[..., RunReport] | None = None,
 ) -> list[RunReport]:
     reports: list[RunReport] = []
     failures = 0
     budgets = daily_call_budgets or {}
     stopped: set[str] = set()
-    for source in store.due_sources():
-        if city_slug is not None and source.city_slug != city_slug:
+    engine = getattr(store, "engine", None)
+    due = store.due_sources()
+    if city_slug is not None:
+        due = [s for s in due if s.city_slug == city_slug]
+
+    def _connector_order(name: str) -> tuple[int, str]:
+        priority = {"ticketmaster": 0, "ticketmaster_feed": 1, "eventbrite": 2}.get(name, 9)
+        return priority, name
+
+    connectors = sorted({s.connector for s in due}, key=_connector_order)
+    for connector in connectors:
+        if connector in stopped:
             continue
-        if source.connector in stopped:
-            continue
-        budget = budgets.get(source.connector)
-        if budget is not None and not _within_budget(store, source.connector, budget):
-            logger.warning(
-                "scaper %s: daily %s call budget (%d) reached; skipped until tomorrow",
-                source.name, source.connector, budget,
+        budget = budgets.get(connector)
+        plan = (
+            plan_connector_sources(
+                due, connector=connector, store=store, engine=engine, budget=budget
             )
-            stopped.add(source.connector)
-            continue
-        try:
-            report = run_source(store, connector_for(source.connector), source)
-            reports.append(report)
-            _advance_ramp(store, source, report)
-            if report.status == "failed" and any(m in (report.error_summary or "") for m in _REFUSAL_MARKERS):
-                logger.error(
-                    "scaper: %s is refusing requests (%s); skipping its other sources this cycle",
-                    source.connector, report.error_summary,
-                )
-                stopped.add(source.connector)
-        except RunInProgress:
-            logger.info("scaper %s already running; skipped", source.name)
-        except Exception:
-            logger.exception("scaper could not run %s", source.name)
-            failures += 1
+            if engine is not None
+            else CyclePlan(to_run=[s for s in due if s.connector == connector])
+        )
+        calls_used = 0
+        for source in plan.to_run:
+            if source.connector in stopped:
+                continue
+            if budget is not None and not within_budget(store, connector, budget):
+                plan.skipped.append((source.name, "daily budget exhausted"))
+                stopped.add(connector)
+                break
+            try:
+                if source.connector == "ticketmaster_feed":
+                    if feed_runner is None:
+                        plan.skipped.append((source.name, "feed runner not configured"))
+                        continue
+                    report = feed_runner(source)
+                else:
+                    report = run_source(store, connector_for(source.connector), source)
+                reports.append(report)
+                calls_used += int(report.stats.api_calls or 0)
+                _advance_ramp(store, source, report)
+                if report.status == "failed" and any(m in (report.error_summary or "") for m in REFUSAL_MARKERS):
+                    logger.error(
+                        "scaper: %s is refusing requests (%s); skipping its other sources this cycle",
+                        source.connector, report.error_summary,
+                    )
+                    stopped.add(source.connector)
+                    break
+            except RunInProgress:
+                logger.info("scaper %s already running; skipped", source.name)
+            except Exception:
+                logger.exception("scaper could not run %s", source.name)
+                failures += 1
+        if engine is not None and connector == "ticketmaster":
+            for source in plan_spare_budget_sources(due, connector=connector, store=store, budget=budget):
+                if source.connector in stopped or (budget is not None and not within_budget(store, connector, budget)):
+                    break
+                try:
+                    report = run_source(store, connector_for(source.connector), source)
+                    reports.append(report)
+                    calls_used += int(report.stats.api_calls or 0)
+                    _advance_ramp(store, source, report)
+                except RunInProgress:
+                    continue
+        log_cycle_summary(connector, calls_used=calls_used, skipped=plan.skipped)
     if failures:
         raise RuntimeError(f"{failures} scheduled Scaper source(s) could not run")
     return reports
