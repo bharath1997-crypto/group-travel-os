@@ -174,7 +174,9 @@ class TicketmasterConnector(Connector):
             complete = yield from self._fetch_window(base, window_start, window_end)
             self.last_fetch_complete = complete
         elif isinstance(cfg, TicketmasterCountryConfig):
-            base = {"countryCode": cfg.country_code, "size": PAGE_SIZE, "sort": "date,asc"}
+            # Without locale=* the API returns only listings in the default (English) locale:
+            # France showed 32 events instead of thousands.
+            base = {"countryCode": cfg.country_code, "size": PAGE_SIZE, "sort": "date,asc", "locale": "*"}
             if cfg.segment_id:
                 base["segmentId"] = cfg.segment_id
             complete = yield from self._fetch_window(base, window_start, window_end)

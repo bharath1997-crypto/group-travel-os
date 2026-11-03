@@ -34,7 +34,7 @@ ALREADY_LOADED_STATES = {"CA", "TX", "AK"}
 # Countries with listings on Ticketmaster Discovery (counted read-only 2026-10-25;
 # SG had events but none with usable venue coordinates).
 COUNTRIES = (
-    "GB IE ES CA TR NL AU MX IT NZ PL DE GR CH NO BE FI CZ DK ZA AE SE AT PE BR".split()
+    "GB IE ES CA TR NL AU MX IT NZ PL DE GR CH NO BE FI CZ DK ZA AE SE AT PE BR FR".split()
 )
 INTERVAL_MINUTES = 1440
 
@@ -69,12 +69,27 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--apply", action="store_true", help="write to ingest.sources (default: dry run)")
     parser.add_argument("--days-ahead", type=int, default=3, choices=range(1, 61), metavar="1-60")
+    parser.add_argument(
+        "--only",
+        nargs="+",
+        metavar="CODE",
+        help="write only these country/state codes (e.g. FR). Existing sources are updated back to "
+        "--days-ahead, so use this after the first rollout instead of re-running everything",
+    )
     parser.add_argument("--no-ramp", action="store_true", help="keep days_ahead fixed instead of widening 3 -> 14 -> 60")
     args = parser.parse_args()
 
     settings = ScaperSettings()
     connector = build_connector("ticketmaster", settings)
     plan = planned_sources(args.days_ahead, None if args.no_ramp else RAMP)
+    if args.only:
+        wanted = {c.upper() for c in args.only}
+        plan = [
+            p for p in plan
+            if (p["config"].get("country_code") or p["config"].get("state_code")) in wanted
+        ]
+        if not plan:
+            parser.error(f"no planned source matches {sorted(wanted)}")
     for item in plan:
         connector.parse_config(item["config"])  # validate before anything is written
     states = sum(1 for p in plan if p["state_code"])
