@@ -237,16 +237,25 @@ def expire_unseen_for_country(
 
 
 def feed_fresh_within_hours(engine: Engine, country: str, *, hours: float = 26.0) -> bool:
-    with engine.connect() as conn:
-        row = conn.execute(
-            text(
-                """
-                SELECT 1 FROM ingest.feed_state
-                WHERE provider = 'ticketmaster_feed' AND country = :c
-                  AND status IN ('succeeded', 'partial', 'unchanged')
-                  AND loaded_at > now() - make_interval(hours => CAST(:h AS double precision))
-                """
-            ),
-            {"c": country.upper(), "h": hours},
-        ).scalar()
+    """False when no fresh feed load exists, or when migration 019 is not applied yet.
+
+    run-due calls this for every Ticketmaster source; a missing ingest.feed_state must
+    never stop the Discovery API sources (it did on 2026-11-02 to 2026-11-04).
+    """
+    try:
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(
+                    """
+                    SELECT 1 FROM ingest.feed_state
+                    WHERE provider = 'ticketmaster_feed' AND country = :c
+                      AND status IN ('succeeded', 'partial', 'unchanged')
+                      AND loaded_at > now() - make_interval(hours => CAST(:h AS double precision))
+                    """
+                ),
+                {"c": country.upper(), "h": hours},
+            ).scalar()
+    except Exception:
+        logger.warning("ingest.feed_state unavailable (apply migrations/019_tm_feed.sql); treating the feed as not fresh")
+        return False
     return row is not None
