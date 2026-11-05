@@ -2,6 +2,38 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-10-28 — Ticketmaster bulk Discovery Feed engine (Partial)
+
+- **Context:** `Scaper_Ticketmaster_BulkFeed_Spec.md` + owner overrides (migrations **018/019/020**, country-scoped expiry, shared daily budget, allocator, no live load until approval).
+- **Result:** Idempotent **018** `ingest.provider_registry`, **019** `feed_state` / `tm_feed_staging` / `dedup_queue` + disabled `ticketmaster:feed:us`; streaming gzip+MD5 parser; loader with staging upsert (`DISTINCT ON (event_id)` + lateral `place_links`), 30% expiry guard per country; venue match on **same transaction** via `resolve_place_connection` (dry-run counts unlinked venues only, **no** place/link writes); `feed_fresh` includes **`unchanged`** status; `python -m scaper feed-load --dry-run`; allocator + tests in `tests/test_ticketmaster_feed.py` and opt-in `tests/test_ticketmaster_feed_pg.py`.
+- **Verification:** `.venv\Scripts\python -m pytest -q` → **1098 passed, 38 skipped, 1 failed** (`tests/test_seats_integration.py::test_concurrent_booking_last_seat_pg` — pre-existing). Unit feed tests **4 passed**; PG feed suite **10 tests** (skip without `SCAPER_PG_TEST_URL`). **No** production migration apply, **no** live feed download, dry-run report template unfilled.
+- **Risks / next:** Run PG feed suite on dev with `SCAPER_PG_TEST_URL`; real-US dry-run report; Partner-with-Us; enable feed source only after explicit approval.
+- **Next:** Do not disable Discovery sources until dry-run + supervised live run (spec §7).
+
+## 2026-10-27 — Explore Videos row: live API + tap-to-play
+
+- **Context:** Backend `GET /api/v2/explorer/videos` (approved YouTube channels; AGENTS.md YouTube rules). Hub/directory rows between vibes and feed; show-all at `/explore/[country]/[admin1]/[city]/videos`.
+- **Result:** `explore-videos-api.ts` (client + server fetch, `X-Rovvy-Directory-Secret` server-only); `ExploreVideosSection` wrapper; `ExploreVideoCard` tap-to-play (one iframe, Escape/close, Watch on YouTube + Report → `/legal/data#removal`); subtitles from `primary_level` (`From {city|region|country}`); duration badges; thumbnails `object-fit: contain`.
+- **Verification:** `cd frontend; npx vitest run` **605 passed** (139 files); `npx tsc --noEmit` **0 errors**. API curl `us/florida/orlando` → `primary_level: city`, 20 items (Visit Orlando). `us/illinois/chicago` → empty (row hidden). Cursor browser on `:3000` hit stale 404 (port in use); fresh dev on `:3001` not reachable from MCP browser — owner QA on local `:3001` recommended.
+- **Risks / next:** Set `EXPLORE_DIRECTORY_SERVER_SECRET` on Vercel for server-rendered videos page; hub row needs resolved directory place (country + admin1 + city slugs).
+- **Next:** Owner screenshots 1360/390 on hub (Orlando saved/GPS) and `/explore/us/florida/orlando/videos` with tap-to-play.
+
+## 2026-10-26 — F89: International Explore directory frontend (Task 3; Partial until 014/015 + live QA)
+
+- **Context:** Task 3 on Task 2 backend — intl App Router paths `/explore/[country]/[admin1]/[city]`, legacy 308 `/explore/illinois` → `/explore/us/illinois`, hub GPS→`/directory/nearest`, Top events state/country via `/events/top`, Videos row rename (no Shorts), GeoNames/Wikipedia/OSM directory footers, browse-by-country on hub.
+- **Result:** `middleware.ts` + `explore-directory-paths.ts`; directory pages under `[country]`; server fetches send `X-Rovvy-Directory-Secret` from `EXPLORE_DIRECTORY_SERVER_SECRET`; hub directory bootstrap + hero location sheet (directory search then geocode→nearest); `ExploreTopEventsRow` scope chips; `ExploreVideosRow`; sitemap helpers (`app/sitemap.ts`, `explore-directory-sitemap.xml`).
+- **Verification:** `npx vitest run` **591 passed** (134 files, +7 tests); `npx tsc --noEmit` **0 errors**; `pytest -q` (sqlite CI) **1041 passed, 36 skipped**. Directory/country list/top-events **not** live-verified — Postgres `places_directory` empty until migrations **014/015** applied and GeoNames import `--write` (owner).
+- **Risks / next:** Apply 014/015 + import; set `EXPLORE_DIRECTORY_SERVER_SECRET` on Vercel + Cloud Run; workbook F89 row green after owner browser QA (1360/390) on `/explore/us/illinois/chicago`, `/explore/gb/england/london`, legacy redirect, GPS denied path.
+- **Next:** Owner screenshots + workbook Context Log; wire city-level sitemap entries when import completes.
+
+## 2026-10-26 — F88: Explore hub Top events + Videos row (between vibes and feed)
+
+- **Context:** Product mockup `Explore_Rows_Mockup.html` — add horizontal rows between vibe chips and the masonry feed without changing hero, pulse bar, stats, vibes, feed, ranking, or destinations.
+- **Result:** `ExploreRow` (scroll-snap, hidden scrollbar, arrow buttons on non-touch, keyboard scroll); `ExploreTopEventsRow` uses existing hub event slots (soonest-first, provider `<a href>` cards); `ExploreVideosShortsRow` reserved layout with `items=[]` (renders nothing); show-all at `/explore/[state]/[city]/events` when directory slugs are saved, else `/explore/events`; videos show-all route stub only.
+- **Verification:** `npx vitest run` **584 passed** (131 files, +18 tests); `npx tsc --noEmit` **0 errors**; browser `/explore` (Hermosa, Chicago) at **1360px** and **390px** — Top events row visible between vibes and feed, horizontal card peek, scope chips with state/country disabled (“Coming soon”), no visible row scrollbar; hero/stats/vibes/masonry unchanged.
+- **Risks / next:** Top in state/country need backend endpoints; video row stays hidden until approved channel data exists.
+- **Next:** Owner review screenshots; wire directory slugs from GPS consistently for show-all deep links.
+
 ## 2026-10-25 — Explore dynamic state/city directory pages (phase 1 review fixes, Partial)
 
 - **Context:** Phase 1 review fixes — no live Wikipedia on requests, Postgres savepoints, directory query/cache/rate limits, file grouping for commits.
@@ -89,6 +121,13 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 - **Honest reading of the expectation:** "about 0 before and several after" for Chicago's first 24 does not materialise because the first 24 cards are all **today**, and Eventbrite has **no Chicago event today**. The mix is working wherever a day has rows from both providers (Eventbrite is now the 2nd card of every such day). If the owner wants Eventbrite to appear on days without Eventbrite rows, that is a cross-day rule, contradicts the "rank within each local day" design, and needs a separate decision.
 - **Scram:** workbook row F27 → `[2026-10-14]`, `Complete in code`, green; Evidence prepended; Cursor Context Log row added; backup `Rovvy_Explorer_Scrum_Book.xlsx.bak-20261014-f27-provider-mix`.
 - **Risks / next:** the window function runs over the visible set per city (hundreds of rows; fine). Browser QA `/explore` Chicago "This weekend" after deploy (expect Eventbrite at cards 2/4/6). Organizer expansion (option 2) still waits for approval.
+
+## 2026-11-02 — Explore slowness: measurements and region-move plan
+
+- **Context:** owner shared a comparison showing rovvy.app slower than localhost (`/api/hero` 9.5 s, places up to 6.5 s). Claude measured live: `/api/hero` first call 10.3 s then 0.4-0.8 s (cold Vercel instance + public Nominatim 1 req/s queue + sequential photo lookups, `no-store` fetches so no shared cache); API `/health` 1.25-1.54 s, places 1.6-2.3 s, events 3.0-4.6 s with 30 ms connect time.
+- **Diagnosis:** two causes. (1) hero: cold in-memory caches and sequential outside calls. (2) the API runs in asia-south1 (Mumbai) while Supabase is us-west-2 (Oregon): every DB round trip crosses the Pacific. Cause 2 is probable, not proven (cannot time inside Cloud Run).
+- **Output:** Cursor prompt for the hero fix (Next fetch cache with rounded-coordinate keys, 2.5 s time budget, photo off the critical path) given in chat; `API_Region_Move_Plan.md` (blue/green move to us-west1, new OAuth secret, rollback, cost note). No code, infra or data changed.
+- **Risks:** double Cloud Run cost during overlap (budget cap USD 15-20); OAuth redirect ordering; IP-restricted keys. **Next:** owner approves the plan; Cursor builds the hero fix; re-measure.
 
 ## 2026-10-15 — Flight product removal: pushed, deployed, database cleaned
 
