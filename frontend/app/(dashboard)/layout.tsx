@@ -24,6 +24,7 @@ import { useLiveAutoRevealHeader } from "./live/use-live-auto-reveal-header";
 
 import { IconCheck } from "@/components/icons";
 
+import { PageTransition } from "@/components/PageTransition";
 import { PostOAuthWelcomeModal } from "@/components/PostOAuthWelcomeModal";
 import { PresenceHeartbeat } from "@/components/PresenceHeartbeat";
 import { VerificationBanner } from "@/components/VerificationBanner";
@@ -712,7 +713,7 @@ function DashboardChrome({ children }: { children: ReactNode }) {
               <PresenceHeartbeat />
               <PostOAuthWelcomeModal />
               <VerificationBanner />
-              <div className="w-full">{children}</div>
+              <PageTransition>{children}</PageTransition>
             </div>
           )}
         </main>
