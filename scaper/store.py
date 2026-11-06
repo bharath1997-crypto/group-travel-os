@@ -30,8 +30,10 @@ MATCH_MIN_SIMILARITY = 0.45
 WIDE_MATCH_RADIUS_M = 250.0
 # Tier A3: providers scatter one venue's pin by hundreds of metres; require name + street + postcode.
 ADDRESS_MATCH_RADIUS_M = 500.0
-# Stale 'running' rows older than this are treated as crashed workers.
-RUN_LEASE = "2 hours"
+# Stale 'running' rows older than this are treated as crashed workers. Must exceed the Cloud Run
+# task timeout (4 h, scripts/deploy-scaper-job.ps1) or a slow, healthy France/UK run is
+# declared abandoned while it is still working.
+RUN_LEASE = "4 hours 15 minutes"
 
 
 @dataclass(frozen=True)

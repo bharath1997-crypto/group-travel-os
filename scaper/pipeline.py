@@ -67,21 +67,6 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
     place_cache: dict[tuple[str, str], object] = {}
     touched_cities: set[str] = set()
 
-    try:
-        for item in connector.fetch(source.config):
-            stats.fetched += 1
-            if item.external_id in blocked_ids:
-                continue
-            raw_id, needs_extraction = store.upsert_raw(source, run, connector.name, item)
-            if needs_extraction:
-                to_extract.append((raw_id, item.payload))
-            else:
-                stats.unchanged += 1
-                store.touch_event(connector.name, item.external_id)
-    except Exception as exc:  # provider/network/config failure
-        fetch_error = f"fetch: {exc}"
-        logger.exception("scaper fetch failed for %s", source.name)
-
     chunk: list[_PersistRow] = []
 
     def flush_chunk() -> None:
@@ -93,38 +78,65 @@ def run_source(store: Store, connector: Connector, source: Source) -> RunReport:
         stats.updated += updated
         chunk = []
 
-    for raw_id, payload in to_extract:
-        try:
-            result = connector.extract(payload)
-            if isinstance(result, Rejected):
-                store.mark_raw(raw_id, "rejected", result.reason)
-                stats.rejected += 1
-                continue
-            city_slug, state_code = _event_location(source, result, payload)
-            if city_slug:
-                touched_cities.add(city_slug)
-            place_id = None
-            if result.venue:
-                cache_key = (connector.name, result.venue.external_id)
-                if cache_key in place_cache:
-                    place_id = place_cache[cache_key]
-                else:
-                    place_id = store.resolve_place(
-                        connector.name, result.venue, city_slug or source.city_slug
-                    )
-                    place_cache[cache_key] = place_id
-            chunk.append(_PersistRow(raw_id, result, place_id, city_slug, state_code))
-            if len(chunk) >= EXTRACT_CHUNK_SIZE:
-                flush_chunk()
-        except Exception as exc:
-            stats.failed += 1
-            logger.exception("scaper extract failed for raw_record %s", raw_id)
-            try:
-                store.mark_raw(raw_id, "failed", f"{exc.__class__.__name__}: {exc}")
-            except Exception:
-                logger.exception("could not mark raw_record %s failed", raw_id)
+    def extract_pending() -> None:
+        """Extract and persist what has been fetched so far, then release the payloads.
 
-    flush_chunk()
+        Runs while fetching, so memory stays bounded: a 60-day France or UK fetch holds
+        tens of thousands of ~9 KB payloads and was OOM-killed at 512 MiB.
+        """
+        pending = list(to_extract)
+        to_extract.clear()
+        for raw_id, payload in pending:
+            try:
+                result = connector.extract(payload)
+                if isinstance(result, Rejected):
+                    store.mark_raw(raw_id, "rejected", result.reason)
+                    stats.rejected += 1
+                    continue
+                city_slug, state_code = _event_location(source, result, payload)
+                if city_slug:
+                    touched_cities.add(city_slug)
+                place_id = None
+                if result.venue:
+                    cache_key = (connector.name, result.venue.external_id)
+                    if cache_key in place_cache:
+                        place_id = place_cache[cache_key]
+                    else:
+                        place_id = store.resolve_place(
+                            connector.name, result.venue, city_slug or source.city_slug
+                        )
+                        place_cache[cache_key] = place_id
+                chunk.append(_PersistRow(raw_id, result, place_id, city_slug, state_code))
+                if len(chunk) >= EXTRACT_CHUNK_SIZE:
+                    flush_chunk()
+            except Exception as exc:
+                stats.failed += 1
+                logger.exception("scaper extract failed for raw_record %s", raw_id)
+                try:
+                    store.mark_raw(raw_id, "failed", f"{exc.__class__.__name__}: {exc}")
+                except Exception:
+                    logger.exception("could not mark raw_record %s failed", raw_id)
+
+        flush_chunk()
+
+    try:
+        for item in connector.fetch(source.config):
+            stats.fetched += 1
+            if item.external_id in blocked_ids:
+                continue
+            raw_id, needs_extraction = store.upsert_raw(source, run, connector.name, item)
+            if needs_extraction:
+                to_extract.append((raw_id, item.payload))
+                if len(to_extract) >= EXTRACT_CHUNK_SIZE:
+                    extract_pending()
+            else:
+                stats.unchanged += 1
+                store.touch_event(connector.name, item.external_id)
+    except Exception as exc:  # provider/network/config failure
+        fetch_error = f"fetch: {exc}"
+        logger.exception("scaper fetch failed for %s", source.name)
+
+    extract_pending()
     stats.api_calls = int(getattr(connector, "api_calls_used", 0) or 0)
 
     if fetch_error is None and connector.last_fetch_complete:
