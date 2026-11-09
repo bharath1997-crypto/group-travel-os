@@ -1,6 +1,6 @@
 # API region move: Cloud Run asia-south1 (Mumbai) to us-west1 (Oregon)
 
-Status: **plan only (2026-11-02)**. Nothing deployed. Needs owner approval for each production step (AGENTS.md section 5).
+Status: **step 3 prepared (2026-11-09), not pushed.** Owner said "move it"; `production-ci.yml` now targets `us-west1` and `GOOGLE_REDIRECT_URI_USW1` (uncommitted). Nothing deployed. Steps 2 (secret + Google Console) must be done BEFORE the push or the deploy fails; the push is the production deploy (AGENTS.md section 5).
 
 ## 1. Why
 
