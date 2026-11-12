@@ -2,6 +2,14 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-11-12 — Venue calendar bulk onboarding: 115 `feed` sources added (Partial: sources live, no feed has run yet)
+- **Context:** owner pasted Gemini-generated venue calendar CSVs state by state (50 states + DC, 25 files, 2,840 rows in `data/`). Goal: turn the venues with machine-readable calendars into `feed` sources without a connector per site.
+- **Built:** `scaper/venue_feed_check.py` (read-only checker), `scaper/venue_overture_match.py` (read-only match to Overture places; coordinates are Overture's own, never Gemini's or a geocoder's), `scaper/venue_feed_plan.py` (builds and previews the add-source configs), `tests/test_scaper_venue_tools.py`.
+- **Result:** checker 222 ok / 1,538 check / 1,069 rejected (about 8% ok; many sites are JS-rendered or Gemini guessed the URL). 153 of the 222 ok rows matched an Overture place; 122 had similarity 0.8 or more and were not chain rows (House of Blues, Live Nation, STG). Owner removed 5 (wrong place or whole-university/city/state calendars), 3 were held back and re-probed: Academy Center of the Arts was a one-off empty preview (29 events, complete read) and was added afterwards; Grand Ole Opry now has no machine-readable events (its calendar redirects to /events with only Organization/Breadcrumb markup); Charleston Pour House times out even at 60 s with our identifying User-Agent (robots allows it; we do not disguise the bot) and both stay out. **115 sources written to `ingest.sources`** with owner approval (enabled, 6 h interval).
+- **Verification:** 24 new tests pass; dry-run preview through the real feed connector: 114 of 117 returned events, 2,649 accepted, 9 all-day entries rejected by design. DB write confirmed by `list-sources` (115 feed sources). No feed has run live.
+- **Risks:** 31 sources have no time zone (split-zone states), so feeds with offset-less times are rejected rather than guessed; each venue's own terms are not individually checked (robots.txt is not a licence); possible duplicates with Ticketmaster/Eventbrite events are handled only by the existing dedup rank (feed = 2); 69 ok venues without an Overture match are not added.
+- **Next:** watch the first scheduled runs (accepted/rejected counts, duplicates, errors); ask Opry and Pour House for a feed if wanted; decide on time zones and the unmatched venues; Hawaii statewide library calendar and other shared calendars need review before any are added.
+
 ## 2026-10-28 — Ticketmaster bulk Discovery Feed engine (Partial)
 
 - **Context:** `Scaper_Ticketmaster_BulkFeed_Spec.md` + owner overrides (migrations **018/019/020**, country-scoped expiry, shared daily budget, allocator, no live load until approval).
