@@ -1,21 +1,35 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { OFFER_TOUR_STEPS } from "./seats-offer-tour";
+import { OFFER_TOUR_STEPS, type OfferTourStep } from "./seats-offer-tour";
 import styles from "./seats.module.css";
 
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** Steps to show. Defaults to the Offer a ride demo. */
+  steps?: OfferTourStep[];
+  /** Eyebrow text before "demo N of M". */
+  label?: string;
+  /** Text of the last button. */
+  finishLabel?: string;
 };
 
-export function SeatsOfferTour({ open, onClose }: Props) {
+/** Step-by-step demo dialog shared by Offer a ride and Find a seat. */
+export function SeatsOfferTour({
+  open,
+  onClose,
+  steps = OFFER_TOUR_STEPS,
+  label = "Offer a ride",
+  finishLabel = "Start offering a ride",
+}: Props) {
   const [index, setIndex] = useState(0);
   const primaryRef = useRef<HTMLButtonElement>(null);
-  const total = OFFER_TOUR_STEPS.length;
-  const step = OFFER_TOUR_STEPS[index];
+  const titleId = useId();
+  const total = steps.length;
+  const step = steps[Math.min(index, total - 1)];
   const last = index === total - 1;
 
   useEffect(() => {
@@ -43,12 +57,12 @@ export function SeatsOfferTour({ open, onClose }: Props) {
       className={styles.mapModalOverlay}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="offer-tour-title"
+      aria-labelledby={titleId}
     >
       <div className={`${styles.mapModal} ${styles.tourModal}`}>
         <div className={styles.mapModalHead}>
           <p className={`${styles.eyebrow} ${styles.mono}`}>
-            Offer a ride · demo {index + 1} of {total}
+            {label} · demo {index + 1} of {total}
           </p>
           <button
             type="button"
@@ -60,7 +74,7 @@ export function SeatsOfferTour({ open, onClose }: Props) {
           </button>
         </div>
         <div className={styles.tourBody}>
-          <h2 id="offer-tour-title" className={`${styles.wizardTitle} ${styles.serif}`}>
+          <h2 id={titleId} className={`${styles.wizardTitle} ${styles.serif}`}>
             {step.title}
           </h2>
           <p className={styles.hint}>{step.body}</p>
@@ -71,7 +85,7 @@ export function SeatsOfferTour({ open, onClose }: Props) {
           </ul>
         </div>
         <div className={styles.tourDots} aria-hidden>
-          {OFFER_TOUR_STEPS.map((s, i) => (
+          {steps.map((s, i) => (
             <span key={s.id} className={i === index ? styles.wizardSegOn : styles.wizardSeg} />
           ))}
         </div>
@@ -91,7 +105,7 @@ export function SeatsOfferTour({ open, onClose }: Props) {
             className={styles.ctaBook}
             onClick={() => (last ? onClose() : setIndex(index + 1))}
           >
-            {last ? "Start offering a ride" : "Next"}
+            {last ? finishLabel : "Next"}
           </button>
         </div>
       </div>

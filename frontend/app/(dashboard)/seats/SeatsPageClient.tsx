@@ -6,7 +6,9 @@ import InlineSignInModal from "@/app/(dashboard)/live/InlineSignInModal";
 import { RideCard, type BookSuccessPayload } from "./RideCard";
 import { SeatsFindEmptyState } from "./SeatsFindEmptyState";
 import { SeatsFlowSuccess } from "./SeatsFlowSuccess";
+import { SeatsOfferTour } from "./SeatsOfferTour";
 import { SeatsOfferWizard } from "./SeatsOfferWizard";
+import { FIND_TOUR_STEPS, hasSeenFindTour, markFindTourSeen } from "./seats-find-tour";
 import { SeatsSearchBar, type SeatsSearchState } from "./SeatsSearchBar";
 import { SeatsTabHero } from "./SeatsTabHero";
 import { findRouteOption, isSeatShareSearchReady } from "./seats-route";
@@ -94,6 +96,7 @@ export default function SeatsPageClient() {
   const [searchAuthRequired, setSearchAuthRequired] = useState(false);
   const [searchLoadError, setSearchLoadError] = useState<string | null>(null);
   const [signInOpen, setSignInOpen] = useState(false);
+  const [findTourOpen, setFindTourOpen] = useState(false);
   const [tripFlash, setTripFlash] = useState<{
     eyebrow: string;
     title: string;
@@ -160,6 +163,16 @@ export default function SeatsPageClient() {
     if (!isSeatShareSearchReady(searchState.from, searchState.to, selectedRoute)) return;
     void loadSearch();
   }, [mode, sort, loadSearch, searchState, selectedRoute?.id, selectedRoute?.isEligible]);
+
+  // First visit on this device: show the Find a seat demo once.
+  useEffect(() => {
+    if (!hasSeenFindTour()) setFindTourOpen(true);
+  }, []);
+
+  const closeFindTour = useCallback(() => {
+    markFindTourSeen();
+    setFindTourOpen(false);
+  }, []);
 
   const onSearch = useCallback(() => {
     void loadSearch();
@@ -287,6 +300,18 @@ export default function SeatsPageClient() {
       {mode === "find" ? (
         <>
           <SeatsTabHero variant="find" />
+          <SeatsOfferTour
+            open={findTourOpen && mode === "find"}
+            onClose={closeFindTour}
+            steps={FIND_TOUR_STEPS}
+            label="Find a seat"
+            finishLabel="Start searching"
+          />
+          <p className={styles.hint}>
+            <button type="button" className={styles.wizardBack} onClick={() => setFindTourOpen(true)}>
+              Watch the demo
+            </button>
+          </p>
 
           <SeatsSearchBar
             state={searchState}

@@ -8,6 +8,22 @@
 
 ---
 
+## 2026-11-13 — First-time demo for Find a seat
+
+**Context:** Owner asked for the same demo on Find a seat.
+
+**Goals addressed:** new workbook row S277 (Complete in code).
+
+**Result:** `SeatsOfferTour` is now generic (`steps`, `label`, `finishLabel`, `useId` for the title id) and is reused. New `seats-find-tour.ts` holds a 6-step script: welcome, search (From/To/time/seats), compare rides, Book it vs Ask to join (max 5 pending), Watch this route, Your rides after booking. It opens once per browser on the first visit to `/seats`, has its own seen flag (`rovvy.seatshare.find-tour.v1`, separate from the Offer demo) and a "Watch the demo" link under the Find hero. Copy shows no prices and no ratings (the rating value is still a placeholder, so the demo does not promise it; the "Best rated" sort is not mentioned).
+
+**Verification:** `vitest run` → 151 files, 692 passed (8 new); `tsc --noEmit` has no seats errors. Browser at 375 px: opens on first visit, all 6 titles reached, finishing sets only its own flag, replay link present. (One new test failed on first run because the copy said "Best rated"; the copy was fixed, not the test.)
+
+**Risks:** Seen flag is per browser. A first-time visitor who lands on `/seats` sees the Find demo first and the Offer demo later when they open that tab.
+
+**Next action:** Owner reviews the wording; decide on a per-account seen flag and a demo for Your rides.
+
+---
+
 ## 2026-11-13 — First-time demo for Offer a ride
 
 **Context:** Owner asked for a step-by-step demo that a first-time user sees in the Offer a ride section.
