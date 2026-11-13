@@ -7,10 +7,15 @@ import { useDashboardUser } from "@/contexts/dashboard-user-context";
 
 import {
   createCollectionItem,
+  createNamedCollection,
   deleteCollectionItem,
   extractCollectionLink,
   fetchCollectionItems,
+  fetchCollections,
+  updateCollectionItem,
 } from "./collection-api";
+import CollectionCardEditor from "./CollectionCardEditor";
+import { restoreBody } from "./collection-edit";
 import {
   COLLECTION_DEMO_HOURS,
   COLLECTION_DEMO_ITEMS,
@@ -28,6 +33,8 @@ import {
 } from "./collection-grouping";
 import type {
   CollectionItem,
+  CollectionItemPatch,
+  CollectionSummary,
   ExtractLinkResponse,
   GroupMode,
   ViewMode,
@@ -79,12 +86,18 @@ export default function CollectionPage() {
   const [error, setError] = useState<string | null>(null);
   const [apiItems, setApiItems] = useState<CollectionItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [unsortedCount, setUnsortedCount] = useState(0);
   const [facets, setFacets] = useState({
     countries: [] as string[],
     cities: [] as string[],
     categories: [] as string[],
   });
+
+  const [collections, setCollections] = useState<CollectionSummary[]>([]);
+  const [activeCollection, setActiveCollection] = useState<string | null>(null);
+  const [newCollOpen, setNewCollOpen] = useState(false);
+  const [newCollName, setNewCollName] = useState("");
+  const [undo, setUndo] = useState<CollectionItem | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [view, setView] = useState<ViewMode>("grid");
   const [groupMode, setGroupMode] = useState<GroupMode>("city");
@@ -108,10 +121,15 @@ export default function CollectionPage() {
     () => (isGuest ? filterByFacets(COLLECTION_DEMO_ITEMS, filters) : apiItems),
     [isGuest, apiItems, filters],
   );
-  const items = useMemo(() => filterBySearch(baseItems, textSearch), [baseItems, textSearch]);
+  const items = useMemo(
+    () =>
+      filterBySearch(baseItems, textSearch).filter(
+        (i) => !activeCollection || i.collection_id === activeCollection,
+      ),
+    [baseItems, textSearch, activeCollection],
+  );
 
   const displayTotal = isGuest ? COLLECTION_DEMO_ITEMS.length : totalCount;
-  const displayUnsorted = isGuest ? 0 : unsortedCount;
   const displayFacets = isGuest
     ? {
         countries: countBy(COLLECTION_DEMO_ITEMS, "country"),
@@ -146,26 +164,32 @@ export default function CollectionPage() {
     [user, router, pathname],
   );
 
-  const load = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchCollectionItems(filters);
-      setApiItems(data.items);
-      setTotalCount(data.total_count);
-      setUnsortedCount(data.unsorted_count);
-      setFacets(data.facets);
-    } catch (e) {
-      setApiItems([]);
-      setError(e instanceof Error ? e.message : "Could not load your collection");
-    } finally {
-      setLoading(false);
-    }
-  }, [user, filters]);
+  const load = useCallback(
+    async (quiet = false) => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      if (!quiet) setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchCollectionItems(filters);
+        setApiItems(data.items);
+        setTotalCount(data.total_count);
+        setFacets(data.facets);
+        // Named collections are secondary: a failure here must not hide the saves.
+        fetchCollections()
+          .then(setCollections)
+          .catch(() => setCollections([]));
+      } catch (e) {
+        setApiItems([]);
+        setError(e instanceof Error ? e.message : "Could not load your collection");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, filters],
+  );
 
   useEffect(() => {
     void load();
@@ -187,6 +211,7 @@ export default function CollectionPage() {
   }, [filterOpen]);
 
   const sections = useMemo(() => groupItems(items, groupMode), [items, groupMode]);
+  const unsortedItems = useMemo(() => items.filter((i) => i.is_unsorted), [items]);
 
   const filterCount = activeFilterCount(filters);
   const narrowed = filterCount > 0 || Boolean(textSearch.trim());
@@ -244,18 +269,141 @@ export default function CollectionPage() {
     }
   };
 
-  const handleRemove = async (id: string) => {
-    if (isDemoId(id)) return;
+  const handlePatch = async (id: string, patch: CollectionItemPatch): Promise<boolean> => {
+    if (isDemoId(id)) return false;
     try {
-      await deleteCollectionItem(id);
+      const saved = await updateCollectionItem(id, patch);
+      setApiItems((list) => list.map((i) => (i.id === id ? saved : i)));
+      await load(true);
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save your change");
+      return false;
+    }
+  };
+
+  const handleRemove = async (item: CollectionItem): Promise<void> => {
+    if (isDemoId(item.id)) return;
+    try {
+      await deleteCollectionItem(item.id);
       setOpenCardId(null);
-      await load();
+      setUndo(item);
+      if (undoTimer.current) clearTimeout(undoTimer.current);
+      undoTimer.current = setTimeout(() => setUndo(null), 8000);
+      await load(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not remove place");
     }
   };
 
+  const handleUndo = async () => {
+    const item = undo;
+    if (!item) return;
+    setUndo(null);
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    try {
+      await createCollectionItem(restoreBody(item));
+      await load(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not put it back");
+    }
+  };
+
+  const handleCreateCollection = async () => {
+    const name = newCollName.trim();
+    if (!name) return;
+    try {
+      const created = await createNamedCollection(name);
+      setNewCollName("");
+      setNewCollOpen(false);
+      await load(true);
+      setActiveCollection(created.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not create collection");
+    }
+  };
+
+  useEffect(
+    () => () => {
+      if (undoTimer.current) clearTimeout(undoTimer.current);
+    },
+    [],
+  );
+
   const showMap = view === "map";
+
+  const renderCard = (item: CollectionItem) => {
+                    const open = openCardId === item.id;
+                    const demo = isDemoId(item.id);
+                    const rating = demo ? COLLECTION_DEMO_RATING[item.id] : undefined;
+                    const hours = demo ? COLLECTION_DEMO_HOURS[item.id] : undefined;
+                    const from = formatSavedFrom(item.saved_from);
+                    return (
+                      <div key={item.id} className={`${styles.card} ${open ? styles.cardOpen : ""}`}>
+                        <button
+                          type="button"
+                          className={styles.cardToggle}
+                          aria-expanded={open}
+                          onClick={() => setOpenCardId(open ? null : item.id)}
+                        >
+                          <span className={styles.cardImage}>
+                            <span className={`${styles.sourceBadge} ${styles.mono}`}>{item.source.toUpperCase()}</span>
+                            {item.stars > 0 ? (
+                              <span className={styles.starsBadge}>
+                                <StarIcon filled size={9} />
+                                <span className={styles.mono}>{item.stars}.0</span>
+                              </span>
+                            ) : null}
+                          </span>
+                          <span className={styles.cardBody}>
+                            <span className={styles.cardName}>{item.name}</span>
+                            <span className={`${styles.cardMeta} ${styles.mono}`}>{itemMetaLabel(item)}</span>
+                          </span>
+                        </button>
+                        {open ? (
+                          <div className={`${styles.cardDetails} ${styles.cardDetailsPop}`}>
+                            {rating || hours ? (
+                              <div className={styles.ratingLine}>
+                                {rating ? <span className={`${styles.ratingValue} ${styles.mono}`}>{rating}</span> : null}
+                                {hours ? <span className={`${styles.hoursValue} ${styles.mono}`}>{hours}</span> : null}
+                              </div>
+                            ) : null}
+                            {demo ? null : (
+                              <div className={styles.detailRow}>
+                                <span className={`${styles.detailLabel} ${styles.mono}`}>Saved</span>
+                                <span className={styles.detailValue}>{formatSavedWhen(item.created_at)}</span>
+                              </div>
+                            )}
+                            {from ? (
+                              <div className={styles.detailRow}>
+                                <span className={`${styles.detailLabel} ${styles.mono}`}>From</span>
+                                <span className={styles.detailValue}>{from}</span>
+                              </div>
+                            ) : null}
+                            {demo ? (
+                              item.note ? (
+                                <div style={{ marginTop: 10 }}>
+                                  <div className={styles.noteHeader}>
+                                    <span className={`${styles.noteLabel} ${styles.mono}`}>Note</span>
+                                  </div>
+                                  <div className={styles.noteBox}>{item.note}</div>
+                                </div>
+                              ) : null
+                            ) : (
+                              <CollectionCardEditor
+                                key={`${item.id}-${item.updated_at}`}
+                                item={item}
+                                collections={collections}
+                                onPatch={handlePatch}
+                                onRemove={handleRemove}
+                              />
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+  };
+
 
   return (
     <div className={styles.page}>
@@ -402,6 +550,59 @@ export default function CollectionPage() {
         </span>
       </div>
 
+      {!isGuest ? (
+        <>
+          <div className={styles.collectionBar} role="group" aria-label="Collections">
+            <button
+              type="button"
+              aria-pressed={activeCollection === null}
+              className={`${styles.chip} ${activeCollection === null ? styles.chipActive : ""}`}
+              onClick={() => setActiveCollection(null)}
+            >
+              All saves
+            </button>
+            {collections.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                aria-pressed={activeCollection === c.id}
+                className={`${styles.chip} ${activeCollection === c.id ? styles.chipActive : ""}`}
+                onClick={() => setActiveCollection(activeCollection === c.id ? null : c.id)}
+              >
+                {c.name}
+              </button>
+            ))}
+            <button type="button" className={styles.newCollectionBtn} onClick={() => setNewCollOpen((v) => !v)}>
+              New collection
+            </button>
+          </div>
+          {newCollOpen ? (
+            <form
+              className={styles.newCollForm}
+              onSubmit={(e) => {
+                e.preventDefault();
+                void handleCreateCollection();
+              }}
+            >
+              <input
+                autoFocus
+                value={newCollName}
+                maxLength={120}
+                placeholder="Collection name"
+                aria-label="Collection name"
+                onChange={(e) => setNewCollName(e.target.value)}
+              />
+              <button type="submit" className={styles.readBtn} disabled={!newCollName.trim()}>
+                Create
+              </button>
+              <button type="button" className={styles.filterBtn} onClick={() => setNewCollOpen(false)}>
+                Cancel
+              </button>
+            </form>
+          ) : null}
+        </>
+      ) : null}
+
       {error ? (
         <div role="alert" className={styles.errorBox}>
           <span>{error}</span>
@@ -456,6 +657,22 @@ export default function CollectionPage() {
             </div>
           ) : null}
 
+          {unsortedItems.length > 0 ? (
+            <section className={styles.section} aria-label="Unsorted saves">
+              <div className={styles.sectionHead}>
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className={`${styles.sectionTitle} ${styles.serif}`}>Unsorted</span>
+                  <span className={`${styles.countPill} ${styles.mono}`}>{unsortedItems.length}</span>
+                </span>
+                <span className={`${styles.sectionMeta} ${styles.mono}`}>Needs a look</span>
+              </div>
+              <p className={styles.unsortedHint}>
+                We were not sure where these belong. Open one to file it where it fits, or remove it.
+              </p>
+              <div className={styles.grid}>{unsortedItems.map((item) => renderCard(item))}</div>
+            </section>
+          ) : null}
+
           {sections.length === 0 ? (
             narrowed ? (
               <div className={styles.emptyState}>
@@ -467,7 +684,14 @@ export default function CollectionPage() {
                   Clear filters
                 </button>
               </div>
-            ) : displayUnsorted > 0 ? null : (
+            ) : activeCollection ? (
+              <div className={styles.emptyState}>
+                <h2 className={styles.serif} style={{ fontSize: 24, marginBottom: 8 }}>This collection is empty</h2>
+                <p className={styles.subtitle} style={{ margin: "0 auto" }}>
+                  Open any save and pick this collection in its Collection menu.
+                </p>
+              </div>
+            ) : unsortedItems.length > 0 ? null : (
               <div className={styles.emptyState}>
                 <h2 className={styles.serif} style={{ fontSize: 24, marginBottom: 8 }}>Nothing saved yet</h2>
                 <p className={styles.subtitle} style={{ margin: "0 auto" }}>
@@ -486,99 +710,23 @@ export default function CollectionPage() {
                   <span className={`${styles.sectionMeta} ${styles.mono}`}>{section.meta}</span>
                 </div>
                 <div className={styles.grid}>
-                  {section.items.map((item) => {
-                    const open = openCardId === item.id;
-                    const demo = isDemoId(item.id);
-                    const rating = demo ? COLLECTION_DEMO_RATING[item.id] : undefined;
-                    const hours = demo ? COLLECTION_DEMO_HOURS[item.id] : undefined;
-                    const from = formatSavedFrom(item.saved_from);
-                    return (
-                      <div key={item.id} className={`${styles.card} ${open ? styles.cardOpen : ""}`}>
-                        <button
-                          type="button"
-                          className={styles.cardToggle}
-                          aria-expanded={open}
-                          onClick={() => setOpenCardId(open ? null : item.id)}
-                        >
-                          <span className={styles.cardImage}>
-                            <span className={`${styles.sourceBadge} ${styles.mono}`}>{item.source.toUpperCase()}</span>
-                            {item.stars > 0 ? (
-                              <span className={styles.starsBadge}>
-                                <StarIcon filled size={9} />
-                                <span className={styles.mono}>{item.stars}.0</span>
-                              </span>
-                            ) : null}
-                          </span>
-                          <span className={styles.cardBody}>
-                            <span className={styles.cardName}>{item.name}</span>
-                            <span className={`${styles.cardMeta} ${styles.mono}`}>{itemMetaLabel(item)}</span>
-                          </span>
-                        </button>
-                        {open ? (
-                          <div className={`${styles.cardDetails} ${styles.cardDetailsPop}`}>
-                            {rating || hours ? (
-                              <div className={styles.ratingLine}>
-                                {rating ? <span className={`${styles.ratingValue} ${styles.mono}`}>{rating}</span> : null}
-                                {hours ? <span className={`${styles.hoursValue} ${styles.mono}`}>{hours}</span> : null}
-                              </div>
-                            ) : null}
-                            {demo ? null : (
-                              <div className={styles.detailRow}>
-                                <span className={`${styles.detailLabel} ${styles.mono}`}>Saved</span>
-                                <span className={styles.detailValue}>{formatSavedWhen(item.created_at)}</span>
-                              </div>
-                            )}
-                            {from ? (
-                              <div className={styles.detailRow}>
-                                <span className={`${styles.detailLabel} ${styles.mono}`}>From</span>
-                                <span className={styles.detailValue}>{from}</span>
-                              </div>
-                            ) : null}
-                            {item.note ? (
-                              <div style={{ marginTop: 10 }}>
-                                <div className={styles.noteHeader}>
-                                  <span className={`${styles.noteLabel} ${styles.mono}`}>Your note</span>
-                                </div>
-                                <div className={styles.noteBox}>{item.note}</div>
-                              </div>
-                            ) : null}
-                            {demo ? null : (
-                              <div className={styles.cardActions}>
-                                <button
-                                  type="button"
-                                  onClick={() => void handleRemove(item.id)}
-                                  className={styles.removeBtn}
-                                  aria-label={`Remove ${item.name}`}
-                                >
-                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden>
-                                    <path d="M5 7h14M9 7V4.5h6V7M7 7l1 13h8l1-13" strokeLinecap="round" />
-                                  </svg>
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
+                  {section.items.map((item) => renderCard(item))}
                 </div>
               </section>
             ))
           )}
 
-          {displayUnsorted > 0 ? (
-            <div className={styles.unsortedBar}>
-              <div style={{ flex: "1 1 280px", minWidth: 0 }}>
-                <div className={`${styles.eyebrow} ${styles.mono}`}>Unsorted · {displayUnsorted}</div>
-                <div style={{ fontSize: 13, color: "#3A423B", lineHeight: 1.55 }}>
-                  {displayUnsorted} {displayUnsorted === 1 ? "save is" : "saves are"} not filed yet, so{" "}
-                  {displayUnsorted === 1 ? "it is" : "they are"} not shown above. Sorting is coming next.
-                </div>
-              </div>
-            </div>
-          ) : null}
         </div>
       )}
+
+      {undo ? (
+        <div className={styles.undoToast} role="status">
+          <span>Removed {undo.name}.</span>
+          <button type="button" onClick={() => void handleUndo()}>
+            Undo
+          </button>
+        </div>
+      ) : null}
 
       {filterOpen ? (
         <div className={styles.modalBackdrop} onClick={() => setFilterOpen(false)} role="presentation">

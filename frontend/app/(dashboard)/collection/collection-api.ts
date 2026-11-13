@@ -2,7 +2,9 @@ import { apiFetch } from "@/lib/api";
 
 import type {
   CollectionItem,
+  CollectionItemPatch,
   CollectionListResponse,
+  CollectionSummary,
   ExtractLinkResponse,
 } from "./collection-types";
 
@@ -31,6 +33,7 @@ export async function createCollectionItem(body: {
   stars?: number;
   match_status?: string;
   is_unsorted?: boolean;
+  collection_id?: string | null;
   latitude?: number | null;
   longitude?: number | null;
 }): Promise<CollectionItem> {
@@ -38,6 +41,20 @@ export async function createCollectionItem(body: {
     method: "POST",
     body: JSON.stringify(body),
   });
+}
+
+export async function updateCollectionItem(
+  id: string,
+  patch: CollectionItemPatch,
+): Promise<CollectionItem> {
+  return apiFetch<CollectionItem>(`/collection/items/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function fetchCollections(): Promise<CollectionSummary[]> {
+  return apiFetch<CollectionSummary[]>("/collection/collections");
 }
 
 export async function deleteCollectionItem(id: string): Promise<void> {

@@ -8,6 +8,30 @@
 
 ---
 
+## 2026-11-13 — Sprint C2 (editable and organised saves), first pass
+
+**Context:** Owner asked to start Sprint C2 after C1 was committed (9d80bee).
+
+**Goals addressed:** Notes, stars, rename, move, remove with undo, named collections list, Explore saves visible, unsorted saves visible.
+
+**Result:**
+- Backend unchanged (PATCH `/items/{id}` and GET `/collections` already existed); only tests added.
+- Frontend: `updateCollectionItem` and `fetchCollections` in `collection-api.ts`; new `CollectionCardEditor.tsx` and `collection-edit.ts`. Open a save to tap stars (tap again clears), edit name/city/category/note (one PATCH of changed fields), pick a collection, File it (unsorted), or Remove with an 8-second Undo toast that re-creates the row.
+- Collection chips above the grid (All saves + named collections) filter the page; New collection is an in-app form and selects the new chip. Empty collection has its own message.
+- Unsorted saves show in an Unsorted section at the top (old bottom banner removed).
+- Explore saves (`explore-hub-save.ts`) now go straight to the grid (known city) and no longer put the listing summary in the note. Test updated.
+- Workbook: 14 rows Complete in code, 3 Partial (C158, C078, C217). Backup `Rovvy_Collection_Scrum_Book.backup-2026-11-13-c2.xlsx`.
+
+**Verification:** `npx vitest run` collection + explore-hub-save: 16 passed (5 new in collection-edit). `pytest tests/test_collection.py tests/test_collection_idempotent_save.py`: 12 passed (6 new: PATCH 401/422/success, other user's PATCH and DELETE 403, collections list). `tsc` shows no Collection errors. Browser, signed in with the API stubbed in the page (no account, no database write): star, edit, move, chip filter, File it, remove + Undo, new collection all sent the expected PATCH/POST/DELETE and the page updated; no horizontal overflow.
+
+**Risks:** Not run against the real API or Postgres (no Postgres test yet, C262). Undo creates a new row id and created_at. Edits are not optimistic: the list reloads after each change. The Explore save path was checked by unit test, not by clicking Save in Explore. Collection rename/delete, per-collection view, sort control, multi-select and pagination are still pending.
+
+**Postgres test (added same day):** `tests/test_collection_pg.py`, 5 tests driving the real routes against PostgreSQL inside one rolled-back transaction (opt-in `COLLECTION_PG_TEST_URL`, marker `collection_postgres`). Covers create/list/patch/delete, country filter with unfiltered totals, unsorted counts, same-`saved_from` dedupe, named collections and move, another user's data returning 403 or empty, and ON DELETE SET NULL. Without the URL: 5 skipped. **Run against Supabase, rolled back (owner-approved):** 5 passed. Afterwards 0 leftover test users and the collection tables already existed, so no DDL was needed. C262 is Complete in code. The local Postgres 18 needed a password we did not have.
+
+**Next action:** Sort control and per-collection grouping, then finish C1 leftovers (skeleton loading, removable filter chips) before Sprint C3 (link reader).
+
+---
+
 ## 2026-11-13 — Sprint C1 (truthful states), first pass
 
 **Context:** Owner asked to start Sprint C1 on `/collection`. There is no separate video plan for this tab; the YouTube/reel reader belongs to Sprint C3.

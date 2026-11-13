@@ -19,6 +19,27 @@ export type CollectionItem = {
   updated_at: string;
 };
 
+export type CollectionSummary = {
+  id: string;
+  user_id: string;
+  name: string;
+  group_id: string | null;
+  created_at: string;
+};
+
+export type CollectionItemPatch = Partial<{
+  name: string;
+  note: string | null;
+  stars: number;
+  city: string | null;
+  country: string | null;
+  category: string | null;
+  subcategory: string | null;
+  is_unsorted: boolean;
+  match_status: string;
+  collection_id: string | null;
+}>;
+
 export type CollectionListResponse = {
   items: CollectionItem[];
   total_count: number;

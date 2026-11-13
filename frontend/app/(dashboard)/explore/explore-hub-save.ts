@@ -62,7 +62,9 @@ export function collectionCreateBodyFromExploreSlot(
     subcategory: slot.explorePlaceBucket ?? null,
     source: "Search",
     saved_from: exploreListingSaveKey(slot),
-    note: slot.summary?.trim().slice(0, 1000) || null,
-    is_unsorted: true,
+    // The note is the user's own words; the listing summary is not stored there.
+    note: null,
+    // The city is known, so the save goes straight to the grid, not to Unsorted.
+    is_unsorted: false,
   };
 }

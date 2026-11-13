@@ -69,6 +69,7 @@ describe("explore-hub-save", () => {
     const body = collectionCreateBodyFromExploreSlot(samplePlaceSlot("gers:x"), "Chicago, IL");
     expect(body.saved_from).toBe("explore:listing:place:gers:x");
     expect(body.source).toBe("Search");
-    expect(body.is_unsorted).toBe(true);
+    expect(body.is_unsorted).toBe(false);
+    expect(body.note).toBeNull();
   });
 });
