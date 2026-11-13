@@ -8,6 +8,22 @@
 
 ---
 
+## 2026-11-13 — First-time demo for Offer a ride
+
+**Context:** Owner asked for a step-by-step demo that a first-time user sees in the Offer a ride section.
+
+**Goals addressed:** new workbook row S276 (Complete in code).
+
+**Result:** `SeatsOfferTour.tsx` + `seats-offer-tour.ts`: a 6-step dialog (welcome, route, when and booking, price and details, review and publish, after publishing in Your rides). Opens once on the first visit to the Offer tab, skippable (Skip, X, Escape), arrow keys and Back/Next work; a "Watch the demo" link in the wizard header replays it. Text is static: no sample prices or invented rides, and it states the 200-mile limit and that Rovvy moves no money. Rendered through a portal into `<body>` because the dashboard page transition's CSS transform otherwise traps fixed overlays off-screen.
+
+**Verification:** `vitest run` → 148 files, 673 passed (7 new); `tsc --noEmit` has no seats errors (5 existing Explore type errors are not mine). Browser at 375 px: opens on first visit, all 6 titles reached, finishing sets the seen flag, no reopen after reload, replay link present.
+
+**Risks:** The seen flag lives in the browser (localStorage), so a new device or cleared storage shows the demo again; a per-account flag would need a backend field. The demo only covers Offer a ride, not Find a seat. The Explore stylesheet had a syntax error from another session during testing (`explore.module.css`), unrelated to this change.
+
+**Next action:** Owner reviews the wording; decide whether to add the same demo to Find a seat and whether to store the seen flag per account.
+
+---
+
 ## 2026-11-13 — Offer wizard batch 3 (card details, edit and cancel rules, share trip)
 
 **Context:** Third batch of the owner-requested upgrades. Two items were reviewed and deliberately deferred (see Risks).

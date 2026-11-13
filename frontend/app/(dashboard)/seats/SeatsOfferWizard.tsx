@@ -37,6 +37,8 @@ import {
   todayInZone,
   zonedDateTimeToUtc,
 } from "./seats-time";
+import { SeatsOfferTour } from "./SeatsOfferTour";
+import { hasSeenOfferTour, markOfferTourSeen } from "./seats-offer-tour";
 import styles from "./seats.module.css";
 
 const TOTAL_STEPS = 4;
@@ -89,6 +91,7 @@ export function SeatsOfferWizard({ onPublished, onAuthRequired }: Props) {
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
   const [vehicleColor, setVehicleColor] = useState("");
+  const [tourOpen, setTourOpen] = useState(false);
   const [publishProgress, setPublishProgress] = useState<string | null>(null);
   // One id links every ride from this plan; `done` lets a retry skip rides already published.
   const seriesIdRef = useRef<string | null>(null);
@@ -108,6 +111,13 @@ export function SeatsOfferWizard({ onPublished, onAuthRequired }: Props) {
       setDraftRestored(true);
     }
     setDraftReady(true);
+    // First visit on this device: show the demo once.
+    if (!hasSeenOfferTour()) setTourOpen(true);
+  }, []);
+
+  const closeTour = useCallback(() => {
+    markOfferTourSeen();
+    setTourOpen(false);
   }, []);
 
   useEffect(() => {
@@ -331,8 +341,12 @@ export function SeatsOfferWizard({ onPublished, onAuthRequired }: Props) {
           <span key={n} className={n <= step ? styles.wizardSegOn : styles.wizardSeg} />
         ))}
       </div>
+      <SeatsOfferTour open={tourOpen} onClose={closeTour} />
       <p className={`${styles.eyebrow} ${styles.mono}`}>
-        Offer a ride · step {step} of {TOTAL_STEPS}
+        Offer a ride · step {step} of {TOTAL_STEPS}{" "}
+        <button type="button" className={styles.wizardBack} onClick={() => setTourOpen(true)}>
+          Watch the demo
+        </button>
       </p>
       {draftRestored && step === 1 ? (
         <p className={styles.hint}>
