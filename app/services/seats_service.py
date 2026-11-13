@@ -97,6 +97,19 @@ def _vehicle_for_card(db: Session, row: dict[str, Any]) -> dict[str, Any]:
                 "body_type": body,
                 "display": f"{vehicle.make} {vehicle.model}",
             }
+    prefs = row.get("preferences") or {}
+    described = " ".join(
+        str(prefs[k]).strip()
+        for k in ("vehicle_color", "vehicle_make", "vehicle_model")
+        if prefs.get(k) and str(prefs[k]).strip()
+    )
+    if described:
+        return {
+            "make": prefs.get("vehicle_make"),
+            "model": prefs.get("vehicle_model"),
+            "body_type": body,
+            "display": described,
+        }
     display = _VEHICLE_LABELS.get(body, "Four-wheeler") if body else "Four-wheeler"
     return {"make": None, "model": None, "body_type": body, "display": display}
 
@@ -148,6 +161,7 @@ def _ride_to_card(
         "price_per_seat": format_money(row["price_per_seat_paise"]),
         "max_per_seat": format_money(row["max_per_seat_paise"]),
         "note": row.get("note"),
+        "preferences": row.get("preferences") or {},
         "driver": {
             "id": str(row["driver_id"]),
             "name": driver.full_name if driver else "Driver",
@@ -574,6 +588,9 @@ class SeatsService:
                     "status": r.status,
                     "seats_free": r.seats_offered - r.seats_taken,
                     "pending_count": len([b for b in r.bookings if b.status == "held"]),
+                    "stops": [{"label": st.label} for st in r.stops],
+                    "note": r.note,
+                    "preferences": r.preferences or {},
                 }
                 for r in driving
             ],
@@ -633,6 +650,10 @@ class SeatsService:
             AppException.not_found("Ride not found")
         if ride.status not in ("open", "full"):
             AppException.conflict("Cannot cancel this ride")
+        now = datetime.now(timezone.utc)
+        if ride.depart_at <= now:
+            AppException.conflict("This ride has already left, so it cannot be cancelled")
+        late = (ride.depart_at - now) < timedelta(hours=24)
 
         ride.status = "cancelled"
         ride.driver_cancel_count = (ride.driver_cancel_count or 0) + 1
@@ -645,12 +666,65 @@ class SeatsService:
                     booking.rider_id,
                     "seats_cancelled",
                     "Ride cancelled",
-                    "The driver cancelled this trip",
+                    "The driver cancelled this trip, less than 24 hours before departure"
+                    if late
+                    else "The driver cancelled this trip",
                     {"booking_id": str(booking.id), "ride_id": str(ride.id)},
                 )
         ride.seats_taken = 0
         db.commit()
         db.refresh(ride)
+        return ride
+
+    @staticmethod
+    def edit_ride(
+        db: Session,
+        driver: User,
+        ride_id: uuid.UUID,
+        *,
+        note: str | None,
+        preferences: dict[str, Any] | None,
+    ) -> Ride:
+        """Driver may change the note and ride details until departure.
+
+        Price, seats, route and times are locked: riders already booked on them.
+        """
+        ride = db.execute(
+            select(Ride)
+            .where(Ride.id == ride_id)
+            .options(selectinload(Ride.bookings))
+            .with_for_update()
+        ).scalar_one_or_none()
+        if ride is None or ride.driver_id != driver.id:
+            AppException.not_found("Ride not found")
+        if ride.status not in ("open", "full"):
+            AppException.conflict("This ride can no longer be edited")
+        if ride.depart_at <= datetime.now(timezone.utc):
+            AppException.conflict("This ride has already left, so it cannot be edited")
+
+        changed = False
+        if note is not None and note != ride.note:
+            ride.note = note or None
+            changed = True
+        if preferences is not None:
+            clean = {k: v for k, v in preferences.items() if v is not None}
+            if clean != (ride.preferences or {}):
+                ride.preferences = clean
+                changed = True
+        if changed:
+            for booking in ride.bookings:
+                if booking.status in ("held", "confirmed", "requested"):
+                    NotificationService.append_in_app(
+                        db,
+                        booking.rider_id,
+                        "seats_ride_updated",
+                        "Ride details updated",
+                        "The driver changed the note or details of your ride",
+                        {"booking_id": str(booking.id), "ride_id": str(ride.id)},
+                    )
+            ride.updated_at = datetime.now(timezone.utc)
+            db.commit()
+            db.refresh(ride)
         return ride
 
     @staticmethod

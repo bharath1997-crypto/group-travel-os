@@ -126,3 +126,4 @@ class WatchOut(BaseModel):
 class RidePatchIn(BaseModel):
     status: Literal["cancelled"] | None = None
     note: str | None = Field(default=None, max_length=500)
+    preferences: RidePreferencesIn | None = None

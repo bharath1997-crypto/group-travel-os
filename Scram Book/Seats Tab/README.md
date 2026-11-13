@@ -8,6 +8,26 @@
 
 ---
 
+## 2026-11-13 — Offer wizard batch 3 (card details, edit and cancel rules, share trip)
+
+**Context:** Third batch of the owner-requested upgrades. Two items were reviewed and deliberately deferred (see Risks).
+
+**Goals addressed:** new workbook rows S270–S275 (four Partial, two Pending).
+
+**Result:**
+- Ride cards show the driver's stated details (flexible window, luggage, pets/smoking/quiet chips) and the described car instead of a generic body type; search cards and Your rides carry `preferences`.
+- `PATCH /seats/rides/{id}` now edits the note and ride details until departure (`SeatsService.edit_ride`): price, seats, route and time stay locked; riders with a booking get an in-app `seats_ride_updated` notice only when something really changed.
+- Cancel rules: cannot cancel after departure; riders are told when the cancel is under 24 hours before departure.
+- Your rides: driver can edit the pickup note and "Share trip" (share sheet or copy: route, time, car, note; no plate, no tracking).
+
+**Verification:** `pytest tests/test_seats_edit_cancel_rules.py` plus the seats suites → all pass (11 new incl. 401 and 422 on PATCH); frontend `vitest run` → 146 files, 656 passed (4 new); `tsc --noEmit` clean. Browser: `/seats` Your rides tab renders with no console errors. Edit, cancel, chips and share not driven end to end (needs a logged-in driver with a published ride).
+
+**Risks:** Migration 022 must be applied first. Deferred and recorded as Pending: **extra stops with per-stop pricing** (needs a stop-picker UI, segment pricing in `create_booking` where the booked price is still the full ride price, and a per-segment cap rule) and **automatic emergency-contact alerts** (needs an SMS/email channel and owner approval; Share trip covers it by hand). Late cancels are only worded, not penalised.
+
+**Next action:** apply 022, browser-drive the whole offer flow with a test driver, then decide whether to build segment pricing.
+
+---
+
 ## 2026-11-13 — Offer wizard batch 2 (return trip, recurring, preferences, vehicle)
 
 **Context:** Second batch of the owner-requested offer-a-ride upgrades; needs one additive migration.

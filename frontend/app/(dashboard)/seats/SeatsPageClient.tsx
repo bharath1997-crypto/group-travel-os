@@ -23,7 +23,7 @@ import {
   type SeatsSort,
 } from "./seats-api";
 import { isSeatsAuthError } from "./seats-api-errors";
-import { buildDemoSeatRideCards } from "./seats-demo-cards";
+import { resolveSeatsMeLoadFailure, resolveSeatsSearchLoadFailure } from "./seats-load-state";
 import { reformatSeatShareMoney } from "./seats-money";
 import {
   filterRidesAfterTime,
@@ -88,6 +88,11 @@ export default function SeatsPageClient() {
   const [watching, setWatching] = useState(false);
   const [watchError, setWatchError] = useState<string | null>(null);
   const [me, setMe] = useState<SeatsMe | null>(null);
+  const [meLoading, setMeLoading] = useState(false);
+  const [meAuthRequired, setMeAuthRequired] = useState(false);
+  const [meLoadError, setMeLoadError] = useState<string | null>(null);
+  const [searchAuthRequired, setSearchAuthRequired] = useState(false);
+  const [searchLoadError, setSearchLoadError] = useState<string | null>(null);
   const [signInOpen, setSignInOpen] = useState(false);
   const [tripFlash, setTripFlash] = useState<{
     eyebrow: string;
@@ -100,6 +105,8 @@ export default function SeatsPageClient() {
       const route = findRouteOption(routeOptions, selectedRouteId);
       if (!isSeatShareSearchReady(state.from, state.to, route)) return;
       setSearchCompleted(true);
+      setSearchAuthRequired(false);
+      setSearchLoadError(null);
       try {
         const res = await searchSeats({
           from_lat: state.from.lat,
@@ -113,35 +120,38 @@ export default function SeatsPageClient() {
         const filtered = filterRidesAfterTime(res, state.date, state.time);
         setRides(applySearchCurrency(filtered));
         setTotalCount(filtered.length);
-      } catch {
-        const fallback = filterRidesAfterTime(
-          buildDemoSeatRideCards(state.from, state.to).filter(
-            (r) => r.seats_free >= state.seats,
-          ),
-          state.date,
-          state.time,
-        );
-        setRides(fallback);
-        setTotalCount(fallback.length);
+      } catch (e: unknown) {
+        const failure = resolveSeatsSearchLoadFailure(e);
+        setRides([]);
+        setTotalCount(0);
+        if (failure.kind === "auth") {
+          setSearchAuthRequired(true);
+          setSignInOpen(true);
+        } else {
+          setSearchLoadError(failure.message);
+        }
       }
     },
     [searchState, sort, routeOptions, selectedRouteId, applySearchCurrency],
   );
 
   const loadMe = useCallback(async () => {
+    setMeLoading(true);
+    setMeAuthRequired(false);
+    setMeLoadError(null);
     try {
       const res = await fetchSeatsMe();
       setMe(res);
-    } catch {
-      setMe({
-        driving: [],
-        riding: [],
-        history_driving: [],
-        history_riding: [],
-        pending_as_driver: [],
-        pending_count: 0,
-        profile_public: true,
-      });
+    } catch (e: unknown) {
+      setMe(null);
+      const failure = resolveSeatsMeLoadFailure(e);
+      if (failure.kind === "auth") {
+        setMeAuthRequired(true);
+      } else {
+        setMeLoadError(failure.message);
+      }
+    } finally {
+      setMeLoading(false);
     }
   }, []);
 
@@ -182,7 +192,9 @@ export default function SeatsPageClient() {
     : "your window";
 
   const pendingBadge = me?.pending_count ?? 0;
-  const showFindEmpty = searchCompleted && searchReady && rides.length === 0;
+  const showFindEmpty =
+    searchCompleted && searchReady && (rides.length === 0 || searchAuthRequired || Boolean(searchLoadError));
+  const findEmptyVariant = searchAuthRequired ? "auth" : searchLoadError ? "error" : "empty";
 
   const onWatch = useCallback(async () => {
     if (!searchReady) return;
@@ -319,11 +331,14 @@ export default function SeatsPageClient() {
           {showFindEmpty ? (
             <SeatsFindEmptyState
               timeLabel={timeLabel}
-              onWatch={() => void onWatch()}
+              onWatch={() => void loadSearch()}
               watchDisabled={!searchReady}
               watchDisabledTitle={searchDisabledTitle}
               watching={watching}
               watchError={watchError}
+              variant={findEmptyVariant}
+              errorMessage={searchLoadError}
+              onSignIn={() => setSignInOpen(true)}
             />
           ) : (
             <div className={styles.list}>
@@ -397,7 +412,14 @@ export default function SeatsPageClient() {
               }}
             />
           ) : null}
-          <SeatsYourRidesTab data={me} onRefresh={loadMe} onAuthRequired={() => setSignInOpen(true)} />
+          <SeatsYourRidesTab
+            data={me}
+            loading={meLoading}
+            authRequired={meAuthRequired}
+            loadError={meLoadError}
+            onRefresh={loadMe}
+            onAuthRequired={() => setSignInOpen(true)}
+          />
         </>
       ) : null}
     </div>

@@ -21,6 +21,17 @@ export type SeatRideVehicle = {
   display?: string | null;
 };
 
+export type SeatRidePreferences = {
+  depart_window_minutes?: number;
+  luggage?: "none" | "small" | "large";
+  smoking_allowed?: boolean;
+  pets_allowed?: boolean;
+  quiet_ride?: boolean;
+  vehicle_make?: string;
+  vehicle_model?: string;
+  vehicle_color?: string;
+};
+
 export type SeatRideCard = {
   id: string;
   depart_at: string;
@@ -32,6 +43,7 @@ export type SeatRideCard = {
   approval: "instant" | "manual";
   price_per_seat: Money;
   note?: string | null;
+  preferences?: SeatRidePreferences | null;
   route_summary?: string | null;
   vehicle?: SeatRideVehicle | null;
   driver: SeatsPerson & {
@@ -55,6 +67,9 @@ export type SeatsMe = {
     status: string;
     seats_free: number;
     pending_count: number;
+    stops?: Array<{ label: string }>;
+    note?: string | null;
+    preferences?: SeatRidePreferences | null;
   }>;
   riding: Array<{
     booking_id: string;
@@ -219,6 +234,17 @@ export async function cancelPublishedRide(rideId: string): Promise<{ id: string;
   return apiFetch(`/seats/rides/${rideId}`, {
     method: "PATCH",
     body: JSON.stringify({ status: "cancelled" }),
+  });
+}
+
+/** Edit the pickup note and ride details until departure (price, seats, route and times are locked). */
+export async function editPublishedRide(
+  rideId: string,
+  body: { note?: string; preferences?: Record<string, unknown> },
+): Promise<{ id: string; status: string }> {
+  return apiFetch(`/seats/rides/${rideId}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
   });
 }
 
