@@ -2,6 +2,49 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-11-13 — Destinations chrome: adult layout, no demos / scrollbar / location toast
+
+- **Context:** Owner: logo too small; uneven type; after Destinations a “Showing … / Back to Chicago” toast looked like a demo; masonry Ask/Tonight cards were demos; scrollbar + arrow buttons cluttered the reel; design felt kid-like.
+- **Result:** Header logo `xl`; calmer type scale (hero/destinations/reel meta); removed city-picked banner; `buildMasonryFeed` = live slots only (no ask/live placeholders); Destinations reel hides scrollbar and drops arrow controls (trackpad/swipe only); Suggest cities button quieter.
+- **Verification:** Vitest explore-hub-v6-map + destination-media **11 passed**. Browser check Destinations + masonry.
+- **Next:** Optional Top/Takes arrow cleanup if owner wants the same pattern hub-wide.
+
+## 2026-11-13 — Destinations: one L/R reel + real place photos (no Earth)
+
+- **Context:** Owner: cards showed Earth/empty stills; keep every country in **one** horizontal reel (scroll L/R only), not stacked continent sections.
+- **Result:** Single `countriesInHubOrder()` reel (Americas→Asia→Europe→Oceania→Other). Direct Wikimedia upload/thumb URLs; Earth globe removed; South Korea fixed to Bukchon Hanok Village ASCII Commons thumb; eager `<img>` load; URL-cascade reset on media change.
+- **Verification:** Browser `/explore` Destinations — **36/36** cards `naturalWidth > 0`, `earthSrc: false`, no `reelPhotoFallback`. Vitest `explore-destination-media` **3 passed**.
+- **Next:** Stronger Surprise collection bias; optional Scram workbook row green when owner confirms.
+
+## 2026-11-13 — Destinations: all continents stacked + Surprise city spots
+
+- **Context:** Owner wanted every country visible by continent (not a 3–4 card filter), order Americas → Asia → Europe → Oceania → Other, iconic stills, and Surprise that picks cities (3–4 spots), later biasable by location/collection.
+- **Result:** *(Superseded by single-reel entry above.)* Initially five continent reels; expanded Americas + Other; `pickSurpriseCitySpots(4, hints)` Surprise panel.
+- **Verification:** Browser `/explore` — Surprise city cards; Vitest catalog + destination-media passed.
+- **Next:** Replaced by one L/R reel.
+
+## 2026-11-13 — Destinations reel photos + remove lonely country box + zoom typography
+
+- **Context:** Owner: Explore destinations cards showed empty stripe placeholders (no country/city images); a lone “United States · N events” Browse-by-country box sat above Destinations; browser zoom made some headings scale unevenly / lines stick out.
+- **Result:** Removed hub `ExploreBrowseByCountrySection` (Destinations + All countries remains). Reel cards load curated Wikimedia Commons stills (`explore-destination-media.ts`) with on-error cascade; fake “You're here” on US removed (Selected only after pick). Replaced heavy `vw` clamps with rem-based clamps; destination/rank text wraps; region tabs wrap instead of overflowing.
+- **Verification:** Browser `/explore` — US/Canada/Mexico cards show Liberty / CN Tower / Bellas Artes; Browse-by-country box gone. Vitest `explore-destination-media` passed.
+- **Next:** Spot-check Europe/Asia/Oceania thumbs; replace any Commons 404s that hit the Earth fallback.
+
+## 2026-11-13 — Explore hub Critical trust batch (When / Plan it / Top / filters / GPS)
+
+- **Context:** Owner asked to fix Critical Explore-hub honesty issues from the FE/BE audit (exact When → API, Plan it claims, Top vs filters, sold-out≠free, destination GPS overwrite, unverifiable vibes), then list what remains.
+- **Result:** `buildExploreHubFetchInput` sends exact When/`dateRangeForWhen` (no 14-day strip widen); hero headline follows When; hero/Plan it copy = cached listings only; Plan CTAs open `sourceUrl` or stay disabled; Top city scope uses `matchingSlots` + filter-empty copy, state/country labeled unfiltered; sold-out title detection + Free reason/chip/plan exclusion; GPS bootstrap once with `exploreLocationLocked`; `EXPLORE_VIBES` trimmed to three soft keywords; zero-count selected category chips stay visible; Surprise copy already random-from-list.
+- **Verification:** `cd frontend; npx vitest run "app/(dashboard)/explore/__tests__"` → **217 passed** (46 files). No full-browser QA in this pass.
+- **Risks / still open:** Destination timezone for When chips; soft Kind/vibe keyword matching (not provider taxonomy); Save → login drops drawer; invite/share/split social demos if still mounted; Videos empty in cities without curated channels; Top state/country still ignore Tonight filters by design (labeled).
+- **Next:** Browser QA on `/explore` (Tonight→Tomorrow fetch, Free sold-out card, Plan it provider link, Surprise lock); optional destination-TZ When; workbook rows F09/F10/F17 remain Partial.
+
+## 2026-11-13 — Venue calendar feeds: first live run of all 115 sources (Partial: events stored; purge, deploy and follow-ups open)
+- **Context:** the 115 `feed` sources added on 2026-11-12 were run live for the first time, locally and one by one (`python -m scaper run --source ...`), because the connector code is not committed or deployed yet.
+- **Result:** 115 of 115 succeeded (Winterthur failed once on a dropped database connection; the re-run fetched 60, 44 new, 16 already stored). 2,633 events are stored with provider `feed`; 9 all-day entries rejected by design; Billings Farm and Museum fetched 0 events; 3 event rows failed to save across all runs (not yet traced).
+- **Verification:** per-run reports from the runner plus a database count of `public.events` where provider is `feed`.
+- **Risks:** `scaper/raw_purge.py` has no purge rule for the `feed` connector and logs a ValueError on every run, so raw payloads are never purged; a full pass takes over an hour from this machine; the Cloud Run job image has no `feed` connector until the code is committed and deployed.
+- **Next:** add the purge rule with a test; commit and deploy the connector; investigate Billings Farm and the 3 failed rows; watch repeat runs.
+
 ## 2026-11-12 — Venue calendar bulk onboarding: 115 `feed` sources added (Partial: sources live, no feed has run yet)
 - **Context:** owner pasted Gemini-generated venue calendar CSVs state by state (50 states + DC, 25 files, 2,840 rows in `data/`). Goal: turn the venues with machine-readable calendars into `feed` sources without a connector per site.
 - **Built:** `scaper/venue_feed_check.py` (read-only checker), `scaper/venue_overture_match.py` (read-only match to Overture places; coordinates are Overture's own, never Gemini's or a geocoder's), `scaper/venue_feed_plan.py` (builds and previews the add-source configs), `tests/test_scaper_venue_tools.py`.
@@ -9,6 +52,15 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 - **Verification:** 24 new tests pass; dry-run preview through the real feed connector: 114 of 117 returned events, 2,649 accepted, 9 all-day entries rejected by design. DB write confirmed by `list-sources` (115 feed sources). No feed has run live.
 - **Risks:** 31 sources have no time zone (split-zone states), so feeds with offset-less times are rejected rather than guessed; each venue's own terms are not individually checked (robots.txt is not a licence); possible duplicates with Ticketmaster/Eventbrite events are handled only by the existing dedup rank (feed = 2); 69 ok venues without an Overture match are not added.
 - **Next:** watch the first scheduled runs (accepted/rejected counts, duplicates, errors); ask Opry and Pour House for a feed if wanted; decide on time zones and the unmatched venues; Hawaii statewide library calendar and other shared calendars need review before any are added.
+
+## 2026-11-11 — Generic calendar-feed connector `feed` (Partial: built and unit-tested, no live feed run yet)
+
+- **Context:** owner wants to ingest the long tail of venue and organiser websites without one connector per site. Decision: one generic connector that reads a venue's own published iCalendar (.ics) feed or a page with schema.org JSON-LD event markup; one `ingest.sources` row per feed. No AI crawling or scraping (Scaper_Connector_Architecture.md decision; Instagram rule).
+- **Built:** `scaper/connectors/feed.py` (config: `url`, `format` auto/ics/jsonld, `venue` with owner-supplied coordinates, `timezone`, `respect_robots`); registered in `scaper/connectors/__init__.py`; `PROVIDER_RANK["feed"] = 2` in `scaper/dedup.py` (after Ticketmaster and Eventbrite); `RetryingClient.get_text()` added in `scaper/http.py` (same retry rules).
+- **Rules enforced:** robots.txt is checked before each fetch; identifying User-Agent `RovvyBot/1.0`; only what the feed states is stored (no price, category or capacity invented); recurring (RRULE) and all-day entries are rejected with a stored reason; naive times without a TZID or source timezone are rejected; a 500-event cap leaves the fetch incomplete so nothing is expired from a partial read.
+- **Verification:** 9 new tests (`tests/test_scaper_feed.py`, mock transport, no real HTTP); Scaper tests 134 passed, 31 skipped; full backend 1135 passed, 46 skipped.
+- **Not done / risks:** no real feed has been fetched yet; no source row exists; each feed's own terms must be checked before adding it (robots.txt is not a licence). RRULE expansion is not implemented, so weekly recurring events are skipped until it is. Venue coordinates must be supplied per source. Workbook row not yet written.
+- **Next:** owner picks 3 to 5 venues with a public .ics or JSON-LD calendar; Claude checks their terms, runs `python -m scaper preview --connector feed --config ...` read-only, then owner approves `add-source`. Later: RRULE expansion, an "Add your venue" form.
 
 ## 2026-10-28 — Ticketmaster bulk Discovery Feed engine (Partial)
 
@@ -129,6 +181,13 @@ This folder is the authoritative Scram Book record for the Explorer hub and its 
 - **Honest reading of the expectation:** "about 0 before and several after" for Chicago's first 24 does not materialise because the first 24 cards are all **today**, and Eventbrite has **no Chicago event today**. The mix is working wherever a day has rows from both providers (Eventbrite is now the 2nd card of every such day). If the owner wants Eventbrite to appear on days without Eventbrite rows, that is a cross-day rule, contradicts the "rank within each local day" design, and needs a separate decision.
 - **Scram:** workbook row F27 → `[2026-10-14]`, `Complete in code`, green; Evidence prepended; Cursor Context Log row added; backup `Rovvy_Explorer_Scrum_Book.xlsx.bak-20261014-f27-provider-mix`.
 - **Risks / next:** the window function runs over the visible set per city (hundreds of rows; fine). Browser QA `/explore` Chicago "This weekend" after deploy (expect Eventbrite at cards 2/4/6). Organizer expansion (option 2) still waits for approval.
+
+## 2026-11-13 — API region move: Oregon service live and measured; frontend switch prepared
+
+- **Context:** owner completed plan steps 2-3 (new redirect secret, Google OAuth client URI, push `bbcdbf8`; CI test+deploy green 2026-11-09). Claude verified step 4 and prepared step 5.
+- **Result (curl, 3 runs each):** `/health` 0.19-0.23 s Oregon vs 1.27-1.32 s Mumbai; events 0.44 s vs 3.1-3.5 s; places 0.31-0.36 s vs 1.6-1.9 s (each service had one slower cold first call). CORS and the Google OAuth redirect_uri are correct on the new URL.
+- **Prepared, not live:** `frontend/.env.production` switched to the us-west1 API URL (local commit). **Owner:** check Vercel's own `NEXT_PUBLIC_API_URL`, push, sync to `main`.
+- **Risks:** real Google sign-in not yet tested on the new URL; restricted third-party keys; two always-on instances cost until Mumbai is scaled to 0. **Next:** switch, observe 24-72 h, then scale Mumbai to min-instances 0 (owner approval).
 
 ## 2026-11-02 — Explore slowness: measurements and region-move plan
 

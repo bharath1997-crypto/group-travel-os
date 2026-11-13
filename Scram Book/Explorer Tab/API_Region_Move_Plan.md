@@ -70,3 +70,10 @@ secret were never changed. After step 7 (min-instances 0): scale the Mumbai serv
 
 `pool_pre_ping=True` adds one round trip per checkout. After the region move this is negligible; before it, it is part of
 the 1.3 to 1.5 s. Do not change pooling until the move is measured.
+
+## 7. Status (2026-11-13, Claude, read-only checks)
+
+- Steps 2 and 3 done by the owner: secret `GOOGLE_REDIRECT_URI_USW1`, OAuth client redirect URI, workflow commit `bbcdbf8` pushed; CI run 42604510014 (test + deploy) success on 2026-11-09. The us-west1 service is live; Mumbai untouched.
+- Step 4 verified (3 requests each, seconds): `/health` 0.19-0.23 (Oregon) vs 1.27-1.32 (Mumbai); events 0.44 (after one 2.5 s cold call) vs 3.1-3.5; places 0.31-0.36 (after one 1.4 s cold call) vs 1.6-1.9. CORS allows https://rovvy.app and exposes X-Next-Cursor. `/api/v1/auth/oauth/google/start` returns redirect_uri = the Oregon callback.
+- Step 5 prepared, NOT live: `frontend/.env.production` now points at the us-west1 URL (local commit). The frontend reaches users when synced to `main`; if Vercel has its own `NEXT_PUBLIC_API_URL`, it overrides this file and must be changed in the Vercel project settings (owner).
+- Not yet checked: a real Google sign-in against the new URL; IP/referrer-restricted API keys (Routes, Foursquare) from the new region.
