@@ -97,6 +97,9 @@ class Ride(Base):
     price_per_seat_paise: Mapped[int] = mapped_column(Integer, nullable=False)
     cost_basis: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Departure window, luggage, rider rules, vehicle description (migration 022).
+    preferences: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    series_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     driver_cancel_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)

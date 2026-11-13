@@ -8,6 +8,25 @@
 
 ---
 
+## 2026-11-13 — Offer wizard batch 2 (return trip, recurring, preferences, vehicle)
+
+**Context:** Second batch of the owner-requested offer-a-ride upgrades; needs one additive migration.
+
+**Goals addressed:** new workbook rows S264–S269 (all Partial).
+
+**Result:**
+- `migrations/022_seats_ride_preferences.sql` (written, **not applied**): `rides.preferences` JSONB (departure window, luggage, rules, car make/model/colour) and `rides.series_id` UUID.
+- Backend: `RidePreferencesIn` (extra fields rejected; window 0–60, luggage none/small/large), `RidePublishIn.preferences` and `series_id`, saved by `SeatsService.publish_ride`, returned by ride detail.
+- Wizard: ±15/±30 min window, weekly repeat (chosen weekdays, 1–8 weeks, max 24 rides), return trip (reverse stops and road geometry; must leave after arrival), luggage, pets/smoking/quiet (only ticked rules are stored), car make/model/colour (no plate). Rides publish one by one; a failure keeps finished rides and a retry skips them. Review step lists the new details.
+
+**Verification:** `pytest tests/test_seats_ride_preferences.py tests/test_seats_publish_schema.py tests/test_seats_booking.py tests/test_seats_s1.py tests/test_seats_integration.py` → 17 passed, 8 skipped (Postgres); frontend `vitest run` → 145 files, 652 passed (8 new series/payload tests); `tsc --noEmit` clean. Not browser-driven.
+
+**Risks:** The Ride model now maps the two new columns, so **apply migration 022 before deploying** or publishing fails. Riders do not see the new details yet (ride cards/detail UI not updated). No whole-series edit or cancel. Drafts do not save the new fields. US price cap still blocked by region `IN-MH`.
+
+**Next action:** You apply 022 (I will not touch production without your OK); browser-drive steps 2–4; batch 3 (extra stops, emergency-contact sharing, edit/cancel rules, show details on ride cards).
+
+---
+
 ## 2026-11-13 — Offer wizard batch 1 (timezone, price units, cost step, review, draft)
 
 **Context:** Owner asked for the offer-a-ride flow to be fixed and extended in batches; batch 1 is front end only.

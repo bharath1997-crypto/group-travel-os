@@ -46,4 +46,54 @@ describe("buildPublishRidePayload", () => {
     expect(payload.vehicle_body_type).toBe("sedan");
     expect(payload.visibility).toBe("public");
   });
+
+  it("builds a return leg and carries preferences and series id", () => {
+    const point = (address: string, lat: number, lng: number) => ({
+      address,
+      lat,
+      lng,
+      isConfirmed: true,
+      source: "autocomplete" as const,
+    });
+    const payload = buildPublishRidePayload({
+      from: point("A", 1, 2),
+      to: point("B", 3, 4),
+      selectedRoute: {
+        id: "primary",
+        label: "Primary route",
+        distanceMiles: 50,
+        durationMinutes: 60,
+        geometry: [
+          [2, 1],
+          [3, 2],
+          [4, 3],
+        ],
+        isEligible: true,
+      },
+      depart_at: "2026-12-01T10:00:00Z",
+      arrive_est_at: null,
+      seats_offered: 2,
+      approval: "manual",
+      price_per_seat_paise: 1000,
+      vehicle_body_type: "suv",
+      tolls_paise: null,
+      note: null,
+      reverse: true,
+      series_id: "11111111-1111-4111-8111-111111111111",
+      preferences: {
+        depart_window_minutes: 15,
+        luggage: "small",
+        smoking_allowed: null,
+        pets_allowed: true,
+        quiet_ride: null,
+        vehicle_make: null,
+        vehicle_model: null,
+        vehicle_color: null,
+      },
+    });
+    expect(payload.stops.map((s) => s.label)).toEqual(["B", "A"]);
+    expect(payload.route_geometry?.[0]).toEqual([4, 3]);
+    expect(payload.series_id).toBe("11111111-1111-4111-8111-111111111111");
+    expect(payload.preferences?.pets_allowed).toBe(true);
+  });
 });

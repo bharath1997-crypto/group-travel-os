@@ -1,11 +1,22 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SeatsLocationPicker, PROMPT_FROM, PROMPT_TO } from "./SeatsLocationPicker";
 import { previewRideCost, publishRide, type CostPreview } from "./seats-api";
 import { isSeatsAuthError } from "./seats-api-errors";
-import { buildPublishRidePayload, buildPublishRideStops } from "./seats-publish-payload";
+import {
+  buildPublishRidePayload,
+  buildPublishRideStops,
+  type RidePreferences,
+} from "./seats-publish-payload";
+import {
+  buildSeries,
+  MAX_REPEAT_WEEKS,
+  seriesProblem,
+  WEEKDAY_LABELS,
+  type SeriesInput,
+} from "./seats-series";
 import { resolveSeatShareCurrency } from "./seats-currency";
 import { formatSeatShareMoney } from "./seats-money";
 import { isSeatShareSearchReady, SEATSHARE_MAX_DISTANCE_MILES } from "./seats-route";
@@ -66,6 +77,22 @@ export function SeatsOfferWizard({ onPublished, onAuthRequired }: Props) {
   const [publishing, setPublishing] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [windowMinutes, setWindowMinutes] = useState(0);
+  const [repeatDays, setRepeatDays] = useState<number[]>([]);
+  const [repeatWeeks, setRepeatWeeks] = useState(2);
+  const [returnOn, setReturnOn] = useState(false);
+  const [returnTime, setReturnTime] = useState("17:00");
+  const [luggage, setLuggage] = useState<"none" | "small" | "large" | null>(null);
+  const [smoking, setSmoking] = useState(false);
+  const [pets, setPets] = useState(false);
+  const [quiet, setQuiet] = useState(false);
+  const [vehicleMake, setVehicleMake] = useState("");
+  const [vehicleModel, setVehicleModel] = useState("");
+  const [vehicleColor, setVehicleColor] = useState("");
+  const [publishProgress, setPublishProgress] = useState<string | null>(null);
+  // One id links every ride from this plan; `done` lets a retry skip rides already published.
+  const seriesIdRef = useRef<string | null>(null);
+  const doneRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     const draft = loadOfferDraft();
@@ -106,6 +133,21 @@ export function SeatsOfferWizard({ onPublished, onAuthRequired }: Props) {
     setPreviewError(false);
     setPublishError(null);
     setDraftRestored(false);
+    setWindowMinutes(0);
+    setRepeatDays([]);
+    setRepeatWeeks(2);
+    setReturnOn(false);
+    setReturnTime("17:00");
+    setLuggage(null);
+    setSmoking(false);
+    setPets(false);
+    setQuiet(false);
+    setVehicleMake("");
+    setVehicleModel("");
+    setVehicleColor("");
+    setPublishProgress(null);
+    seriesIdRef.current = null;
+    doneRef.current = new Set();
   }
 
   const {
@@ -141,6 +183,34 @@ export function SeatsOfferWizard({ onPublished, onAuthRequired }: Props) {
   const departureOk = departDate
     ? isFutureDeparture(departDate, departTime, timeZone)
     : false;
+
+  const seriesInput: SeriesInput = {
+    date: departDate,
+    time: departTime,
+    timeZone,
+    repeatDays,
+    weeks: repeatWeeks,
+    returnTime: returnOn ? returnTime : null,
+  };
+  const series = useMemo(
+    () => buildSeries(seriesInput),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [departDate, departTime, timeZone, repeatDays, repeatWeeks, returnOn, returnTime],
+  );
+  const seriesIssue = departDate
+    ? seriesProblem(seriesInput, selectedRoute?.durationMinutes ?? 0)
+    : null;
+
+  const preferences: RidePreferences = {
+    depart_window_minutes: windowMinutes,
+    luggage,
+    smoking_allowed: smoking ? true : null,
+    pets_allowed: pets ? true : null,
+    quiet_ride: quiet ? true : null,
+    vehicle_make: vehicleMake.trim() || null,
+    vehicle_model: vehicleModel.trim() || null,
+    vehicle_color: vehicleColor.trim() || null,
+  };
 
   useEffect(() => {
     if (step < 3) return;
@@ -190,49 +260,65 @@ export function SeatsOfferWizard({ onPublished, onAuthRequired }: Props) {
       setCapError(true);
       return;
     }
-    const departInstant = zonedDateTimeToUtc(departDate, departTime, timeZone);
-    if (!departInstant || !departureOk) {
-      setPublishError("Pick a departure time that is still in the future.");
+    if (!departureOk || series.length === 0 || seriesIssue) {
+      setPublishError(seriesIssue ?? "Pick a departure time that is still in the future.");
       return;
     }
     setPublishing(true);
     setPublishError(null);
-    const depart_at = departInstant.toISOString();
-    const arrive = new Date(departInstant.getTime() + selectedRoute.durationMinutes * 60_000);
-    const arrive_est_at = arrive.toISOString();
-
-    const payload = buildPublishRidePayload({
-      from,
-      to,
-      selectedRoute,
-      depart_at,
-      arrive_est_at,
-      seats_offered: seatsOffered,
-      approval,
-      price_per_seat_paise: pricePaise,
-      vehicle_body_type: vehicleType,
-      tolls_paise: null,
-      note: note || null,
-    });
+    const seriesId = series.length > 1 ? (seriesIdRef.current ??= crypto.randomUUID()) : null;
+    const total = series.length;
 
     try {
-      await publishRide(payload);
+      for (let i = 0; i < series.length; i += 1) {
+        if (doneRef.current.has(i)) continue;
+        const ride = series[i];
+        setPublishProgress(total > 1 ? `Publishing ride ${doneRef.current.size + 1} of ${total}…` : null);
+        const arrive = new Date(ride.depart.getTime() + selectedRoute.durationMinutes * 60_000);
+        await publishRide(
+          buildPublishRidePayload({
+            from,
+            to,
+            selectedRoute,
+            depart_at: ride.depart.toISOString(),
+            arrive_est_at: arrive.toISOString(),
+            seats_offered: seatsOffered,
+            approval,
+            price_per_seat_paise: pricePaise,
+            vehicle_body_type: vehicleType,
+            tolls_paise: null,
+            note: note || null,
+            preferences,
+            series_id: seriesId,
+            reverse: ride.leg === "return",
+          }),
+        );
+        doneRef.current.add(i);
+      }
       onPublished?.();
       resetWizard();
     } catch (e: unknown) {
+      const done = doneRef.current.size;
+      const partial = done > 0 ? ` ${done} of ${total} rides were published; press Publish to finish the rest.` : "";
       if (isSeatsAuthError(e)) {
         onAuthRequired?.();
-        setPublishError("Log in to publish your ride.");
+        setPublishError(`Log in to publish your ride.${partial}`);
       } else {
-        setPublishError("Could not publish this ride. Check your price and try again.");
+        setPublishError(`Could not publish this ride. Check your price and try again.${partial}`);
       }
     } finally {
       setPublishing(false);
+      setPublishProgress(null);
     }
   }
 
   const publishDisabled =
-    publishing || capError || !priceValid || !selectedRoute?.isEligible || !departureOk;
+    publishing ||
+    capError ||
+    !priceValid ||
+    !selectedRoute?.isEligible ||
+    !departureOk ||
+    Boolean(seriesIssue);
 
   const departureLabel = departDate
     ? `${departDate} ${departTime} (${timeZone})`
@@ -355,6 +441,76 @@ export function SeatsOfferWizard({ onPublished, onAuthRequired }: Props) {
               Driver approves
             </button>
           </div>
+
+          <p className={styles.fieldLabel}>Flexible departure</p>
+          <div className={styles.chipRow}>
+            {[0, 15, 30].map((m) => (
+              <button
+                key={m}
+                type="button"
+                className={`${styles.chip} ${windowMinutes === m ? styles.chipOn : ""}`}
+                onClick={() => setWindowMinutes(m)}
+              >
+                {m === 0 ? "Exact time" : `± ${m} min`}
+              </button>
+            ))}
+          </div>
+
+          <p className={styles.fieldLabel}>Repeat weekly</p>
+          <div className={styles.chipRow}>
+            {WEEKDAY_LABELS.map((label, day) => (
+              <button
+                key={label}
+                type="button"
+                aria-pressed={repeatDays.includes(day)}
+                className={`${styles.chip} ${repeatDays.includes(day) ? styles.chipOn : ""}`}
+                onClick={() =>
+                  setRepeatDays((cur) =>
+                    cur.includes(day) ? cur.filter((d) => d !== day) : [...cur, day].sort(),
+                  )
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {repeatDays.length > 0 ? (
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>For how many weeks (1 to {MAX_REPEAT_WEEKS})</span>
+              <input
+                type="number"
+                min={1}
+                max={MAX_REPEAT_WEEKS}
+                value={repeatWeeks}
+                onChange={(e) => setRepeatWeeks(Number(e.target.value) || 1)}
+              />
+            </label>
+          ) : null}
+
+          <p className={styles.fieldLabel}>Return trip</p>
+          <div className={styles.chipRow}>
+            <button
+              type="button"
+              aria-pressed={returnOn}
+              className={`${styles.chip} ${returnOn ? styles.chipOn : ""}`}
+              onClick={() => setReturnOn((v) => !v)}
+            >
+              Also offer the return ride
+            </button>
+          </div>
+          {returnOn ? (
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Return departure time</span>
+              <input type="time" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} />
+            </label>
+          ) : null}
+          {seriesIssue ? (
+            <p className={styles.capError} role="alert">
+              {seriesIssue}
+            </p>
+          ) : series.length > 1 ? (
+            <p className={styles.hint}>This will publish {series.length} rides.</p>
+          ) : null}
         </>
       ) : null}
 
@@ -466,6 +622,76 @@ export function SeatsOfferWizard({ onPublished, onAuthRequired }: Props) {
               placeholder="Exact pickup spot, luggage, flexible stops…"
             />
           </label>
+
+          <p className={styles.fieldLabel}>Luggage space</p>
+          <div className={styles.chipRow}>
+            {(
+              [
+                ["none", "No luggage"],
+                ["small", "Small bags"],
+                ["large", "Large bags"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={luggage === id}
+                className={`${styles.chip} ${luggage === id ? styles.chipOn : ""}`}
+                onClick={() => setLuggage((cur) => (cur === id ? null : id))}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <p className={styles.fieldLabel}>Ride rules (only what you tick is shown to riders)</p>
+          <div className={styles.chipRow}>
+            {(
+              [
+                ["Pets allowed", pets, setPets],
+                ["Smoking allowed", smoking, setSmoking],
+                ["Quiet ride", quiet, setQuiet],
+              ] as const
+            ).map(([label, on, set]) => (
+              <button
+                key={label}
+                type="button"
+                aria-pressed={on}
+                className={`${styles.chip} ${on ? styles.chipOn : ""}`}
+                onClick={() => set(!on)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <p className={styles.fieldLabel}>Your car (optional, no plate number needed)</p>
+          <div className={styles.fieldRow}>
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Make</span>
+              <input
+                value={vehicleMake}
+                maxLength={40}
+                onChange={(e) => setVehicleMake(e.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Model</span>
+              <input
+                value={vehicleModel}
+                maxLength={40}
+                onChange={(e) => setVehicleModel(e.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Colour</span>
+              <input
+                value={vehicleColor}
+                maxLength={30}
+                onChange={(e) => setVehicleColor(e.target.value)}
+              />
+            </label>
+          </div>
         </>
       ) : null}
 
@@ -498,6 +724,43 @@ export function SeatsOfferWizard({ onPublished, onAuthRequired }: Props) {
               <span>Departs</span>
               <span className={styles.mono}>{departureLabel}</span>
             </div>
+            {windowMinutes > 0 ? (
+              <div className={styles.costRow}>
+                <span>Flexible by</span>
+                <span className={styles.mono}>± {windowMinutes} min</span>
+              </div>
+            ) : null}
+            {series.length > 1 ? (
+              <div className={styles.costRow}>
+                <span>Rides published</span>
+                <span className={styles.mono}>
+                  {series.length}
+                  {returnOn ? ` (with return at ${returnTime})` : ""}
+                </span>
+              </div>
+            ) : null}
+            {luggage ? (
+              <div className={styles.costRow}>
+                <span>Luggage</span>
+                <span>{luggage === "none" ? "No luggage" : luggage === "small" ? "Small bags" : "Large bags"}</span>
+              </div>
+            ) : null}
+            {pets || smoking || quiet ? (
+              <div className={styles.costRow}>
+                <span>Rules</span>
+                <span>
+                  {[pets && "Pets allowed", smoking && "Smoking allowed", quiet && "Quiet ride"]
+                    .filter(Boolean)
+                    .join(", ")}
+                </span>
+              </div>
+            ) : null}
+            {vehicleMake || vehicleModel || vehicleColor ? (
+              <div className={styles.costRow}>
+                <span>Car</span>
+                <span>{[vehicleColor, vehicleMake, vehicleModel].filter(Boolean).join(" ")}</span>
+              </div>
+            ) : null}
             <div className={styles.costRow}>
               <span>Seats</span>
               <span className={styles.mono}>{seatsOffered}</span>
@@ -541,7 +804,7 @@ export function SeatsOfferWizard({ onPublished, onAuthRequired }: Props) {
               step === 1
                 ? !step1Ready
                 : step === 2
-                  ? !departureOk
+                  ? !departureOk || Boolean(seriesIssue)
                   : !priceValid || capError || !selectedRoute?.isEligible
             }
             onClick={() => setStep((s) => s + 1)}
@@ -561,7 +824,11 @@ export function SeatsOfferWizard({ onPublished, onAuthRequired }: Props) {
               disabled={publishDisabled}
               onClick={() => void publish()}
             >
-              {publishing ? "Publishing…" : "Publish the ride"}
+              {publishing
+                ? (publishProgress ?? "Publishing…")
+                : series.length > 1
+                  ? `Publish ${series.length} rides`
+                  : "Publish the ride"}
             </button>
           </>
         )}

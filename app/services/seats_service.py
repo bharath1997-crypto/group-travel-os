@@ -281,6 +281,7 @@ class SeatsService:
             "max_per_seat": format_money(ride.max_per_seat_paise),
             "cost_total": format_money(ride.cost_total_paise),
             "note": ride.note,
+            "preferences": ride.preferences or {},
             "driver": {
                 "id": str(ride.driver_id),
                 "name": driver.full_name if driver else "Driver",
@@ -344,6 +345,8 @@ class SeatsService:
         vehicle_body_type: str | None = None,
         route_option_id: str | None = None,
         route_label: str | None = None,
+        preferences: dict[str, Any] | None = None,
+        series_id: uuid.UUID | None = None,
     ) -> Ride:
         if visibility not in ("groups", "fof", "public"):
             AppException.bad_request("Invalid visibility")
@@ -393,6 +396,8 @@ class SeatsService:
             price_per_seat_paise=price_per_seat_paise,
             cost_basis=cost_basis,
             note=note,
+            preferences={k: v for k, v in (preferences or {}).items() if v is not None},
+            series_id=series_id,
         )
         db.add(ride)
         db.flush()
@@ -633,14 +638,21 @@ class SeatsService:
         ride.driver_cancel_count = (ride.driver_cancel_count or 0) + 1
         for booking in ride.bookings:
             if booking.status in ("held", "confirmed", "requested"):
-                booking.status = "cancelled"
+                booking.status = "cancelled_driver"
                 booking.decided_at = datetime.now(timezone.utc)
+                NotificationService.append_in_app(
+                    db,
+                    booking.rider_id,
+                    "seats_cancelled",
+                    "Ride cancelled",
+                    "The driver cancelled this trip",
+                    {"booking_id": str(booking.id), "ride_id": str(ride.id)},
+                )
         ride.seats_taken = 0
         db.commit()
         db.refresh(ride)
         return ride
 
-    @staticmethod
     @staticmethod
     def list_watches(db: Session, user: User) -> list[RideWatch]:
         return list(
