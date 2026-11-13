@@ -1,15 +1,6 @@
 import type { CollectionItem } from "./collection-types";
 
-/** Design-reference demo saves — shown when the user has no server-side items yet. */
-export const COLLECTION_DEMO_UNSORTED = 6;
-
-export const COLLECTION_SHARED_SECTIONS: Record<
-  string,
-  { extra: string; meta: string }
-> = {
-  Chicago: { extra: "+4", meta: "Shared with the Saturday group" },
-  Food: { extra: "+2", meta: "Shared with the Saturday group" },
-};
+/** Sample saves — shown ONLY to signed-out visitors, always labelled "Sample". */
 
 export const COLLECTION_CITY_ORDER = [
   "Chicago",

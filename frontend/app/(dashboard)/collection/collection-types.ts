@@ -53,7 +53,5 @@ export type CollectionSection = {
   title: string;
   count: number;
   meta: string;
-  shared?: boolean;
-  sharedExtra?: string;
   items: CollectionItem[];
 };
