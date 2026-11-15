@@ -33,6 +33,17 @@ export function buildEditPatch(item: CollectionItem, draft: EditDraft): Collecti
   return patch;
 }
 
+/** "date night, #rainy day" -> ["date night", "rainy day"] (max 10, 40 chars each, no repeats). */
+export function parseTags(input: string): string[] {
+  const out: string[] = [];
+  for (const part of input.split(/[,\n]/)) {
+    // Only a leading "#" is decoration; "c#" and "f#" are real tags (same rule as the server).
+    const tag = part.trim().replace(/^#+\s*/, "").replace(/\s+#/g, " ").replace(/\s+/g, " ").toLowerCase().slice(0, 40);
+    if (tag && !out.includes(tag)) out.push(tag);
+  }
+  return out.slice(0, 10);
+}
+
 /** Tapping the star you already have clears the rating. */
 export function nextStars(current: number, tapped: number): number {
   return current === tapped ? 0 : tapped;
@@ -53,6 +64,7 @@ export function restoreBody(item: CollectionItem) {
     match_status: item.match_status,
     is_unsorted: item.is_unsorted,
     collection_id: item.collection_id,
+    tags: item.tags ?? [],
     latitude: item.latitude,
     longitude: item.longitude,
   };

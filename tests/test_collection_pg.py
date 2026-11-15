@@ -24,6 +24,8 @@ from sqlalchemy.orm import Session
 
 from app.main import app
 from app.models.collection_item import CollectionItem
+from app.models.collection_item_tag import CollectionItemTag
+from app.models.friend_request import FriendRequest
 from app.models.user import User
 from app.models.user_collection import UserCollection
 from app.utils.auth import get_current_user
@@ -61,7 +63,7 @@ def pg_env() -> Iterator[tuple[TestClient, dict, User, User]]:
         # Tables may not be applied yet; DDL is transactional, so this is rolled back too.
         Base.metadata.create_all(
             conn,
-            tables=[UserCollection.__table__, CollectionItem.__table__],
+            tables=[UserCollection.__table__, CollectionItem.__table__, CollectionItemTag.__table__],
             checkfirst=True,
         )
         alice = _make_user(session, "alice")
@@ -193,3 +195,30 @@ def test_delete_collection_row_keeps_items(pg_env):
     after = client.get(f"{API}/items").json()["items"]
     assert [i["id"] for i in after] == [item["id"]]
     assert after[0]["collection_id"] is None
+
+
+def test_tags_filter_and_share_with_friend(pg_env):
+    """Sprint C4 on real Postgres (rolled back): tags, tag filter, send to a friend."""
+    client, current, alice, bob = pg_env
+    item = _save(client, tags=["Date Night", "rainy day"], note="private", stars=5)
+    assert item["tags"] == ["date night", "rainy day"]
+    assert [i["id"] for i in client.get(f"{API}/items", params={"tag": "rainy day"}).json()["items"]] == [item["id"]]
+    assert client.get(f"{API}/items", params={"tag": "nope"}).json()["items"] == []
+
+    # not a friend yet -> 403
+    res = client.post(f"{API}/items/{item['id']}/share", json={"friend_ids": [str(bob.id)]})
+    assert res.status_code == 403
+
+    pg_session = client.app.dependency_overrides[get_db]()
+    pg_session.add(FriendRequest(sender_id=alice.id, receiver_id=bob.id, status="accepted"))
+    pg_session.flush()
+    res = client.post(f"{API}/items/{item['id']}/share", json={"friend_ids": [str(bob.id)]})
+    assert res.status_code == 200, res.text
+    again = client.post(f"{API}/items/{item['id']}/share", json={"friend_ids": [str(bob.id)]})
+    assert again.json()["sent"] == [] and len(again.json()["already_shared"]) == 1
+
+    current["user"] = bob
+    got = client.get(f"{API}/items").json()["items"]
+    assert len(got) == 1
+    assert got[0]["shared_by_name"] == alice.full_name and got[0]["is_unsorted"] is True
+    assert got[0]["note"] is None and got[0]["stars"] == 0 and got[0]["tags"] == []

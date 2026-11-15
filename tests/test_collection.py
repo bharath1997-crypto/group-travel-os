@@ -110,10 +110,14 @@ def test_extract_link_validation_error(auth_user):
 
 
 def test_extract_link_success(auth_user):
-    res = client.post(
-        "/api/v1/collection/extract-link",
-        json={"url": "https://www.instagram.com/reel/example"},
-    )
+    # Mocked: this unit test must not touch a real database.
+    with patch(
+        "app.routes.collection.CollectionService.saved_from_keys", return_value=set()
+    ):
+        res = client.post(
+            "/api/v1/collection/extract-link",
+            json={"url": "https://www.instagram.com/reel/example"},
+        )
     assert res.status_code == 200
     body = res.json()
     assert body["source_label"] == "Instagram"

@@ -12,9 +12,13 @@ import {
   extractCollectionLink,
   fetchCollectionItems,
   fetchCollections,
+  fetchFriends,
+  shareCollectionItem,
   updateCollectionItem,
 } from "./collection-api";
 import CollectionCardEditor from "./CollectionCardEditor";
+import CollectionLinkResult from "./CollectionLinkResult";
+import { canonicalLink, extractSharedUrl, linkName, linkOnlyBody, MAX_LINK_LENGTH, sourceLink } from "./collection-link";
 import { restoreBody } from "./collection-edit";
 import {
   COLLECTION_DEMO_HOURS,
@@ -36,6 +40,7 @@ import type {
   CollectionItemPatch,
   CollectionSummary,
   ExtractLinkResponse,
+  Friend,
   GroupMode,
   ViewMode,
 } from "./collection-types";
@@ -80,7 +85,7 @@ export default function CollectionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get("q") ?? "";
-  const { user } = useDashboardUser();
+  const { user, loading: userLoading } = useDashboardUser();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,14 +95,16 @@ export default function CollectionPage() {
     countries: [] as string[],
     cities: [] as string[],
     categories: [] as string[],
+    tags: [] as string[],
   });
 
   const [collections, setCollections] = useState<CollectionSummary[]>([]);
   const [activeCollection, setActiveCollection] = useState<string | null>(null);
   const [newCollOpen, setNewCollOpen] = useState(false);
   const [newCollName, setNewCollName] = useState("");
-  const [undo, setUndo] = useState<CollectionItem | null>(null);
-  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Removed saves that can still be put back, newest last. Each lives 8 s (deleting two in a row used to lose the first).
+  const [undoStack, setUndoStack] = useState<Array<{ item: CollectionItem; until: number }>>([]);
+  const undo = undoStack.length > 0 ? undoStack[undoStack.length - 1].item : null;
 
   const [view, setView] = useState<ViewMode>("grid");
   const [groupMode, setGroupMode] = useState<GroupMode>("city");
@@ -108,14 +115,27 @@ export default function CollectionPage() {
 
   const [linkInput, setLinkInput] = useState(() => (looksLikeUrl(searchQuery) ? searchQuery.trim() : ""));
   const [reading, setReading] = useState(false);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friendsFailed, setFriendsFailed] = useState(false);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [clipNote, setClipNote] = useState<string | null>(null);
+  const [savedLink, setSavedLink] = useState<CollectionItem | null>(null);
+  const autoRead = useRef(false);
+  const loadSeq = useRef(0);
   const [extractResult, setExtractResult] = useState<ExtractLinkResponse | null>(null);
 
   const filterBtnRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
   // Sample places are for signed-out visitors only. Signed-in users never see them.
-  const isGuest = !user;
+  const isGuest = !user && !userLoading;
   const textSearch = looksLikeUrl(searchQuery) ? "" : searchQuery;
+
+  const cityToCountry = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const i of apiItems) if (i.city && i.country) m.set(i.city, i.country);
+    return m;
+  }, [apiItems]);
 
   const baseItems = useMemo(
     () => (isGuest ? filterByFacets(COLLECTION_DEMO_ITEMS, filters) : apiItems),
@@ -125,8 +145,8 @@ export default function CollectionPage() {
     () =>
       filterBySearch(baseItems, textSearch).filter(
         (i) => !activeCollection || i.collection_id === activeCollection,
-      ),
-    [baseItems, textSearch, activeCollection],
+      ).filter((i) => !activeTag || (i.tags ?? []).includes(activeTag)),
+    [baseItems, textSearch, activeCollection, activeTag],
   );
 
   const displayTotal = isGuest ? COLLECTION_DEMO_ITEMS.length : totalCount;
@@ -150,7 +170,8 @@ export default function CollectionPage() {
 
   const loginNext = (extra?: string) => {
     const base = pathname || "/collection";
-    const target = extra ? `${base}?q=${encodeURIComponent(extra)}` : base;
+    const shared = searchParams.get("shared") === "1" ? "&shared=1" : "";
+    const target = extra ? `${base}?q=${encodeURIComponent(extra)}${shared}` : base;
     return `/login?next=${encodeURIComponent(target)}`;
   };
 
@@ -167,33 +188,50 @@ export default function CollectionPage() {
   const load = useCallback(
     async (quiet = false) => {
       if (!user) {
-        setLoading(false);
+        if (!userLoading) setLoading(false);
         return;
       }
       if (!quiet) setLoading(true);
       setError(null);
+      const seq = ++loadSeq.current;
       try {
         const data = await fetchCollectionItems(filters);
+        if (seq !== loadSeq.current) return; // a newer load is already on its way; this answer is stale
         setApiItems(data.items);
         setTotalCount(data.total_count);
-        setFacets(data.facets);
+        setFacets({ ...data.facets, tags: data.facets.tags ?? [] });
         // Named collections are secondary: a failure here must not hide the saves.
         fetchCollections()
           .then(setCollections)
           .catch(() => setCollections([]));
       } catch (e) {
+        if (seq !== loadSeq.current) return;
         setApiItems([]);
         setError(e instanceof Error ? e.message : "Could not load your collection");
       } finally {
-        setLoading(false);
+        if (seq === loadSeq.current) setLoading(false);
       }
     },
-    [user, filters],
+    [user, userLoading, filters],
   );
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Friends you can send saves to. A failure only hides the picker, never the saves.
+  useEffect(() => {
+    if (!user) return;
+    fetchFriends()
+      .then((list) => {
+        setFriends(list);
+        setFriendsFailed(false);
+      })
+      .catch(() => {
+        setFriends([]);
+        setFriendsFailed(true);
+      });
+  }, [user]);
 
   // Filter dialog: focus it on open, close on Escape, give focus back on close.
   useEffect(() => {
@@ -201,6 +239,21 @@ export default function CollectionPage() {
     dialogRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setFilterOpen(false);
+      if (event.key === "Tab" && dialogRef.current) {
+        // aria-modal promises focus stays inside: wrap at both ends.
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>("button:not([disabled])");
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+        if (event.shiftKey && (active === first || active === dialogRef.current)) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && active === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
     const opener = filterBtnRef.current;
@@ -210,12 +263,21 @@ export default function CollectionPage() {
     };
   }, [filterOpen]);
 
+  // A tag or collection that no longer exists (last item untagged, removed) must not stay applied.
+  useEffect(() => {
+    if (activeTag && !(facets.tags ?? []).includes(activeTag)) setActiveTag(null);
+  }, [facets.tags, activeTag]);
+  useEffect(() => {
+    if (activeCollection && collections.length > 0 && !collections.some((c) => c.id === activeCollection)) setActiveCollection(null);
+  }, [collections, activeCollection]);
+
   const sections = useMemo(() => groupItems(items, groupMode), [items, groupMode]);
   const unsortedItems = useMemo(() => items.filter((i) => i.is_unsorted), [items]);
 
   const filterCount = activeFilterCount(filters);
-  const narrowed = filterCount > 0 || Boolean(textSearch.trim());
-  const noun = (n: number) => (n === 1 ? "place" : "places");
+  const narrowed = filterCount > 0 || Boolean(textSearch.trim()) || Boolean(activeTag) || Boolean(activeCollection);
+  // Links and unsorted saves are counted too, so these are "saves", not "places".
+  const noun = (n: number) => (n === 1 ? "save" : "saves");
 
   const savedHeadline = isGuest
     ? "A sample collection"
@@ -224,48 +286,131 @@ export default function CollectionPage() {
       : `${displayTotal} ${noun(displayTotal)} you kept`;
 
   const clearNarrowing = () => {
+    setActiveTag(null);
+    setActiveCollection(null);
     setFilters(NO_FILTERS);
     setDraftFilters(NO_FILTERS);
     if (searchParams.get("q")) router.replace(pathname || "/collection");
   };
 
-  const handleReadLink = async () => {
-    const url = linkInput.trim() || (looksLikeUrl(searchQuery) ? searchQuery.trim() : "");
-    if (!url || reading) return;
-    if (!requireLogin(url)) return;
-    if (!looksLikeUrl(url)) {
+  const handleReadLink = async (explicit?: string) => {
+    const raw = (explicit ?? linkInput).trim() || (looksLikeUrl(searchQuery) ? searchQuery.trim() : "");
+    if (!raw || reading) return;
+    // "Look at this https://..." (a whole share message) works as well as a bare link.
+    const typed = looksLikeUrl(raw) ? raw : extractSharedUrl({ text: raw });
+    if (!typed) {
       setError("That does not look like a link. Paste a full address starting with http.");
+      return;
+    }
+    if (!requireLogin(typed)) return;
+    // Same reel, different share tracking (?igsh=, ?si=) must save once.
+    const url = canonicalLink(typed);
+    if (url.length > MAX_LINK_LENGTH) {
+      setError(`That link is longer than ${MAX_LINK_LENGTH} characters, so Rovvy cannot keep it. Open it and copy its short link instead.`);
       return;
     }
     setReading(true);
     setExtractResult(null);
+    setSavedLink(null);
     setError(null);
+
+    // Every link is kept first, whatever happens next (unreadable site, Instagram, a slow
+    // read, a rate limit). The user never loses a link they pasted or shared.
+    let kept: CollectionItem | null = null;
     try {
-      setExtractResult(await extractCollectionLink(url));
+      kept = await createCollectionItem(linkOnlyBody(url, ""));
+      setSavedLink(kept);
+      await load(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not read that link");
+      setError(e instanceof Error ? e.message : "Could not save that link");
+    }
+
+    try {
+      const result = await extractCollectionLink(url);
+      setExtractResult({ ...result, link_saved: kept !== null || Boolean(result.link_saved) });
+      // Give the saved link a real name once we know the title (only if it still has the URL name).
+      const better = linkName(url, result.source_title);
+      if (kept && better !== kept.name && kept.name === linkName(url, "")) {
+        try {
+          const renamed = await updateCollectionItem(kept.id, { name: better });
+          setSavedLink(renamed);
+          await load(true);
+        } catch {
+          /* the link is saved; a nicer name is optional */
+        }
+      }
+    } catch (e) {
+      setError(
+        (e instanceof Error ? e.message : "Could not read that link") +
+          (kept ? " Your link is saved in Unsorted." : ""),
+      );
     } finally {
       setReading(false);
     }
   };
 
-  const handleSaveCandidate = async (candidate: ExtractLinkResponse["candidates"][number]) => {
-    if (!requireLogin()) return;
+  /** Tags and friends picked after the link was already saved. */
+  const handleApplyToLink = async (tags: string[], friendIds: string[]): Promise<boolean> => {
+    if (!savedLink) return false;
     try {
-      await createCollectionItem({
-        name: candidate.name,
-        city: candidate.city,
-        country: candidate.country,
-        category: candidate.category,
-        subcategory: candidate.subcategory,
-        source: "Link",
-        saved_from: candidate.saved_from ?? linkInput.trim(),
-        match_status: candidate.match_status ?? "unknown",
-        is_unsorted: candidate.match_status === "unsure",
-      });
-      await load();
+      if (tags.length > 0) await updateCollectionItem(savedLink.id, { tags });
+      if (friendIds.length > 0) await shareCollectionItem(savedLink.id, friendIds);
+      await load(true);
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not update your saved link");
+      return false;
+    }
+  };
+
+  /** Save a candidate or a link-only entry. Returns the saved row (or the one already saved). */
+  const handleSaveLinkItem = async (body: Parameters<typeof createCollectionItem>[0]): Promise<CollectionItem | null> => {
+    if (!requireLogin()) return null;
+    try {
+      const saved = await createCollectionItem(body);
+      await load(true);
+      return saved;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save place");
+      return null;
+    }
+  };
+
+  const handleShare = async (itemId: string, friendIds: string[]): Promise<boolean> => {
+    try {
+      await shareCollectionItem(itemId, friendIds);
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not send to your friends");
+      return false;
+    }
+  };
+
+  /** Phone share sheet opens /collection?q=<link>&shared=1: read it once, signed in. */
+  useEffect(() => {
+    if (autoRead.current || !user || searchParams.get("shared") !== "1") return;
+    if (!looksLikeUrl(searchQuery)) return;
+    autoRead.current = true;
+    const link = searchQuery.trim();
+    router.replace(pathname || "/collection");
+    void handleReadLink(link);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, searchQuery]);
+
+  /** iPhone has no share-sheet entry for web apps: copy the link, then tap this. */
+  const handlePasteFromClipboard = async () => {
+    setClipNote(null);
+    try {
+      const text = await navigator.clipboard.readText();
+      const link = extractSharedUrl({ text });
+      if (!link) {
+        setClipNote("There is no link on your clipboard. Copy a link first.");
+        return;
+      }
+      setLinkInput(link);
+      await handleReadLink(link);
+    } catch {
+      setClipNote("Your browser did not let Rovvy read the clipboard. Press and hold in the box and choose Paste.");
     }
   };
 
@@ -287,9 +432,7 @@ export default function CollectionPage() {
     try {
       await deleteCollectionItem(item.id);
       setOpenCardId(null);
-      setUndo(item);
-      if (undoTimer.current) clearTimeout(undoTimer.current);
-      undoTimer.current = setTimeout(() => setUndo(null), 8000);
+      setUndoStack((s) => [...s.filter((e) => e.until > Date.now()), { item, until: Date.now() + 8000 }]);
       await load(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not remove place");
@@ -299,8 +442,7 @@ export default function CollectionPage() {
   const handleUndo = async () => {
     const item = undo;
     if (!item) return;
-    setUndo(null);
-    if (undoTimer.current) clearTimeout(undoTimer.current);
+    setUndoStack((s) => s.slice(0, -1));
     try {
       await createCollectionItem(restoreBody(item));
       await load(true);
@@ -323,12 +465,22 @@ export default function CollectionPage() {
     }
   };
 
-  useEffect(
-    () => () => {
-      if (undoTimer.current) clearTimeout(undoTimer.current);
-    },
-    [],
-  );
+  // Drop each removed save from the undo list when its 8 seconds are up.
+  useEffect(() => {
+    if (undoStack.length === 0) return;
+    const wait = Math.max(0, Math.min(...undoStack.map((e) => e.until)) - Date.now());
+    const t = setTimeout(() => setUndoStack((s) => s.filter((e) => e.until > Date.now())), wait + 20);
+    return () => clearTimeout(t);
+  }, [undoStack]);
+
+  // A share that carried no web link is explained instead of silently dropped.
+  useEffect(() => {
+    if (searchParams.get("shared") === "none") {
+      setClipNote("That share had no web link. Paste the link into the box, or type the place name.");
+      router.replace(pathname || "/collection");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const showMap = view === "map";
 
@@ -338,6 +490,7 @@ export default function CollectionPage() {
                     const rating = demo ? COLLECTION_DEMO_RATING[item.id] : undefined;
                     const hours = demo ? COLLECTION_DEMO_HOURS[item.id] : undefined;
                     const from = formatSavedFrom(item.saved_from);
+                    const link = sourceLink(item.saved_from);
                     return (
                       <div key={item.id} className={`${styles.card} ${open ? styles.cardOpen : ""}`}>
                         <button
@@ -358,6 +511,9 @@ export default function CollectionPage() {
                           <span className={styles.cardBody}>
                             <span className={styles.cardName}>{item.name}</span>
                             <span className={`${styles.cardMeta} ${styles.mono}`}>{itemMetaLabel(item)}</span>
+                            {item.tags && item.tags.length > 0 ? (
+                              <span className={styles.tagLine}>{item.tags.map((t) => `#${t}`).join(" ")}</span>
+                            ) : null}
                           </span>
                         </button>
                         {open ? (
@@ -374,10 +530,24 @@ export default function CollectionPage() {
                                 <span className={styles.detailValue}>{formatSavedWhen(item.created_at)}</span>
                               </div>
                             )}
+                            {item.shared_by_name ? (
+                              <div className={styles.detailRow}>
+                                <span className={`${styles.detailLabel} ${styles.mono}`}>From</span>
+                                <span className={styles.detailValue}>Shared by {item.shared_by_name}</span>
+                              </div>
+                            ) : null}
                             {from ? (
                               <div className={styles.detailRow}>
                                 <span className={`${styles.detailLabel} ${styles.mono}`}>From</span>
-                                <span className={styles.detailValue}>{from}</span>
+                                <span className={styles.detailValue}>
+                                  {link ? (
+                                    <a className={styles.sourceLink} href={link.href} target="_blank" rel="noopener noreferrer">
+                                      {link.label}
+                                    </a>
+                                  ) : (
+                                    from
+                                  )}
+                                </span>
                               </div>
                             ) : null}
                             {demo ? (
@@ -391,9 +561,12 @@ export default function CollectionPage() {
                               ) : null
                             ) : (
                               <CollectionCardEditor
-                                key={`${item.id}-${item.updated_at}`}
+                                key={item.id}
                                 item={item}
                                 collections={collections}
+                                friends={friends}
+                                friendsUnavailable={friendsFailed}
+                                onShare={handleShare}
                                 onPatch={handlePatch}
                                 onRemove={handleRemove}
                               />
@@ -474,10 +647,10 @@ export default function CollectionPage() {
               Paste a link
             </div>
             <div className={`${styles.pasteTitle} ${styles.serif}`}>
-              Link reading is not switched on yet.
+              A YouTube video or a web article. We find the places in it.
             </div>
             <p className={styles.pasteNote}>
-              You can try a link, but no place is found or saved from it for now.
+              Rovvy reads the public page or video description to find places. Instagram and TikTok posts are not read; you can keep their link in Unsorted.
             </p>
           </div>
         </div>
@@ -495,31 +668,26 @@ export default function CollectionPage() {
           <button type="button" className={styles.readBtn} disabled={reading} onClick={() => void handleReadLink()}>
             {reading ? "Reading…" : extractResult ? "Read again" : "Read it"}
           </button>
+          <button type="button" className={styles.filterBtn} disabled={reading} onClick={() => void handlePasteFromClipboard()}>
+            Paste copied link
+          </button>
         </div>
+        {clipNote ? (
+          <p className={styles.candidateHint} role="status">
+            {clipNote}
+          </p>
+        ) : null}
         {extractResult ? (
-          <div className={`${styles.extractResult} ${styles.cardDetailsPop}`} role="status">
-            <p className={styles.extractMessage}>
-              {extractResult.candidates.length === 0
-                ? "We could not find a place in that link, and nothing was saved."
-                : `“${extractResult.source_title}” — ${extractResult.source_label}`}
-            </p>
-            {extractResult.candidates.map((candidate) => (
-              <div key={candidate.name} style={{ display: "flex", gap: 11, alignItems: "center", marginTop: 10 }}>
-                <span style={{ flex: 1, fontSize: 12.5, fontWeight: 600 }}>
-                  {candidate.name}
-                  {candidate.city || candidate.category ? (
-                    <span style={{ fontWeight: 400, color: "#5a615a" }}>
-                      {" · "}
-                      {[candidate.city, candidate.category].filter(Boolean).join(" · ")}
-                    </span>
-                  ) : null}
-                </span>
-                <button type="button" className={styles.readBtn} onClick={() => void handleSaveCandidate(candidate)}>
-                  Save
-                </button>
-              </div>
-            ))}
-          </div>
+          <CollectionLinkResult
+            key={extractResult.source_url ?? extractResult.source_title}
+            result={extractResult}
+            url={linkInput.trim() || searchQuery.trim()}
+            friends={friends}
+            friendsUnavailable={friendsFailed}
+            onSave={handleSaveLinkItem}
+            onShare={handleShare}
+            onApplyToLink={handleApplyToLink}
+          />
         ) : null}
       </div>
 
@@ -576,6 +744,21 @@ export default function CollectionPage() {
               New collection
             </button>
           </div>
+          {(facets.tags ?? []).length > 0 ? (
+            <div className={styles.collectionBar} role="group" aria-label="Tags">
+              {(facets.tags ?? []).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  aria-pressed={activeTag === t}
+                  className={`${styles.chip} ${activeTag === t ? styles.chipActive : ""}`}
+                  onClick={() => setActiveTag(activeTag === t ? null : t)}
+                >
+                  #{t}
+                </button>
+              ))}
+            </div>
+          ) : null}
           {newCollOpen ? (
             <form
               className={styles.newCollForm}
@@ -614,7 +797,7 @@ export default function CollectionPage() {
         </div>
       ) : null}
 
-      {!isGuest && loading ? (
+      {(!isGuest && loading) || (!user && userLoading) ? (
         <p className={styles.subtitle}>Loading your saves…</p>
       ) : !isGuest && error && apiItems.length === 0 ? null : showMap ? (
         <div className={styles.mapShell}>
@@ -667,7 +850,7 @@ export default function CollectionPage() {
                 <span className={`${styles.sectionMeta} ${styles.mono}`}>Needs a look</span>
               </div>
               <p className={styles.unsortedHint}>
-                We were not sure where these belong. Open one to file it where it fits, or remove it.
+                Saved links, places friends sent you and places we could not confirm wait here. Open one to file it or remove it.
               </p>
               <div className={styles.grid}>{unsortedItems.map((item) => renderCard(item))}</div>
             </section>
@@ -678,7 +861,7 @@ export default function CollectionPage() {
               <div className={styles.emptyState}>
                 <h2 className={styles.serif} style={{ fontSize: 24, marginBottom: 8 }}>No saves match</h2>
                 <p className={styles.subtitle} style={{ margin: "0 auto 14px" }}>
-                  Nothing you kept fits the current filter or search.
+                  Nothing you kept fits the current filter, search, tag or collection.
                 </p>
                 <button type="button" className={styles.readBtn} onClick={clearNarrowing}>
                   Clear filters
@@ -763,7 +946,12 @@ export default function CollectionPage() {
 
             <div className={`${styles.eyebrow} ${styles.mono}`}>City</div>
             <div className={styles.chipRow}>
-              {["Any", ...displayFacets.cities].map((value) => (
+              {[
+                "Any",
+                ...displayFacets.cities.filter(
+                  (c) => draftFilters.country === "Any" || isGuest || cityToCountry.get(c) === draftFilters.country,
+                ),
+              ].map((value) => (
                 <button
                   key={`city-${value}`}
                   type="button"

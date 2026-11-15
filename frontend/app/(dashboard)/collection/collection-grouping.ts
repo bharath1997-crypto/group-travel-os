@@ -17,7 +17,9 @@ export function itemMetaLabel(item: CollectionItem): string {
 export function formatSavedWhen(iso: string, now: number = Date.now()): string {
   const then = new Date(iso);
   if (Number.isNaN(then.getTime())) return "";
-  const days = Math.floor((now - then.getTime()) / 86_400_000);
+  // Calendar days, not 24-hour blocks: 11 pm yesterday is "yesterday" at 1 am, not "today".
+  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((startOf(new Date(now)) - startOf(then)) / 86_400_000);
   if (days <= 0) return "today";
   if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
@@ -38,6 +40,7 @@ export function formatSavedFrom(savedFrom: string | null): string | null {
   const value = savedFrom?.trim();
   if (!value) return null;
   if (value.toLowerCase().startsWith("explore:")) return "Explore";
+  if (value.toLowerCase().startsWith("share:")) return null; // shown as "Shared by <name>"
   return value;
 }
 
@@ -105,8 +108,6 @@ export function filterBySearch(items: CollectionItem[], query: string): Collecti
       item.country,
       item.category,
       item.subcategory,
-      item.source,
-      item.saved_from,
       item.note,
     ]
       .filter(Boolean)

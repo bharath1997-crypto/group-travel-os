@@ -1,14 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { buildEditPatch, draftFromItem, nextStars } from "./collection-edit";
-import type { CollectionItem, CollectionItemPatch, CollectionSummary } from "./collection-types";
+import { buildEditPatch, draftFromItem, nextStars, parseTags } from "./collection-edit";
+import type { CollectionItem, CollectionItemPatch, CollectionSummary, Friend } from "./collection-types";
 import styles from "./collection.module.css";
+import { buildShareUrl, shareText } from "./collection-share-link";
+import FriendPicker from "./FriendPicker";
 
 type Props = {
   item: CollectionItem;
   collections: CollectionSummary[];
+  friends: Friend[];
+  friendsUnavailable?: boolean;
+  onShare: (itemId: string, friendIds: string[]) => Promise<boolean>;
   onPatch: (id: string, patch: CollectionItemPatch) => Promise<boolean>;
   onRemove: (item: CollectionItem) => Promise<void>;
 };
@@ -21,10 +26,21 @@ function Star({ filled }: { filled: boolean }) {
   );
 }
 
-export default function CollectionCardEditor({ item, collections, onPatch, onRemove }: Props) {
+export default function CollectionCardEditor({ item, collections, friends, friendsUnavailable, onShare, onPatch, onRemove }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(() => draftFromItem(item));
   const [busy, setBusy] = useState(false);
+  const [tagsInput, setTagsInput] = useState((item.tags ?? []).join(", "));
+  const [sharing, setSharing] = useState(false);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [shareNote, setShareNote] = useState<string | null>(null);
+
+  // The card is no longer remounted on every save (that threw away what you were typing).
+  // Keep the tag box in step with what the server stored (it lower-cases and tidies tags).
+  const savedTags = (item.tags ?? []).join(", ");
+  useEffect(() => {
+    setTagsInput(savedTags);
+  }, [savedTags]);
 
   const run = async (fn: () => Promise<boolean | void>) => {
     if (busy) return;
@@ -35,6 +51,43 @@ export default function CollectionCardEditor({ item, collections, onPatch, onRem
       setBusy(false);
     }
   };
+
+  const saveTags = () =>
+    run(async () => {
+      const next = parseTags(tagsInput);
+      if (next.join("|") === (item.tags ?? []).join("|")) return;
+      await onPatch(item.id, { tags: next });
+    });
+
+  /** Phone share menu (WhatsApp, Messages...). Falls back to copying the Rovvy link. */
+  const shareOut = async () => {
+    const url = buildShareUrl(window.location.origin, item);
+    try {
+      if (typeof navigator.share === "function") {
+        await navigator.share({ title: item.name, text: shareText(item), url });
+        return;
+      }
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return; // user closed the menu
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareNote("Link copied. Paste it in any chat.");
+    } catch {
+      setShareNote("Could not open the share menu. Try again from your phone.");
+    }
+  };
+
+  const send = () =>
+    run(async () => {
+      if (picked.length === 0) return;
+      const ok = await onShare(item.id, picked);
+      setShareNote(ok ? `Sent to ${picked.length} ${picked.length === 1 ? "friend" : "friends"}.` : "Could not send. Try again.");
+      if (ok) {
+        setPicked([]);
+        setSharing(false);
+      }
+    });
 
   const save = () =>
     run(async () => {
@@ -144,13 +197,62 @@ export default function CollectionCardEditor({ item, collections, onPatch, onRem
         </select>
       </label>
 
+      <label className={styles.editLabel} style={{ marginTop: 10 }}>
+        <span className={styles.mono}>Tags (comma separated)</span>
+        <input
+          value={tagsInput}
+          maxLength={200}
+          disabled={busy}
+          placeholder="date night, rainy day"
+          onChange={(e) => setTagsInput(e.target.value)}
+          onBlur={() => void saveTags()}
+        />
+      </label>
+
+      <div style={{ marginTop: 10 }}>
+        {sharing ? (
+          <>
+            <FriendPicker friends={friends} selected={picked} onChange={setPicked} disabled={busy} unavailable={friendsUnavailable} />
+            <div className={styles.editActions}>
+              <button type="button" className={styles.readBtn} disabled={busy || picked.length === 0} onClick={() => void send()}>
+                {busy ? "Sending…" : "Send"}
+              </button>
+              <button type="button" className={styles.filterBtn} disabled={busy} onClick={() => setSharing(false)}>
+                Cancel
+              </button>
+            </div>
+          </>
+        ) : (
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+            <button type="button" className={styles.linkBtn} onClick={() => void shareOut()}>
+              Share
+            </button>
+            <button
+              type="button"
+              className={styles.linkBtn}
+              onClick={() => {
+                setShareNote(null);
+                setSharing(true);
+              }}
+            >
+              Send to Rovvy friends
+            </button>
+          </div>
+        )}
+        {shareNote ? (
+          <p className={styles.candidateHint} role="status">
+            {shareNote}
+          </p>
+        ) : null}
+      </div>
+
       <div className={styles.cardActions}>
         {item.is_unsorted ? (
           <button
             type="button"
             className={styles.readBtn}
             disabled={busy}
-            onClick={() => void run(() => onPatch(item.id, { is_unsorted: false, match_status: "sure" }))}
+            onClick={() => void run(() => onPatch(item.id, { is_unsorted: false }))}
           >
             File it
           </button>

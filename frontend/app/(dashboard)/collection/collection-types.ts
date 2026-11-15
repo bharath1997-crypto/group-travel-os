@@ -15,6 +15,9 @@ export type CollectionItem = {
   stars: number;
   match_status: string;
   is_unsorted: boolean;
+  tags?: string[];
+  shared_by_user_id?: string | null;
+  shared_by_name?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -38,6 +41,7 @@ export type CollectionItemPatch = Partial<{
   is_unsorted: boolean;
   match_status: string;
   collection_id: string | null;
+  tags: string[];
 }>;
 
 export type CollectionListResponse = {
@@ -48,23 +52,40 @@ export type CollectionListResponse = {
     countries: string[];
     cities: string[];
     categories: string[];
+    tags?: string[];
   };
   city_counts: Record<string, number>;
 };
 
+export type ExtractCandidate = {
+  name: string;
+  city?: string | null;
+  country?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
+  match_status?: string;
+  saved_from?: string | null;
+  already_saved?: boolean;
+};
+
+export type LinkPreview = {
+  platform?: string | null;
+  author?: string | null;
+  thumbnail_url?: string | null;
+  video_id?: string | null;
+};
+
+export type Friend = { id: string; full_name: string; username?: string | null };
+
 export type ExtractLinkResponse = {
   source_title: string;
   source_label: string;
-  candidates: Array<{
-    name: string;
-    city?: string | null;
-    country?: string | null;
-    category?: string | null;
-    subcategory?: string | null;
-    match_status?: string;
-    saved_from?: string | null;
-  }>;
+  source_url?: string | null;
+  candidates: ExtractCandidate[];
+  link_only?: boolean;
+  link_saved?: boolean;
   message?: string | null;
+  preview?: LinkPreview | null;
 };
 
 export type GroupMode = "city" | "category";
