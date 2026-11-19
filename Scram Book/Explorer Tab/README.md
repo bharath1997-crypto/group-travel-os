@@ -2,6 +2,152 @@
 
 This folder is the authoritative Scram Book record for the Explorer hub and its discovery experience.
 
+## 2026-11-19 — Explore shows places while events load; 10–15 s not reproduced
+
+- **Context:** An outside review said Explore listings take 10–15 s because the page waits for events, attractions and restaurants together. B10 (area query not timed) was open.
+- **Result:** `fetchExploreHub` still starts the three requests together, but when places arrive first it sends an early payload (`eventsPending: true`) and the page shows places with the note “Events are still loading. Places are shown below.” The final payload replaces it. No early payload is sent when places return nothing, so there is no false empty or error state. Backend not changed.
+- **Verification:** Timed the live API (us-west1) with curl, one call each unless noted. Events: pin 25 mi Chicago 0.39 s, Aurora 0.54 s, Detroit 0.63 s, Dubuque 0.99 s, Tokyo 0.54 s; Chicago 100 mi 0.38 s; city=Chicago 1.99 s cold, 0.60 s repeat; state IL 0.64 s, MI 0.69 s. Places: restaurants 1.0–1.4 s; attractions 1.2–2.9 s (Chicago 2.9 s first, 1.4 s and 0.3 s on repeats). The slowest source is therefore attractions, about 3 s, not events. `npx vitest run "app/(dashboard)/explore/__tests__"` → 249 passed (50 files; one new test: places reported early while events are held). `npx tsc --noEmit`: only the five older `name` errors. Browser on localhost `/explore` with a saved Chicago pin, API calls sent to the live API and events delayed 8 s: places listed after about 0.3 s with the note “Events are still loading. Places are shown below.”; the note cleared when events returned at 8.5 s. Not checked at 375 px.
+- **Risks:** The 10–15 s figure was not reproduced from this machine; it may have been before the us-west1 move (events 3.1 s then, 0.44 s now), a cold Cloud Run instance, or a slow client network. A user on a slow connection is not covered by these numbers. The Scram Book workbook row was not updated.
+- **Next:** Check at 375 px. Look at the attractions places query (up to 2.9 s) if the page should be faster than ~3 s. Time the page from the browser (Network panel), not only the API.
+
+## 2026-11-17 — Takes stays on the page
+
+- **Context:** Aurora’s Explore page had no YouTube row. The nearest directory city is Chicago, 36.5 miles away, and Choose Chicago has videos.
+- **Result:** The Takes row sits under Top and is labeled “From Chicago”. The video request no longer restarts on every page update, so the row stays.
+- **Verification:** Browser on localhost `/explore` at Aurora: Takes showed Choose Chicago videos under Top.
+- **Next:** Aurora itself has no channel. A city channel would replace the Chicago videos.
+
+## 2026-11-17 — Location card shows miles from the live position
+
+- **Context:** The top-right location card named the place, the weather, and the listing count, and did not say how far that place is.
+- **Result:** The card adds the distance from the device position to the place on the page. A Ferndale position with the page on Dubuque reads “384 mi from Ferndale, Michigan”.
+- **Verification:** `npx vitest run` on explore-distance-label → 1 passed. Browser on localhost `/explore` showed that line on the location card.
+- **Next:** The number follows the device. A place that is the device position shows no mile line.
+
+## 2026-11-17 — Cities row uses the nearest catalog cities
+
+- **Context:** Competine Township had no catalog city inside 25 miles, so the cities row said none were nearby.
+- **Result:** The cities row lists the 6 closest catalog cities, with no mile cutoff. For this pin they are Des Moines, Dubuque, Rockford, La Crosse, Madison, and Rochester. Listings still use the 25-mile circle.
+- **Verification:** `npx vitest run` on explore-location-catalog → 8 passed. Browser on localhost `/explore`: the cities row showed those six and no “within 25 miles” line.
+- **Next:** A city still needs a stored photo before its card can show one.
+
+## 2026-11-15 — Place banner measures from the live position
+
+- **Context:** The card mile count is from the place set on the map. For a Competine Township pin, Godfather's Pizza Express is 5.4 mi from that pin. Calling that “from your location” was wrong.
+- **Result:** The banner reads the device position and the listing coordinates. The line names both ends, for example “480 mi from Ferndale, Michigan to Godfather's Pizza Express”. The cards still show the pin distance.
+- **Verification:** `npx vitest run` on explore-distance-label. A Ferndale point to Batavia is more than 400 miles, and that figure is what the line uses.
+- **Next:** Weather on a newly chosen pin was not changed.
+
+## 2026-11-15 — Every catalog city has a photo source
+
+- **Context:** The owner asked for a photo source on every catalog city, and for a check of trekking, gas stations, hiking, and amusement parks.
+- **Result:** All 83 catalog cities now have a Commons photograph with an author and license. The last three were Eau Claire (Bobak Ha'Eri, CC BY 3.0), Guadalajara (Isacdaavid, CC BY-SA 4.0), and Oaxaca (Nanahuatl, CC BY-SA 4.0). The place table has 1,891,130 rows and 2,759 city slugs. Hiking trails: 4,702 in the US box, 4,735 total. Amusement parks: 1,578 in the US box, 1,600 total. Gas stations: no `gas_station` or `fuel` rows; 6 truck stops. There is no trekking category.
+- **Verification:** Catalog diff 83 cities, 0 missing. Eau Claire and Guadalajara photo URLs returned HTTP 200. `npx vitest run` on explore-destination-media → 5 passed.
+- **Next:** A full gas, trail, or amusement extract is a separate load. These counts are what is stored now.
+
+## 2026-11-15 — Midwest city photos and Detroit Takes
+
+- **Context:** The owner asked to finish the remaining city photos and to add Detroit so Takes can load for a Royal Oak pin. Restaurant cards stay without a borrowed photo.
+- **Result:** Kenosha, Cleveland, Toledo, Grand Rapids, and the other Midwest catalog cities except Eau Claire now use a Commons photograph with the author and license. Eau Claire’s lead file has no author name, so it was left out. Detroit and Michigan were added to `places_directory`. A saved Royal Oak pin stays Royal Oak. Takes resolve to Detroit, 12 miles away, and show the approved Pure Michigan videos.
+- **Verification:** Photo URLs for Kenosha and Cleveland returned HTTP 200. `npx vitest run` on explore-destination-media and explore-directory-resolve → 10 passed. `GET /api/v2/explorer/directory/nearest` for the Royal Oak pin returned Detroit at 12.0 miles. Browser on localhost `/explore`: 210 listings, the place stayed Royal Oak, and Takes showed Pure Michigan videos labeled “From Michigan”.
+- **Next:** Eau Claire still needs a Commons file that names its author. A Detroit-specific channel would replace the state videos.
+
+## 2026-11-15 — Detroit city card uses a real skyline photo
+
+- **Context:** The owner asked for photographs on the cards that had no image, and not category icons.
+- **Result:** The Detroit catalog card uses the Commons photograph “Detroit Skyline from Windsor 2025-09-01” (TheWxResearcher, CC0). Explore picks show that event’s own photo when the listing has one. The category icons were removed. A restaurant or cafe still shows a photo only when that listing has one. No stock photo was placed on a business.
+- **Verification:** The file returns HTTP 200. Browser on localhost `/explore` at the saved Royal Oak pin: the Detroit card image is that skyline, credited “Detroit skyline, TheWxResearcher, CC0 · Wikimedia Commons”. All six Explore picks showed their own listing photo.
+- **Next:** Other catalog cities that still have no still need the same Commons check. Business listings stay without a photo until a photo of that place exists.
+
+## 2026-11-15 — Category mark when a location has no photo
+
+- **Context:** Detroit is the only catalog city within 25 miles of the Royal Oak pin, and it has no verified photo. Place cards and the picks table also show listings with a name and category and no image.
+- **Result:** A card with no photo keeps the name, the state, and the catalog note (Detroit reads River). A city mark sits on the card, with the place’s initial. A place or event with no photo gets a mark from its category or its name: coffee, food, theatre, music, or a ticket when none of those words are present. These are the same line icons the app already uses. No photo or logo was invented.
+- **Verification:** `npx vitest run` on explore-category-mark and explore-hub-v6-map → 16 passed. Browser on localhost `/explore` at the saved Royal Oak pin: Detroit card shows the city mark, D, Michigan, River. Bean & Leaf Cafe shows a coffee mark; restaurants show a food mark; Emagine Royal Oak shows a theatre mark. Picks show a music mark for Polka Floyd and the record show, a theatre mark for CLUE, and a ticket mark for the metal show and the basketball game.
+- **Next:** A real Detroit photo still needs a verified source. Takes for this pin still need Detroit in the directory.
+
+## 2026-11-15 — Explore page copy and the cities row
+
+- **Context:** The Royal Oak page joined the place to the next word (“Michiganand”), showed Toledo and Cleveland as near a 25-mile pin, repeated “Michigan” on the city card, and showed those cards while listings were still loading.
+- **Result:** The ask line keeps a space before “and”. City cards wait until listings finish. A pin’s city row uses the same miles as the listings (25 here). A card reads city, state, country. A city with no verified photo shows its initial on the teal block.
+- **Verification:** Browser on localhost `/explore` at the saved Royal Oak pin: 210 listings, caption “Catalog cities within 25 miles”, Detroit only (Michigan / United States), Toledo and Cleveland absent.
+- **Next:** Takes for a Detroit-area pin still need Detroit in the directory. No photo was invented for the city cards.
+
+## 2026-11-15 — A pin is one circle (B01–B50)
+
+- **Context:** Owner asked to develop the open location bugs B01–B50.
+- **Result:** A point with coordinates loads events and places inside one radius (25 miles, or the distance the user picks). That radius does not stop at the state line and does not force the United States, so a Detroit-area circle can include Windsor. Inside a known city the feed is still that circle, measured from the pin. GPS does not replace a saved pin. The location card loads the pin instead of the previous city. Picks are the nearest events, then places, with miles. Top uses nearest when a pin is set. Tonight keeps today; later events in the same search sit under Later this week and are not labeled Tonight. A first visit with nothing saved does not query Chicago. Confirm stays off until the place name arrives. The area event query is one statement with a bounding box and a state timezone when the event has none. Directory nearest no longer fails when a city has no state slug.
+- **Verification:** `cd frontend; npx vitest run "app/(dashboard)/explore/__tests__"` → **242 passed** (48 files). `.venv\Scripts\python -m pytest -q tests/test_explore_scaper_events.py tests/test_explore_place_spine.py` → **33 passed, 1 skipped**. Browser on localhost `/explore`: a Ferndale GPS fix queried `within_miles=25` and `radius_m=40234` once. A saved Royal Oak pin survived refresh while GPS was still Ferndale. The card, ask line, Top, picks, and cities all said Royal Oak. Picks started at 2.0 miles (Magic Bag). Places were Royal Oak restaurants. Countries from Michigan started with Canada, then the United States. Directory nearest for Ferndale returned Chicago at 233.7 miles, which the page correctly refuses (60-mile cap), so Takes stayed off.
+- **Risks:** B05 city-card photos are still missing; no image was invented. B10 was not timed. Detroit is not a directory city, so Takes stay empty around Detroit until that city is added. Weekend, the calendar, satellite, and the next event page were not clicked. `npx tsc --noEmit` still reports five older errors in the event page and unknown-field tests (price state requires `name`).
+- **Next:** Add Detroit to the directory only if Takes for that metro are wanted. Time the area query. Leave B05 until a photo source is verified.
+
+## 2026-11-14 — Thirty more location bugs logged (B21–B50)
+
+- **Context:** Owner raised the list ceiling to 200. The book already had B01–B20.
+- **Result:** Explorer Tasks rows 110–139, IDs **B21–B50**, Status **Pending**, task cells gray. Not marked complete. The list stops at 50. Further rows would repeat these defects or copy Partial rows already in the book (filters, save, share, prices). Cursor Context Log summary inserted at row 3. Backup `Rovvy_Explorer_Scrum_Book.backup-2026-11-14-bugs-2.xlsx`.
+- **The list:** B21 first visit loads Chicago. B22 GPS replaces Takes after a pin. B23 a typed town snaps to a directory city within 60 miles. B24 an older location search can overwrite a newer one. B25 Satellite drops the location dot and the place name. B26 the card ignores a move under 20 miles. B27 a failed hero refresh keeps the previous photo and weather. B28 This city means 25 miles. B29 a chosen distance stops at the state line. B30 a chosen distance is ignored when the state is not a short code. B31 Tonight uses the browser date. B32 Weekend is today through Saturday. B33 an event with no date stays in Tonight. B34 the calendar counts a city name. B35 Load more does not ask for the next page. B36 each location change blanks the listings. B37 a full country name is searched as the United States. B38 a Detroit pin cannot show Windsor. B39 inside a hub, events are the city and places are the pin. B40 miles inside a hub are measured from downtown. B41 nearest events are reordered before display. B42 a near listing with no photo sinks. B43 the cities row calls a short catalog the closest cities. B44 Countries is the world list. B45 here means six different distances. B46 Dropped pin is stored as the saved city. B47 Explore asks for GPS twice. B48 the map can open on a fix up to 60 seconds old. B49 events with no coordinates vanish from a radius search. B50 an event with no timezone is dated in UTC.
+- **Verification:** Workbook open check: B21 at row 110 through B50 at row 139, all Pending. No code change. No tests.
+- **Next:** Fix B01 first, then B21 and B28. A pin must survive the opening GPS lookup, a first visit must not query Chicago, and This city must not mean 25 miles.
+
+## 2026-11-14 — Twenty open location bugs logged (B01–B20)
+
+- **Context:** Owner asked for the Explore location issues from the Walworth, GPS, and Ferndale checks, about 20 bugs, recorded in the Scram Book to be completed.
+- **Result:** Explorer Tasks rows 90–109, IDs **B01–B20**, Status **Pending**, task cells gray. Not marked complete. Cursor Context Log summary inserted at row 3. Backup `Rovvy_Explorer_Scrum_Book.backup-2026-11-14-bugs.xlsx`.
+- **The list:** B01 GPS overwrites a pin. B02 confirm before the place name. B03 Takes missing off an exact directory city. B04 no hero photo off a known city. B05 Midwest city cards have no photo. B06 picks are the nearest shops. B07 Top is soonest, not nearest. B08 events 25 miles vs places ~62 miles. B09 events requested twice. B10 area query stays on Checking listings. B11 Tonight hides the rest of the week. B12 a neighborhood inside a hub gets the whole city. B13 map picker jumps back to GPS. B14 refresh drops the pin. B15 late directory result renames the pin. B16 reverse geocode starts a second scope. B17 picks do not show distance. B18 city cards say Open listings unchecked. B19 a small town is titled as if the rows are inside it. B20 Detroit is not a metro hub.
+- **Verification:** Workbook open check: 20 Pending rows, B01 at row 90 through B20 at row 109. No code change. No tests.
+- **Next:** Fix B01 first. A map pin must survive the opening GPS lookup.
+
+## 2026-11-14 — Picks table was the next events in a 100-mile circle
+
+- **Context:** Town of Walworth heading said “Explore picks in Town of Walworth” while the rows were Chicago, Milwaukee, Woodstock, and Island Lake. That feed is soonest-first inside 100 miles, so a far city that has an event tonight outranks the town.
+- **Result:** A GPS point outside a metro hub loads events within 25 miles. The picks table is the closest listings inside that distance (or the distance the user chose), titled “Explore picks near {place}”. A named metro hub still uses the city feed order.
+- **Verification:** `npx vitest run` on explore-hub-v6-map, explore-hub-counts, explore-distance-filter → **35 passed**. Browser not rechecked in this step.
+- **Next:** Refresh `/explore` at Town of Walworth. Chicago and Milwaukee should leave the picks table. Rows should be places and events within about 25 miles, nearest first.
+
+## 2026-11-14 — GPS place and Chicago feed were two different locations
+
+- **Context:** Location card showed Buffalo County, Wisconsin. Feed, Top, and the ask line stayed on Chicago. Nearby cities jumped to Toronto and New York.
+- **Result:** A saved hub no longer wins when the GPS point is outside that hub. Outside every hub, events load within 100 miles of the point and the label stays the GPS place. Nearby cities are capped at 280 miles and include Wisconsin, Minnesota, Iowa, Illinois, Indiana, Michigan, and Ohio. Destinations switches between Cities and Countries.
+- **Verification:** Explore Vitest **235 passed** (48 files).
+- **Next:** Refresh `/explore` at the Wisconsin point and confirm the card, Top, and listings name the same place.
+
+## 2026-11-14 — Explore feed: faster pin, city Takes, more listings, nearby city photos
+
+- **Context:** Owner: Takes not for the picked city; destination/event cards missing images; “24 of 96” too small and the picks table missing; nearby cities should be photos near the selected place; location sheet backdrop incomplete; Use this point too slow.
+- **Result:** Use this point closes and reloads the hub immediately (hero/directory refine after). Takes clear the previous city and reload from a directory search for the new city. First page is 48 (then Load more); events request 200 per city. Picks table shows even when price is unknown. Nearby city image cards sit above Destinations. Location sheet is portaled over the page. Listing photos accept `//` URLs and send `no-referrer`.
+- **Verification:** `cd frontend; npx vitest run "app/(dashboard)/explore/__tests__"` → **232 passed** (48 files).
+- **Next:** Browser check on `/explore`: pin confirm, Takes city label, photos, Load more, nearby cities. Cities with no provider photo stay without a stock image.
+
+## 2026-11-14 — Explore location workflow (GPS → pick → Top tied to place)
+
+- **Context:** Owner: auto-load GPS on Explore; location button → “Where should Rovvy look?” / search / map pick; add Satellite beside Map; fix “Use this point”; remove Top in city/state/country chips; keep Top with a location reference and location-tied events/attractions; lower sections follow the same place.
+- **Result:** Map picker Map/Satellite toggle (Esri imagery). `pickMapPoint` always publishes lat/lon scope + inventory city (including directory miss / hero failure). Top row drops scope chips; shows `Near {location}` and orders events then places from the active hub load. Location scope refresh also updates directory hub for Takes/show-all.
+- **Verification:** `cd frontend; npx vitest run "app/(dashboard)/explore/__tests__"` → **231 passed** (48 files).
+- **Next:** Browser QA on `/explore` — GPS card, map pick + Satellite + Use this point reloads feed, Top reference matches hero place.
+
+## 2026-11-13 — America coverage report (live DB)
+
+- **Context:** Owner asked how America was loaded and for a US cities report.
+- **Result:** Read-only report `America_Coverage_Report_2026-11-13.md`. US loaded mainly via **51 Ticketmaster state sources** (not one source per city); **43,579** future US events; **917** city_slugs; Chicago 1,103; city TM pilots disabled after state cutover; +50 Eventbrite orgs + 115 venue feeds.
+- **Verification:** Live SQL against Supabase `ingest.sources` / `public.events` at 2026-11-13 11:52 UTC.
+- **Next:** Same pattern for non-US (country/city sources); Explore already queries by metro `city_slug`.
+
+## 2026-11-13 — Location inventory: metro snap local-only (not Chicago-everywhere)
+
+- **Context:** Owner: fixing Hermosa by forcing Chicago was wrong; changing the top location still showed Chicago; Japan/India/Indiana must not inherit Chicago inventory.
+- **Cause:** (1) neighbourhood Hermosa queried as `?city=Hermosa`; (2) later fix forced unknown labels → Chicago; (3) `setCity` cleared `locationScope` right after hero set it (dropped lat/lon); (4) geocode path stripped coords; (5) city change unlocked GPS overwrite.
+- **Result:** `resolveExploreInventoryCity` snaps **only within ~80 km** of a hub (Hermosa→Chicago; Tokyo/Mumbai/Indianapolis stay themselves). Persist chosen city; keep scope coords; lock after user/hero pick; directory scope carries lat/lon.
+- **Verification:** Vitest metro + city-persist + directory + calendar + feed **32 passed**. Browser Tokyo hero: API `city=Tokyo` + Tokyo lat/lon, **0** Chicago calls; honest “0 loaded listings” when Scaper has no Tokyo feed yet.
+- **Next:** Grow Scaper/event coverage for non-US hubs so far cities return real events, not only empty-honest.
+
+## 2026-11-13 — Explore load flake: Hermosa neighbourhood ≠ Scaper city (DB was fine)
+
+- **Context:** Owner saw intermittent “listings couldn’t load” and asked if the site was disconnected from the DB.
+- **Cause:** Backend OK; Hermosa neighbourhood used as `?city=` (0 rows).
+- **Result:** *(Superseded by location-inventory entry above — do not force Chicago globally.)*
+- **Verification:** Earlier Hermosa→Chicago path verified; replaced by metro-range snap.
+- **Next:** See entry above.
+
 ## 2026-11-13 — Destinations chrome: adult layout, no demos / scrollbar / location toast
 
 - **Context:** Owner: logo too small; uneven type; after Destinations a “Showing … / Back to Chicago” toast looked like a demo; masonry Ask/Tonight cards were demos; scrollbar + arrow buttons cluttered the reel; design felt kid-like.

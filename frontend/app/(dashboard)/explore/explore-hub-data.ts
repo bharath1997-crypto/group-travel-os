@@ -1,4 +1,5 @@
 import type { ExplorePhotoCredit } from "./explore-fixtures";
+import { dedupeInflight } from "./explore-request-dedupe";
 import { apiFetch } from "@/lib/api";
 import type { ExplorerDrawerItem } from "@/components/explorer/ExplorerItemDetailDrawer";
 import {
@@ -38,8 +39,10 @@ import { haversineMiles } from "@/lib/hero-location";
 import { formatExploreDistanceFromMeters, formatExploreDistanceMiles } from "./explore-distance-label";
 import { interleaveEventSlotsByDayAndProvider } from "./explore-event-interleave";
 import { rankExploreHubSlots } from "./explore-feed-quality";
+import { pickExplorePlanSlots } from "./explore-plan-picks";
 import { interleaveExploreListingSlots } from "./explore-hub-counts";
-import { resolveScaperMetroCity } from "./explore-scaper-metro";
+import { areaEventParams, EXPLORE_LOCAL_PLACE_MILES } from "./explore-distance-filter";
+import { resolveExploreInventoryCity, resolveScaperMetroCity } from "./explore-scaper-metro";
 import {
   filterVerifiedExploreApiEventRows,
   isEditorialExploreListing,
@@ -61,6 +64,7 @@ import {
   type ExplorePlaceRow,
   uniquePlacesByGersId,
 } from "./explore-hub-places-overture";
+import { fetchExploreHubSource } from "./explore-hub-source-fetch";
 
 export type PhotoTheme = "music" | "food" | "outdoors" | "comedy" | "bar" | "landmark" | "art";
 
@@ -115,6 +119,8 @@ export type ExploreHubPayload = {
   placesAnchor?: { lat: number; lng: number } | null;
   hubLoadState: ExploreHubLoadState;
   sourceStatus: ExploreSourceStatusMap;
+  /** True on an early payload: places are in, events are still loading. */
+  eventsPending?: boolean;
 };
 
 function isEditorialEvent(event: ExploreEvent): boolean {
@@ -251,7 +257,7 @@ function parseEventStartMs(event: ExploreEvent): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-function eventToSlot(event: ExploreEvent, index: number, anchor: DistanceAnchor | null): ExploreSlot {
+export function eventToSlot(event: ExploreEvent, index: number, anchor: DistanceAnchor | null): ExploreSlot {
   const editorial = isEditorialEvent(event);
   const category = normalizeCategory(event.category, event.name);
   const priceState = exploreEventPriceState(event);
@@ -430,29 +436,74 @@ function uniqueById<T extends { id: string }>(items: T[]): T[] {
   });
 }
 
-export async function fetchExploreHub(target: string | ExploreHubFetchInput): Promise<ExploreHubPayload> {
+export function fetchExploreHub(
+  target: string | ExploreHubFetchInput,
+  onPartial?: (payload: ExploreHubPayload) => void,
+): Promise<ExploreHubPayload> {
+  return dedupeInflight(`hub:${JSON.stringify(target)}`, () => fetchExploreHubUncached(target, onPartial));
+}
+
+async function fetchExploreHubUncached(
+  target: string | ExploreHubFetchInput,
+  onPartial?: (payload: ExploreHubPayload) => void,
+): Promise<ExploreHubPayload> {
   const input: ExploreHubFetchInput =
     typeof target === "string"
       ? { city: target.split(",")[0].trim() || "Chicago" }
       : target;
   const cityLabel = input.city.split(",")[0].trim() || "Chicago";
-  const scaperMetro = resolveScaperMetroCity({
-    lat: input.lat,
-    lon: input.lon,
-    fallbackCity: cityLabel,
-  });
+  const requestedMetro = input.fetchCity?.trim() || cityLabel;
+  // Hermosa (near Chicago) → Chicago; Tokyo/Mumbai/Indiana stay themselves — never invent Chicago.
+  const scaperMetro =
+    resolveExploreInventoryCity({
+      requestedCity: requestedMetro,
+      lat: input.lat,
+      lon: input.lon,
+    }) ||
+    resolveScaperMetroCity({
+      lat: input.lat,
+      lon: input.lon,
+      fallbackCity: requestedMetro,
+    });
   const placesCoords =
     input.lat != null && input.lon != null
       ? { lat: input.lat, lng: input.lon }
-      : CITY_COORDS[cityLabel];
+      : CITY_COORDS[scaperMetro] ?? CITY_COORDS[cityLabel] ?? CITY_COORDS[requestedMetro];
   const distanceAnchor = placesCoords
     ? { lat: placesCoords.lat, lng: placesCoords.lng }
     : null;
 
-  const eventParams = new URLSearchParams({
-    city: scaperMetro,
-    per_page: scaperMetro === "Orlando" ? "300" : "100",
-  });
+  const area = areaEventParams(input);
+  const pinMiles =
+    typeof input.within === "number"
+      ? input.within
+      : input.within === "state"
+        ? null
+        : input.lat != null && input.lon != null
+          ? EXPLORE_LOCAL_PLACE_MILES
+          : null;
+  const pinQuery = pinMiles != null && input.lat != null && input.lon != null;
+  // A pin is a circle around that point, across a state line, not a saved city name.
+  // "Everywhere" is the only path that stays inside one state.
+  const eventParams = pinQuery
+    ? new URLSearchParams({
+        lat: String(input.lat),
+        lon: String(input.lon),
+        within_miles: String(pinMiles),
+        per_page: "200",
+        ...(input.eventsPage && input.eventsPage > 1 ? { page: String(input.eventsPage) } : {}),
+      })
+    : area
+      ? new URLSearchParams({
+          ...area,
+          per_page: "200",
+          ...(input.eventsPage && input.eventsPage > 1 ? { page: String(input.eventsPage) } : {}),
+        })
+      : new URLSearchParams({
+          city: scaperMetro || cityLabel || "Chicago",
+          per_page: scaperMetro === "Orlando" ? "300" : "200",
+          ...(input.eventsPage && input.eventsPage > 1 ? { page: String(input.eventsPage) } : {}),
+        });
   if (input.dateFrom) eventParams.set("date_from", input.dateFrom);
   if (input.dateTo) eventParams.set("date_to", input.dateTo);
   const scope: ExploreLocationScope | null =
@@ -469,46 +520,51 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
 
   const unavailableFreshness: ExploreFreshnessMeta = { refreshed_at: null, cache_status: "unavailable" };
 
-  async function fetchExploreSource<T>(run: () => Promise<T>): Promise<{ ok: true; data: T } | { ok: false; data: null }> {
-    try {
-      const data = await run();
-      return { ok: true, data };
-    } catch {
-      return { ok: false, data: null };
-    }
-  }
+  // The three sources start together but are awaited separately: the events query is the
+  // slow one, and places should not wait for it.
+  const eventsPromise = fetchExploreHubSource(() =>
+    apiFetch<EventsAPIResponse>(`/explore/events?${eventParams.toString()}`, {}, EXPLORE_FETCH_TIMEOUT_MS),
+  );
+  const attractionsPromise = fetchExploreHubSource(() =>
+    apiFetch<{
+      places: ExplorePlaceRow[];
+      source_status?: ExplorePlacesSourceStatus;
+      freshness?: ExploreFreshnessMeta;
+    }>(
+      `/explore/places?${explorePlacesQuery(scaperMetro, placesCoords, pinMiles ?? undefined, 100)}&category=attractions`,
+      {},
+      EXPLORE_FETCH_TIMEOUT_MS,
+    ),
+  );
+  const restaurantsPromise = fetchExploreHubSource(() =>
+    apiFetch<{
+      places: ExplorePlaceRow[];
+      source_status?: ExplorePlacesSourceStatus;
+      freshness?: ExploreFreshnessMeta;
+    }>(
+      `/explore/places?${explorePlacesQuery(scaperMetro, placesCoords, pinMiles ?? undefined, 100)}&category=restaurants`,
+      {},
+      EXPLORE_FETCH_TIMEOUT_MS,
+    ),
+  );
 
-  const [eventsResult, attractionsResult, restaurantsResult] = await Promise.all([
-    fetchExploreSource(() =>
-      apiFetch<EventsAPIResponse>(`/explore/events?${eventParams.toString()}`, {}, EXPLORE_FETCH_TIMEOUT_MS),
-    ),
-    fetchExploreSource(() =>
-      apiFetch<{
-        places: ExplorePlaceRow[];
-        source_status?: ExplorePlacesSourceStatus;
-        freshness?: ExploreFreshnessMeta;
-      }>(
-        `/explore/places?${explorePlacesQuery(scaperMetro, placesCoords)}&category=attractions`,
-        {},
-        EXPLORE_FETCH_TIMEOUT_MS,
-      ),
-    ),
-    fetchExploreSource(() =>
-      apiFetch<{
-        places: ExplorePlaceRow[];
-        source_status?: ExplorePlacesSourceStatus;
-        freshness?: ExploreFreshnessMeta;
-      }>(
-        `/explore/places?${explorePlacesQuery(scaperMetro, placesCoords)}&category=restaurants`,
-        {},
-        EXPLORE_FETCH_TIMEOUT_MS,
-      ),
-    ),
-  ]);
-
-  const eventsRes: EventsAPIResponse = eventsResult.ok
-    ? eventsResult.data
-    : { city: cityLabel, display_city: cityLabel, events: [], freshness: unavailableFreshness };
+  type EventsSourceResult = Awaited<typeof eventsPromise>;
+  const assemble = (
+    eventsResult: EventsSourceResult,
+    attractionsResult: Awaited<typeof attractionsPromise>,
+    restaurantsResult: Awaited<typeof restaurantsPromise>,
+    eventsPending: boolean,
+  ): ExploreHubPayload => {
+  const eventsRes: EventsAPIResponse =
+    eventsResult.ok && eventsResult.data && Array.isArray(eventsResult.data.events)
+      ? eventsResult.data
+      : {
+          city: eventsResult.ok ? eventsResult.data?.city ?? cityLabel : cityLabel,
+          display_city: eventsResult.ok ? eventsResult.data?.display_city ?? cityLabel : cityLabel,
+          events: [],
+          freshness:
+            (eventsResult.ok ? eventsResult.data?.freshness : undefined) ?? unavailableFreshness,
+        };
   const attractionsRes = attractionsResult.ok
     ? attractionsResult.data
     : { places: [] as ExplorePlaceRow[], freshness: unavailableFreshness };
@@ -531,7 +587,7 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
     const to = input.dateTo;
     eventPool = eventPool.filter((ev) => {
       const day = (ev.date || ev.start_date || "").split("T")[0].slice(0, 10);
-      if (!day || day.length < 10) return true;
+      if (!day || day.length < 10) return false;
       return day >= from && day <= to;
     });
   }
@@ -566,11 +622,23 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
   const restaurantSlots = restaurantsResult.ok
     ? restaurantPlaces.map((p, i) => placeToSlot(p, cityLabel, i, "restaurants"))
     : [];
-  let slots = interleaveExploreListingSlots(eventSlots, attractionSlots, restaurantSlots);
+  let slots = pinQuery
+    ? [...eventSlots, ...attractionSlots, ...restaurantSlots]
+    : interleaveExploreListingSlots(eventSlots, attractionSlots, restaurantSlots);
   if (scope) {
     slots = filterSlotsByLocationScope(slots, scope);
   }
-  slots = rankExploreHubSlots(slots);
+  slots = pinQuery
+    ? [...slots].sort((a, b) => {
+        const da = a.distanceMiles ?? Number.POSITIVE_INFINITY;
+        const db = b.distanceMiles ?? Number.POSITIVE_INFINITY;
+        if (da !== db) return da - db;
+        const aEvent = a.exploreListingKind === "event" ? 0 : 1;
+        const bEvent = b.exploreListingKind === "event" ? 0 : 1;
+        if (aEvent !== bEvent) return aEvent - bEvent;
+        return a.title.localeCompare(b.title);
+      })
+    : rankExploreHubSlots(slots);
 
   const sources = new Set<string>();
   if (eventsResult.ok) {
@@ -601,16 +669,68 @@ export async function fetchExploreHub(target: string | ExploreHubFetchInput): Pr
     placesAnchor: distanceAnchor,
     hubLoadState,
     sourceStatus,
+    ...(eventsPending ? { eventsPending: true } : {}),
   };
+  };
+
+  if (onPartial) {
+    const placesDone = Promise.all([attractionsPromise, restaurantsPromise]);
+    const first = await Promise.race([
+      eventsPromise.then(() => "events" as const),
+      placesDone.then(() => "places" as const),
+    ]);
+    if (first === "places") {
+      const [attractionsResult, restaurantsResult] = await placesDone;
+      const pendingEvents: EventsSourceResult = {
+        ok: true,
+        data: { city: cityLabel, display_city: cityLabel, events: [], freshness: unavailableFreshness },
+      };
+      const partial = assemble(pendingEvents, attractionsResult, restaurantsResult, true);
+      // Only show an early page when places gave something to look at.
+      if (partial.slots.length > 0) onPartial(partial);
+    }
+  }
+
+  const [eventsResult, attractionsResult, restaurantsResult] = await Promise.all([
+    eventsPromise,
+    attractionsPromise,
+    restaurantsPromise,
+  ]);
+  return assemble(eventsResult, attractionsResult, restaurantsResult, false);
 }
 
-export function filterSlotsByPrompt(slots: ExploreSlot[], prompt: string): ExploreSlot[] {
+function promptBudgetMax(prompt: string): number | null {
+  const q = prompt.toLowerCase();
+  const under = q.match(/under\s*\$?\s*(\d+)/);
+  if (under) return Number(under[1]);
+  const lessThan = q.match(/(?:less than|below)\s*\$?\s*(\d+)/);
+  if (lessThan) return Number(lessThan[1]);
+  if (/\bfree\b/.test(q)) return 0;
+  return null;
+}
+
+export function filterSlotsByPrompt(
+  slots: ExploreSlot[],
+  prompt: string,
+  when: string = "Tonight",
+): ExploreSlot[] {
   const q = prompt.trim().toLowerCase();
-  if (!q) return slots.slice(0, 3);
-  return slots
-    .filter((slot) => {
-      const hay = `${slot.title} ${slot.summary} ${slot.meta} ${slot.price}`.toLowerCase();
-      return q.split(/\s+/).some((word) => word.length > 2 && hay.includes(word));
-    })
-    .slice(0, 3);
+  if (!q) return pickExplorePlanSlots(slots, when);
+  const budgetMax = promptBudgetMax(q);
+  const words = q.split(/\s+/).filter((word) => word.length > 2);
+  const budgetFiltered =
+    budgetMax == null
+      ? slots
+      : slots.filter((slot) => {
+          if (slot.priceKnown !== true) return false;
+          if (budgetMax === 0) return slot.price === "Free" || slot.amount === 0;
+          return slot.amount > 0 && slot.amount <= budgetMax;
+        });
+  const matched = budgetFiltered.filter((slot) => {
+    if (!words.length) return true;
+    const hay = `${slot.title} ${slot.summary} ${slot.meta} ${slot.price}`.toLowerCase();
+    return words.some((word) => hay.includes(word.replace(/^\$/, "")));
+  });
+  const pool = matched.length ? matched : budgetMax != null ? budgetFiltered : [];
+  return pool.slice(0, 3);
 }
