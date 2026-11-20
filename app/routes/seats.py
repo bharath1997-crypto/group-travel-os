@@ -87,6 +87,8 @@ def publish_ride(
         vehicle_body_type=body.vehicle_body_type,
         route_option_id=body.route_option_id,
         route_label=body.route_label,
+        preferences=body.preferences.model_dump() if body.preferences else None,
+        series_id=body.series_id,
     )
     return {"id": str(ride.id), "status": ride.status}
 
@@ -109,6 +111,15 @@ def patch_ride(
 ):
     if body.status == "cancelled":
         ride = SeatsService.cancel_ride(db, current_user, ride_id)
+        return {"id": str(ride.id), "status": ride.status}
+    if body.note is not None or body.preferences is not None:
+        ride = SeatsService.edit_ride(
+            db,
+            current_user,
+            ride_id,
+            note=body.note,
+            preferences=body.preferences.model_dump() if body.preferences else None,
+        )
         return {"id": str(ride.id), "status": ride.status}
     AppException.bad_request("No changes applied")
 

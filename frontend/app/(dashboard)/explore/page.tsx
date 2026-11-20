@@ -2,8 +2,11 @@
 
 
 
+import { ChevronDown, MapPin } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+
+import { emitOpenWayra } from "@/lib/open-wayra";
 
 
 
@@ -25,12 +28,19 @@ import { ExploreRankingRow } from "./components/ExploreRankingRow";
 import { ExploreSavedBar } from "./components/ExploreSavedBar";
 
 import { ExploreSlotCard } from "./components/ExploreSlotCard";
+import { ExploreTopEventsRow } from "./components/ExploreTopEventsRow";
+import { ExploreVideosSection } from "./components/ExploreVideosSection";
+import { ExploreYoutubeLegalFooter } from "./components/ExploreYoutubeLegalFooter";
+import {
+  resolveDirectoryHubForScope,
+  type DirectoryHubResolution,
+} from "./explore-directory-resolve";
+import { loadPickedPlace } from "./explore-picked-place";
 import { useExploreHubSaves } from "./use-explore-hub-saves";
 
 import { ExploreWayraPlanCard } from "./components/ExploreWayraPlanCard";
 
 import { exploreCardReasonLabel } from "./explore-card-reason";
-import { exploreRankingHasKnownPrice } from "./explore-card-display";
 import { HeroLocationWidget } from "./HeroLocationWidget";
 
 import {
@@ -46,6 +56,12 @@ import {
 } from "./explore-fixtures";
 
 import {
+  formatExplorePromptSuggestionLabel,
+  getExplorePromptRecentTexts,
+  recordExplorePromptRecent,
+} from "./explore-prompt-recent";
+
+import {
 
   buildMasonryFeed,
 
@@ -56,6 +72,7 @@ import {
   hubSlotToDetail,
 
   hubSlotsToRanking,
+  nearestLocalExplorePicks,
 
   orderExploreSlotCardsForMasonry,
 
@@ -80,7 +97,12 @@ import {
 } from "./explore-hub-counts";
 import { deriveExploreHeroListingCountState } from "./explore-hero-listing-count";
 import { useExploreHub } from "./use-explore-hub";
-
+import {
+  DEFAULT_EXPLORE_WITHIN,
+  EXPLORE_LOCAL_PLACE_MILES,
+  EXPLORE_WITHIN_OPTIONS,
+  type ExploreWithin,
+} from "./explore-distance-filter";
 import {
   buildCalendarDaySummaries,
   filterSlotsByTimeScope,
@@ -98,8 +120,18 @@ import {
 } from "./explore-hub-calendar-month";
 import { useExploreCalendarCounts } from "./use-explore-calendar-counts";
 
-
 import styles from "./explore.module.css";
+import WayraPlanCard from "@/components/ai/WayraPlanCard";
+import { dateRangeForWhen } from "./explore-hub-dates";
+import {
+  applyTweak,
+  classifyPlanError,
+  planSavedIds,
+  requestWayraPlan,
+  type PlanTweak,
+  type WayraPlanRequest,
+  type WayraPlanResponse,
+} from "@/lib/wayra/plan";
 
 
 
@@ -132,6 +164,7 @@ export default function ExplorePage() {
   // Window the calendar counts cover: open month from today onwards.
   const calendarCountsRange = useMemo(() => calendarFetchDateRange(calendarMonth), [calendarMonth]);
 
+  const [within, setWithin] = useState<ExploreWithin>(DEFAULT_EXPLORE_WITHIN);
 
   const {
     city,
@@ -142,14 +175,49 @@ export default function ExplorePage() {
     loading,
     unexpectedError,
     data,
+    eventsPending,
+    loadMoreEvents,
+    loadingMore,
+    eventsExhausted,
     retry,
-  } = useExploreHub(when, calendarFetchRange);
+  } = useExploreHub(when, calendarFetchRange, within);
 
   const [pickedCityBanner, setPickedCityBanner] = useState<string | null>(null);
+  const restoredPin = useState(() => loadPickedPlace() != null)[0];
+  const exploreLocationLockedRef = useRef(restoredPin);
+  const [exploreLocationLocked, setExploreLocationLocked] = useState(restoredPin);
 
-  const [prompt, setPrompt] = useState("Saturday night, six of us, under $70");
+  const [prompt, setPrompt] = useState("");
+
+  const [promptFocused, setPromptFocused] = useState(false);
+
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+
+  const [recentPrompts, setRecentPrompts] = useState<string[]>([]);
 
   const promptRef = useRef<HTMLTextAreaElement>(null);
+
+  const wayraAnswerRef = useRef<HTMLElement>(null);
+
+  const [planBusy, setPlanBusy] = useState(false);
+  const [planResponse, setPlanResponse] = useState<WayraPlanResponse | null>(null);
+  const [planError, setPlanError] = useState<string | null>(null);
+  const [planOpen, setPlanOpen] = useState(false);
+  const lastPlanRequest = useRef<WayraPlanRequest | null>(null);
+
+  const runPlan = useCallback(async (body: WayraPlanRequest) => {
+    lastPlanRequest.current = body;
+    setPlanOpen(true);
+    setPlanBusy(true);
+    setPlanError(null);
+    try {
+      setPlanResponse(await requestWayraPlan(body));
+    } catch (err) {
+      setPlanError(classifyPlanError(err).message);
+    } finally {
+      setPlanBusy(false);
+    }
+  }, []);
 
   const syncPromptHeight = useCallback(() => {
 
@@ -171,11 +239,34 @@ export default function ExplorePage() {
 
   }, [prompt, syncPromptHeight]);
 
+  useEffect(() => {
+    setRecentPrompts(getExplorePromptRecentTexts());
+  }, []);
+
+  useEffect(() => {
+    if (!promptFocused || prompt.trim().length > 0) return;
+    const timer = window.setInterval(() => {
+      setSuggestionIndex((index) => (index + 1) % EXPLORE_PROMPT_SUGGESTIONS.length);
+    }, 3200);
+    return () => window.clearInterval(timer);
+  }, [promptFocused, prompt]);
+
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [answered, setAnswered] = useState(false);
 
+  useEffect(() => {
+    const q = searchParams.get("q")?.trim();
+    if (!q) return;
+    setPrompt(q);
+    setAnswered(true);
+  }, [searchParams]);
+
   const [chips, setChips] = useState<string[]>([]);
+  const [vibesOpen, setVibesOpen] = useState(false);
+  const [whenOpen, setWhenOpen] = useState(false);
+  const [videosShown, setVideosShown] = useState(false);
+  const showVibes = vibesOpen || EXPLORE_VIBES.some((v) => chips.includes(v));
 
   const [detailId, setDetailId] = useState<string | null>(null);
 
@@ -197,10 +288,64 @@ export default function ExplorePage() {
     });
 
     setPickedCityBanner(label);
+    exploreLocationLockedRef.current = true;
+    setExploreLocationLocked(true);
 
   }, [searchParams, applyLocationScope]);
 
   const displayCity = data?.displayCity || locationScope?.label || city;
+
+  const [directoryHub, setDirectoryHub] = useState<DirectoryHubResolution | null>(null);
+
+  // A restored pin does not republish from the hero. Takes still need the nearest directory city.
+  useEffect(() => {
+    if (!locationScope) return;
+    let cancelled = false;
+    void resolveDirectoryHubForScope(locationScope).then((hub) => {
+      if (!cancelled && hub) setDirectoryHub(hub);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [locationScope]);
+
+  // The hero card owns the single GPS read. A restored pin stays locked so that read cannot replace it.
+  useEffect(() => {
+    exploreLocationLockedRef.current = exploreLocationLocked;
+  }, [exploreLocationLocked]);
+
+  const directoryContext = useMemo(() => {
+    const hub = directoryHub;
+    if (!hub) return null;
+    const labelParts = hub.label.split(",").map((part) => part.trim());
+    const countryLabel = labelParts[labelParts.length - 1] || hub.countryCode;
+    const regionLabel =
+      hub.admin1Slug && labelParts.length >= 2 ? labelParts[labelParts.length - 2] : null;
+    return {
+      countryCode: hub.countryCode,
+      countrySlug: hub.countrySlug,
+      admin1Slug: hub.admin1Slug ?? null,
+      admin1Code: hub.stateCode ?? null,
+      citySlug: hub.citySlug ?? null,
+      cityName: hub.fetchCity,
+      placeLabels: {
+        city: hub.citySlug ? hub.fetchCity : null,
+        region: regionLabel,
+        country: countryLabel,
+      },
+    };
+  }, [directoryHub]);
+
+  const videosPlace = useMemo(() => {
+    if (!directoryContext) return null;
+    return {
+      countryCode: directoryContext.countryCode,
+      countrySlug: directoryContext.countrySlug,
+      admin1Slug: directoryContext.admin1Slug,
+      citySlug: directoryContext.citySlug,
+      labels: directoryContext.placeLabels,
+    };
+  }, [directoryContext]);
 
   const hubSaves = useExploreHubSaves(displayCity);
 
@@ -226,13 +371,25 @@ export default function ExplorePage() {
     () => filterSlotsByTimeScope(loadedScopeSlots, when, calendarDayIso),
     [loadedScopeSlots, when, calendarDayIso],
   );
+  const laterThisWeek = useMemo(() => {
+    if (calendarDayIso || when.trim().toLowerCase() !== "tonight") return [];
+    const tonight = new Set(timeScopedSlots.map((slot) => slot.id));
+    return loadedScopeSlots
+      .filter(
+        (slot) =>
+          slot.exploreListingKind === "event" &&
+          !tonight.has(slot.id) &&
+          Boolean(slot.eventDateIso),
+      )
+      .slice(0, 8);
+  }, [calendarDayIso, when, timeScopedSlots, loadedScopeSlots]);
   const showInventorySections = timeScopedSlots.length > 0;
   // Per-day counts: SQL counts from /explore/events/calendar; fall back to the loaded pool when
   // the city has no Scaper index or the request failed.
   const calendarCounts = useExploreCalendarCounts({
     city: data?.city ?? null,
     range: calendarCountsRange,
-    enabled: calendarOpen,
+    enabled: calendarOpen && locationScope?.lat == null,
   });
   const calendarUsesApiCounts = Boolean(calendarCounts.counts?.supported);
   const poolDayCounts = useMemo(
@@ -288,8 +445,22 @@ export default function ExplorePage() {
     [timeScopedSlots, chips, when, calendarDayIso],
   );
 
-  const ranking = useMemo(() => hubSlotsToRanking(visibleSlots), [visibleSlots]);
-  const showRankingTable = ranking.length > 0 && exploreRankingHasKnownPrice(ranking);
+  const localPickMiles = useMemo(() => {
+    if (within === "state") return null;
+    if (typeof within === "number") return within;
+    const lat = locationScope?.lat;
+    const lon = locationScope?.lon;
+    if (lat == null || lon == null || !Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    return EXPLORE_LOCAL_PLACE_MILES;
+  }, [within, locationScope?.lat, locationScope?.lon]);
+  const ranking = useMemo(
+    () =>
+      localPickMiles != null
+        ? nearestLocalExplorePicks(matchingSlots, localPickMiles)
+        : hubSlotsToRanking(visibleSlots),
+    [localPickMiles, matchingSlots, visibleSlots],
+  );
+  const showRankingTable = ranking.length > 0;
 
   const masonryFeed = useMemo(() => {
     const cards = orderExploreSlotCardsForMasonry(
@@ -302,9 +473,9 @@ export default function ExplorePage() {
 
   const wayraPlans = useMemo(
 
-    () => (answered ? slotsToWayraPlans(visibleSlots, prompt) : []),
+    () => (answered ? slotsToWayraPlans(matchingSlots, prompt, when) : []),
 
-    [answered, visibleSlots, prompt],
+    [answered, matchingSlots, prompt, when],
 
   );
 
@@ -326,7 +497,10 @@ export default function ExplorePage() {
     ? `Calendar: ${formatCalendarSelectedLabel(calendarDayIso)} (dated events + nearby places)`
     : null;
 
-  const showLoadMore = showInventorySections && !zeroFilterMatch && hubCounts.hasMore;
+  const showLoadMore =
+    showInventorySections &&
+    !zeroFilterMatch &&
+    (hubCounts.hasMore || (locationScope?.lat != null && !eventsExhausted));
 
   const listingSourcesLine = useMemo(
     () => formatExploreListingSources(data?.sources),
@@ -348,6 +522,8 @@ export default function ExplorePage() {
 
   const hubFailed = !loading && (hubLoadState === "failed" || Boolean(unexpectedError));
   const hubEmpty = !loading && hubLoadState === "empty";
+  const showSavesReloadBanner =
+    Boolean(hubSaves.user && hubSaves.reloadError) && !loading && !hubFailed;
 
   const heroListingCountState = useMemo(
     () =>
@@ -383,36 +559,88 @@ export default function ExplorePage() {
 
 
 
+  const planLat = data?.placesAnchor?.lat ?? locationScope?.lat;
+  const planLon = data?.placesAnchor?.lng ?? locationScope?.lon;
+  const canPlanWithWayra = typeof planLat === "number" && typeof planLon === "number";
+
+  const startWayraPlan = () => {
+    if (!canPlanWithWayra) return;
+    const range = calendarDayIso ? { dateFrom: calendarDayIso, dateTo: calendarDayIso } : dateRangeForWhen(when);
+    void runPlan({
+      lat: planLat,
+      lon: planLon,
+      message: prompt.trim().slice(0, 300),
+      date_from: range.dateFrom,
+      date_to: range.dateTo,
+      saved_ids: planSavedIds(hubSaves.savedSlotIds),
+    });
+  };
+
+  const tweakWayraPlan = (tweak: PlanTweak) => {
+    if (lastPlanRequest.current) void runPlan(applyTweak(lastPlanRequest.current, tweak));
+  };
+
   const ask = (value?: string) => {
 
+    const next = (value ?? prompt).trim();
+
     if (value) setPrompt(value);
+
+    if (next) {
+      recordExplorePromptRecent(next);
+      setRecentPrompts(getExplorePromptRecentTexts());
+    }
 
     setAnswered(true);
 
   };
 
+  useEffect(() => {
+    if (!answered) return;
+    wayraAnswerRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [answered, wayraPlans.length]);
+
+  const applyPromptSuggestion = (text: string) => {
+    setPrompt(text);
+    syncPromptHeight();
+    promptRef.current?.focus();
+  };
+
+  const promptIsEmpty = !prompt.trim();
+
+  const activeSuggestion = formatExplorePromptSuggestionLabel(
+    EXPLORE_PROMPT_SUGGESTIONS[suggestionIndex] ?? "",
+  );
+
+  const showPromptHints = promptFocused && promptIsEmpty;
+
 
 
   const handleLocationScope = useCallback(
     (scope: Parameters<typeof applyLocationScope>[0]) => {
+      exploreLocationLockedRef.current = true;
+      setExploreLocationLocked(true);
       applyLocationScope(scope);
       setPickedCityBanner(scope.label);
+      const cityName = (scope.fetchCity || scope.city || "").split(",")[0].trim();
+      setDirectoryHub((current) =>
+        current && cityName && current.fetchCity.toLowerCase() === cityName.toLowerCase() ? current : null,
+      );
+      void resolveDirectoryHubForScope(scope).then((hub) => {
+        if (hub) setDirectoryHub(hub);
+      });
     },
     [applyLocationScope],
   );
 
   const handleCityChange = useCallback(
-
     (next: string) => {
-
+      exploreLocationLockedRef.current = true;
+      setExploreLocationLocked(true);
       setCity(next);
-
       setPickedCityBanner(null);
-
     },
-
     [setCity],
-
   );
 
 
@@ -426,7 +654,7 @@ export default function ExplorePage() {
 
       <main>
 
-        <section className={styles.hero}>
+        <section className={styles.hero} data-explore-hero>
 
           <HeroLocationWidget
 
@@ -438,6 +666,9 @@ export default function ExplorePage() {
 
             onCityChange={handleCityChange}
             onLocationScope={handleLocationScope}
+            syncScopeFromHero={!exploreLocationLocked}
+            locationLocked={exploreLocationLocked}
+            lockedScope={exploreLocationLocked ? locationScope : null}
           />
 
           <div className={styles.heroContent}>
@@ -446,22 +677,24 @@ export default function ExplorePage() {
 
               <i />
 
-              PROVIDER PRICES · FEES AT CHECKOUT
+              Provider prices · fees at checkout
 
             </span>
 
             <h1>
 
-              What are you doing <em>tonight?</em>
+              {when.trim().toLowerCase() === "tonight" || when.trim().toLowerCase() === "today" ? (
+                <>What are you doing <em>tonight?</em></>
+              ) : when.trim().toLowerCase() === "tomorrow" ? (
+                <>What are you doing <em>tomorrow?</em></>
+              ) : (
+                <>What are you doing <em>{when.toLowerCase()}?</em></>
+              )}
 
             </h1>
 
             <p>
-
-              Ask in plain words. Rovvy reads every provider in {displayCity}, checks who&apos;s free and comes back with a plan
-
-              you can book.
-
+              {`Ask in plain words. Rovvy searches cached listings for ${displayCity.trim()}\u00A0and suggests options from what's already loaded — verify times and prices on the provider page.`}
             </p>
 
             <div className={styles.prompt}>
@@ -472,41 +705,102 @@ export default function ExplorePage() {
 
               </label>
 
-              <textarea
+              <div className={styles.promptInputWrap}>
+                <textarea
 
-                id="plan-prompt"
+                  id="plan-prompt"
 
-                ref={promptRef}
+                  ref={promptRef}
 
-                rows={1}
+                  rows={1}
 
-                value={prompt}
+                  value={prompt}
 
-                onChange={(event) => {
+                  placeholder={promptFocused && promptIsEmpty ? "" : "Search loaded listings"}
 
-                  setPrompt(event.target.value);
+                  autoComplete="off"
 
-                  syncPromptHeight();
+                  autoCorrect="off"
 
-                }}
+                  spellCheck={false}
 
-              />
+                  onFocus={() => {
+                    setPromptFocused(true);
+                    setRecentPrompts(getExplorePromptRecentTexts());
+                  }}
 
-              <div>
+                  onBlur={() => {
+                    setPromptFocused(false);
+                  }}
 
-                <span>
+                  onChange={(event) => {
 
-                  {EXPLORE_PROMPT_SUGGESTIONS.map((x) => (
+                    setPrompt(event.target.value);
 
-                    <button type="button" key={x} onClick={() => setPrompt(x)}>
+                    syncPromptHeight();
 
-                      {x.replace(", walkable", "")}
+                  }}
 
-                    </button>
+                />
+                {promptFocused && promptIsEmpty ? (
+                  <span className={styles.promptGhost} aria-hidden key={activeSuggestion}>
+                    {activeSuggestion}
+                  </span>
+                ) : null}
+              </div>
 
-                  ))}
+              {showPromptHints ? (
+                <div className={styles.promptHints}>
+                  {recentPrompts.length > 0 ? (
+                    <div className={styles.promptHintGroup}>
+                      <span className={styles.promptHintLabel}>Recent</span>
+                      <div className={styles.promptHintRow}>
+                        {recentPrompts.map((text) => (
+                          <button
+                            type="button"
+                            key={`recent-${text}`}
+                            className={styles.promptHintChip}
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => applyPromptSuggestion(text)}
+                          >
+                            {text}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  <div className={styles.promptHintGroup}>
+                    <span className={styles.promptHintLabel}>Try</span>
+                    <div className={styles.promptHintRow}>
+                      <button
+                        type="button"
+                        className={styles.promptHintChip}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() =>
+                          applyPromptSuggestion(EXPLORE_PROMPT_SUGGESTIONS[suggestionIndex] ?? "")
+                        }
+                      >
+                        {activeSuggestion}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
-                </span>
+              <div className={styles.promptActions}>
+
+                <button
+                  type="button"
+                  className={styles.planItWayraBtn}
+                  onClick={() => {
+                    const next = prompt.trim();
+                    emitOpenWayra(next ? { prompt: next, autoSend: true } : undefined);
+                  }}
+                  aria-label="Ask Wayra"
+                  title="Ask Wayra (AI agent)"
+                >
+                  ✦
+                </button>
 
                 <button
 
@@ -530,12 +824,34 @@ export default function ExplorePage() {
 
                 </button>
 
+                <button
+                  type="button"
+                  className={styles.planItBtn}
+                  onClick={startWayraPlan}
+                  disabled={loading || planBusy || !canPlanWithWayra}
+                  data-testid="plan-with-wayra"
+                >
+                  {planBusy ? "Planning…" : "Plan with Wayra"}
+                </button>
+
               </div>
 
             </div>
 
             <div className={styles.when}>
 
+              <button
+                type="button"
+                className={`${styles.whenToggle} ${styles.whenSelected}`}
+                aria-expanded={whenOpen}
+                onClick={() => setWhenOpen((v) => !v)}
+              >
+                {calendarDayIso ? formatCalendarChipLabel(calendarDayIso) : when}
+                <ChevronDown size={14} aria-hidden="true" className={whenOpen ? styles.chevronOpen : undefined} />
+              </button>
+
+              {whenOpen ? (
+                <>
               {EXPLORE_WHEN_OPTIONS.map((x) => (
 
                 <button
@@ -549,6 +865,7 @@ export default function ExplorePage() {
                   onClick={() => {
                     setWhen(x);
                     setCalendarDayIso(null);
+                    setWhenOpen(false);
                   }}
 
                 >
@@ -572,6 +889,28 @@ export default function ExplorePage() {
                 </svg>
                 {calendarDayIso ? formatCalendarChipLabel(calendarDayIso) : "Select the date"}
               </button>
+
+              <label className={`${styles.withinSelectWrap} ${within !== DEFAULT_EXPLORE_WITHIN ? styles.whenSelected : ""}`}>
+                <span>Within</span>
+                <select
+                  className={styles.withinSelect}
+                  aria-label="Show events within"
+                  value={String(within)}
+                  onChange={(event) => {
+                    const raw = event.target.value;
+                    setWithin(raw === "city" || raw === "state" ? raw : Number(raw));
+                  }}
+                >
+                  {EXPLORE_WITHIN_OPTIONS.map((option) => (
+                    <option key={String(option.value)} value={String(option.value)}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+                </>
+              ) : null}
 
               <button type="button" className={styles.refineBtn} onClick={() => setFiltersOpen((v) => !v)}>
 
@@ -613,13 +952,66 @@ export default function ExplorePage() {
 
 
 
+        {planOpen ? (
+          <section className={styles.wayraAnswer} aria-live="polite">
+            <div style={{ position: "relative" }}>
+              <button type="button" className={styles.wayraClose} onClick={() => setPlanOpen(false)} aria-label="Close plan" style={{ position: "absolute", right: 8, top: 8, zIndex: 1, color: "#0f172a" }}>
+                ×
+              </button>
+              {planError ? (
+                <div role="alert" className={styles.note}>{planError}</div>
+              ) : planResponse ? (
+                <WayraPlanCard response={planResponse} busy={planBusy} onTweak={tweakWayraPlan} />
+              ) : (
+                <div role="status" className={styles.note}>Wayra is planning…</div>
+              )}
+            </div>
+          </section>
+        ) : null}
+
+        {answered && wayraPlans.length > 0 ? (
+          <section ref={wayraAnswerRef} className={styles.wayraAnswer}>
+            <div className={styles.wayraAnswerInner}>
+              <header>
+                <div>
+                  <span className={styles.wayraBadge}>From loaded listings</span>
+                  <h2>
+                    {wayraPlans.length === 1
+                      ? `One option from listings in ${displayCity}`
+                      : `${wayraPlans.length} options from listings in ${displayCity}`}
+                  </h2>
+                </div>
+                <button type="button" className={styles.wayraClose} onClick={() => setAnswered(false)} aria-label="Close">
+                  ×
+                </button>
+              </header>
+              <div className={styles.wayraPlans}>
+                {wayraPlans.map((plan) => (
+                  <ExploreWayraPlanCard key={plan.id} plan={plan} />
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {answered && !wayraPlans.length && showInventorySections ? (
+          <section ref={wayraAnswerRef} className={styles.note} role="status">
+            {prompt.trim()
+              ? `No listings matched “${prompt.trim()}” in ${displayCity} for ${when.toLowerCase()}. Try clearing filters or another city.`
+              : `No plan picks available in ${displayCity} for ${when.toLowerCase()}. Load listings first or clear filters.`}
+          </section>
+        ) : null}
+
+
+
+        {loading || hubFailed || hubEmpty ? (
         <section className={styles.pulseBar}>
 
           <div>
 
             <span>
 
-              <i />
+              <MapPin size={14} aria-hidden="true" />
 
               Explore listings
 
@@ -668,8 +1060,15 @@ export default function ExplorePage() {
           </div>
 
         </section>
+        ) : null}
 
 
+
+        {eventsPending ? (
+          <section className={styles.note} role="status">
+            Events are still loading. Places are shown below.
+          </section>
+        ) : null}
 
         {hubPartial && partialFailureLine ? (
           <section className={styles.note} role="status">
@@ -680,7 +1079,7 @@ export default function ExplorePage() {
           </section>
         ) : null}
 
-        {hubSaves.user && hubSaves.reloadError ? (
+        {showSavesReloadBanner ? (
           <section className={styles.savesReloadBanner} role="alert">
             <span>
               Could not restore your saved listings from My Space: {hubSaves.reloadError} Saved marks may
@@ -729,23 +1128,41 @@ export default function ExplorePage() {
 
 
 
-        <section className={styles.vibes}>
+        <div className={styles.filtersToggle}>
+          <button
+            type="button"
+            className={styles.filtersToggleBtn}
+            aria-expanded={showVibes}
+            onClick={() => setVibesOpen((open) => !open)}
+          >
+            {showVibes ? "Hide filters" : "Filters"}
+            <ChevronDown size={14} aria-hidden="true" className={showVibes ? styles.chevronOpen : undefined} />
+          </button>
+        </div>
 
-          <small>Vibe</small>
+        {showVibes ? (
+          <section className={styles.vibes}>
+            <small>Vibe</small>
+            <div>
+              {EXPLORE_VIBES.map((x) => (
+                <ExploreFilterChip key={x} label={x} selected={chips.includes(x)} onToggle={() => toggleChip(x)} />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
-          <div>
-
-            {EXPLORE_VIBES.map((x) => (
-
-              <ExploreFilterChip key={x} label={x} selected={chips.includes(x)} onToggle={() => toggleChip(x)} />
-
-            ))}
-
-          </div>
-
-        </section>
-
-
+        {showInventorySections ? (
+          <>
+            <ExploreTopEventsRow
+              loadedSlots={matchingSlots}
+              directory={directoryContext}
+              filtersActive={filtersActive}
+              locationLabel={locationScope?.label ?? displayCity}
+              orderBy={localPickMiles != null ? "nearest" : "soonest"}
+            />
+            <ExploreVideosSection onVisibleChange={setVideosShown} place={videosPlace} />
+          </>
+        ) : null}
 
         {filtersOpen && (
 
@@ -803,60 +1220,6 @@ export default function ExplorePage() {
           </section>
 
         )}
-
-
-
-        {answered && wayraPlans.length > 0 && (
-
-          <section className={styles.wayraAnswer}>
-
-            <div className={styles.wayraAnswerInner}>
-
-              <header>
-
-                <div>
-
-                  <span className={styles.wayraBadge}>✦ Wayra answered</span>
-
-                  <h2>Three ways to spend it — from live listings in {displayCity}</h2>
-
-                </div>
-
-                <button type="button" className={styles.wayraClose} onClick={() => setAnswered(false)} aria-label="Close">
-
-                  ×
-
-                </button>
-
-              </header>
-
-              <div className={styles.wayraPlans}>
-
-                {wayraPlans.map((plan) => (
-
-                  <ExploreWayraPlanCard key={plan.id} plan={plan} />
-
-                ))}
-
-              </div>
-
-            </div>
-
-          </section>
-
-        )}
-
-
-
-        {answered && !wayraPlans.length && showInventorySections ? (
-
-          <section className={styles.note} role="status">
-
-            No listings matched that prompt in {displayCity}. Try clearing filters or pick another city.
-
-          </section>
-
-        ) : null}
 
 
 
@@ -934,14 +1297,37 @@ export default function ExplorePage() {
         </section>
         ) : null}
 
+        {laterThisWeek.length > 0 ? (
+          <section className={styles.masonry} aria-label="Later this week">
+            <h2>Later this week</h2>
+            <p className={styles.noteQuiet}>
+              Tonight is only today in {displayCity}. These are the next events from the same search.
+            </p>
+            {laterThisWeek.map((slot, index) => (
+              <ExploreSlotCard key={`later-${slot.id}`} slot={hubSlotToCard(slot, index)} onOpen={openDetail} />
+            ))}
+          </section>
+        ) : null}
+
         {showLoadMore ? (
           <section className={styles.note} aria-live="polite">
             <button
               type="button"
               className={styles.hubLoadMoreBtn}
-              onClick={() => setVisibleLimit((limit) => limit + EXPLORE_HUB_PAGE_SIZE)}
+              disabled={loadingMore}
+              onClick={() => {
+                if (hubCounts.visibleCount < hubCounts.matchingCount) {
+                  setVisibleLimit((limit) => limit + EXPLORE_HUB_PAGE_SIZE);
+                  return;
+                }
+                if (!eventsExhausted) void loadMoreEvents();
+              }}
             >
-              {formatLoadMoreButtonLabel(hubCounts.visibleCount, hubCounts.matchingCount)}
+              {loadingMore
+                ? "Loading more…"
+                : eventsExhausted
+                  ? "That's everything in this search"
+                  : formatLoadMoreButtonLabel(hubCounts.visibleCount, hubCounts.matchingCount)}
             </button>
             {" "}
             Showing {hubCounts.visibleCount} of {hubCounts.matchingCount} loaded listings
@@ -949,11 +1335,20 @@ export default function ExplorePage() {
         ) : null}
 
         {showInventorySections ? (
-        <p className={styles.note}>
+        <p className={styles.noteQuiet}>
 
-          Listings come from cached provider responses for your location and dates. Verify times, prices, and availability on each provider page before booking.
+          Listings come from cached provider responses for your location and dates. Events with no venue coordinates are left out of a distance search. Verify times, prices, and availability on each provider page before booking.
+
+          {listingSourcesLine ? <> {listingSourcesLine}</> : null}
+          {freshnessLine ? <> · {freshnessLine}</> : null}
 
         </p>
+        ) : null}
+
+        {showInventorySections && videosShown ? (
+          <div className={styles.noteQuiet}>
+            <ExploreYoutubeLegalFooter />
+          </div>
         ) : null}
 
 
@@ -964,7 +1359,14 @@ export default function ExplorePage() {
 
             <header>
 
-              <h2>Explore picks in {displayCity}</h2>
+              <h2>
+                {localPickMiles != null ? "Explore picks near" : "Explore picks in"} {displayCity}
+              </h2>
+              {localPickMiles != null ? (
+                <p className={styles.noteQuiet}>
+                  Closest events within {localPickMiles} miles, then places. A row can be in a neighboring town.
+                </p>
+              ) : null}
 
             </header>
 
@@ -994,15 +1396,31 @@ export default function ExplorePage() {
 
 
 
+        {!loading ? (
         <ExploreDestinationsSection
           onApplyScope={handleLocationScope}
           activeScopeLabel={locationScope?.label ?? pickedCityBanner}
-          onResetCity={() => {
-            clearLocationScope();
-            setCity(EXPLORE_CITY);
-            setPickedCityBanner(null);
-          }}
+          nearbyAnchor={
+            locationScope?.lat != null && locationScope.lon != null
+              ? {
+                  lat: locationScope.lat,
+                  lon: locationScope.lon,
+                  state: locationScope.state,
+                  city: locationScope.city || locationScope.fetchCity,
+                  label: locationScope.label,
+                }
+              : null
+          }
+          surpriseHints={[
+            locationScope?.city,
+            locationScope?.country,
+            displayCity,
+            ...hubSaves.savedSlotIds
+              .map((id) => allSlotsById.get(id)?.city || allSlotsById.get(id)?.area || "")
+              .filter(Boolean),
+          ].filter((value): value is string => Boolean(value && value.trim()))}
         />
+        ) : null}
 
       </main>
 

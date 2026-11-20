@@ -1,9 +1,7 @@
-import {
-  COLLECTION_CITY_ORDER,
-  COLLECTION_DEMO_META,
-  COLLECTION_SHARED_SECTIONS,
-} from "./collection-fixtures";
+import { COLLECTION_CITY_ORDER, COLLECTION_DEMO_META } from "./collection-fixtures";
 import type { CollectionItem, CollectionSection, GroupMode } from "./collection-types";
+
+export type CollectionFilters = { country: string; city: string; category: string };
 
 export function itemMetaLabel(item: CollectionItem): string {
   const demoMeta = COLLECTION_DEMO_META[item.id];
@@ -15,19 +13,39 @@ export function itemMetaLabel(item: CollectionItem): string {
   return "Saved place";
 }
 
-export function formatSavedWhen(iso: string): string {
-  const then = new Date(iso).getTime();
-  const now = Date.now();
-  const days = Math.floor((now - then) / 86_400_000);
+/** Real relative date: "today", "3 days ago", "2 weeks ago", then "Mar 4" / "Mar 4, 2025". */
+export function formatSavedWhen(iso: string, now: number = Date.now()): string {
+  const then = new Date(iso);
+  if (Number.isNaN(then.getTime())) return "";
+  // Calendar days, not 24-hour blocks: 11 pm yesterday is "yesterday" at 1 am, not "today".
+  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((startOf(new Date(now)) - startOf(then)) / 86_400_000);
   if (days <= 0) return "today";
   if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
-  if (days < 14) return "last Tuesday";
-  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
-  if (days < 90) return "in May";
-  if (days < 180) return "in June";
-  if (days < 365) return "in March";
-  return "last year";
+  if (days < 30) {
+    const weeks = Math.floor(days / 7);
+    return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
+  }
+  const sameYear = then.getFullYear() === new Date(now).getFullYear();
+  return then.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
+}
+
+/** Readable origin for a save; hides internal keys such as `explore:listing:...`. */
+export function formatSavedFrom(savedFrom: string | null): string | null {
+  const value = savedFrom?.trim();
+  if (!value) return null;
+  if (value.toLowerCase().startsWith("explore:")) return "Explore";
+  if (value.toLowerCase().startsWith("share:")) return null; // shown as "Shared by <name>"
+  return value;
+}
+
+export function looksLikeUrl(text: string): boolean {
+  return /^https?:\/\/\S+$/i.test(text.trim());
 }
 
 function sectionSortKey(title: string, mode: GroupMode): number {
@@ -59,25 +77,25 @@ export function groupItems(
       if (orderA !== orderB) return orderA - orderB;
       return a.localeCompare(b);
     })
-    .map(([title, sectionItems]) => {
-      const shared = COLLECTION_SHARED_SECTIONS[title];
-      return {
-        title,
-        count: sectionItems.length,
-        shared: Boolean(shared),
-        sharedExtra: shared?.extra ?? "",
-        meta: shared?.meta ?? (mode === "city" ? sectionItems[0]?.country ?? "Saved" : "Private"),
-        items: sectionItems,
-      };
-    });
+    .map(([title, sectionItems]) => ({
+      title,
+      count: sectionItems.length,
+      meta: mode === "city" ? sectionItems[0]?.country ?? "Saved" : "Private",
+      items: sectionItems,
+    }));
 }
 
-export function activeFilterCount(filters: {
-  country: string;
-  city: string;
-  category: string;
-}): number {
+export function activeFilterCount(filters: CollectionFilters): number {
   return [filters.country, filters.city, filters.category].filter((v) => v !== "Any").length;
+}
+
+export function filterByFacets(items: CollectionItem[], filters: CollectionFilters): CollectionItem[] {
+  return items.filter(
+    (i) =>
+      (filters.country === "Any" || i.country === filters.country) &&
+      (filters.city === "Any" || i.city === filters.city) &&
+      (filters.category === "Any" || i.category === filters.category),
+  );
 }
 
 export function filterBySearch(items: CollectionItem[], query: string): CollectionItem[] {
@@ -90,8 +108,6 @@ export function filterBySearch(items: CollectionItem[], query: string): Collecti
       item.country,
       item.category,
       item.subcategory,
-      item.source,
-      item.saved_from,
       item.note,
     ]
       .filter(Boolean)

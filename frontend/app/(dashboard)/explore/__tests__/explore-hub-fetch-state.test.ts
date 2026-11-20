@@ -172,10 +172,12 @@ describe("fetchExploreHub source outcomes", () => {
   });
 
   it("marks failed sources and omits them from sources list", async () => {
-    mockedFetch
-      .mockRejectedValueOnce(new Error("events down"))
-      .mockResolvedValueOnce({ places: [{ id: "a1", name: "Museum", source: "openstreetmap" }] })
-      .mockRejectedValueOnce(new Error("food down"));
+    mockedFetch.mockImplementation(async (path: string) => {
+      const url = String(path);
+      if (url.includes("/explore/events")) throw new Error("events down");
+      if (url.includes("category=restaurants")) throw new Error("food down");
+      return { places: [{ id: "a1", name: "Museum", source: "openstreetmap" }] };
+    });
 
     const payload = await fetchExploreHub({ city: "Chicago" });
     expect(payload.hubLoadState).toBe("partial");
@@ -205,23 +207,26 @@ describe("fetchExploreHub source outcomes", () => {
   });
 
   it("shows event cards when places sources fail (503) with partial failure copy", async () => {
-    mockedFetch
-      .mockResolvedValueOnce({
-        city: "Chicago",
-        events: [
-          {
-            id: "ev1",
-            name: "Jazz Night",
-            date: "2026-09-26",
-            source: "ticketmaster",
-            category: "Music",
-            venue: "Hall",
-            city: "Chicago",
-          },
-        ],
-      })
-      .mockRejectedValueOnce(new Error("503 Places index unavailable"))
-      .mockRejectedValueOnce(new Error("503 Places index unavailable"));
+    mockedFetch.mockImplementation(async (path: string) => {
+      const url = String(path);
+      if (url.includes("/explore/events")) {
+        return {
+          city: "Chicago",
+          events: [
+            {
+              id: "ev1",
+              name: "Jazz Night",
+              date: "2026-09-26",
+              source: "ticketmaster",
+              category: "Music",
+              venue: "Hall",
+              city: "Chicago",
+            },
+          ],
+        };
+      }
+      throw new Error("503 Places index unavailable");
+    });
 
     const payload = await fetchExploreHub({ city: "Chicago" });
     expect(payload.hubLoadState).toBe("partial");
@@ -236,10 +241,10 @@ describe("fetchExploreHub source outcomes", () => {
   });
 
   it("returns partial with zero slots when some sources fail and others are empty", async () => {
-    mockedFetch
-      .mockRejectedValueOnce(new Error("events down"))
-      .mockResolvedValueOnce({ places: [] })
-      .mockResolvedValueOnce({ places: [] });
+    mockedFetch.mockImplementation(async (path: string) => {
+      if (String(path).includes("/explore/events")) throw new Error("events down");
+      return { places: [] };
+    });
     const payload = await fetchExploreHub({ city: "Chicago" });
     expect(payload.hubLoadState).toBe("partial");
     expect(payload.slots).toHaveLength(0);
@@ -249,7 +254,39 @@ describe("fetchExploreHub source outcomes", () => {
     );
   });
 
-  it("uses hero coordinates for places only; events stay city-scoped", async () => {
+  it("reports places early while a slow events query is still running", async () => {
+    let releaseEvents: () => void = () => {};
+    const eventsGate = new Promise<void>((resolve) => {
+      releaseEvents = resolve;
+    });
+    mockedFetch.mockImplementation(async (path: string) => {
+      const url = String(path);
+      if (url.includes("/explore/events")) {
+        await eventsGate;
+        return { city: "Chicago", events: [] };
+      }
+      return {
+        places: [
+          { id: "g1", gers_id: "g1", name: "Cafe One", category: "restaurants", lat: 41.9, lng: -87.6, distance_m: 500 },
+        ],
+        source_status: "ready",
+      };
+    });
+
+    const early: Array<{ pending?: boolean; slots: number }> = [];
+    const done = fetchExploreHub({ city: "Chicago", lat: 41.9, lon: -87.6 }, (p) =>
+      early.push({ pending: p.eventsPending, slots: p.slots.length }),
+    );
+    await vi.waitFor(() => expect(early.length).toBe(1));
+    expect(early[0].pending).toBe(true);
+    expect(early[0].slots).toBeGreaterThan(0);
+
+    releaseEvents();
+    const final = await done;
+    expect(final.eventsPending).toBeUndefined();
+  });
+
+  it("uses the pin for events and places, not the nearest hub city", async () => {
     mockedFetch
       .mockResolvedValueOnce({ city: "Chicago", events: [] })
       .mockResolvedValueOnce({ places: [] })
@@ -265,11 +302,35 @@ describe("fetchExploreHub source outcomes", () => {
     const calls = mockedFetch.mock.calls.map((c) => String(c[0]));
     const eventsCall = calls.find((u) => u.includes("/explore/events")) ?? "";
     const placesCall = calls.find((u) => u.includes("/explore/places")) ?? "";
-    expect(eventsCall).toMatch(/city=Chicago/i);
-    expect(eventsCall).not.toMatch(/city=Naperville/i);
-    expect(eventsCall).not.toMatch(/lat=41\.7508/);
+    expect(eventsCall).toMatch(/within_miles=25/);
+    expect(eventsCall).toMatch(/lat=41\.7508/);
+    expect(eventsCall).not.toMatch(/city=Chicago/i);
     expect(placesCall).toMatch(/lat=41\.7508/);
     expect(placesCall).toMatch(/lon=-88\.1535/);
+    expect(placesCall).toMatch(/radius_m=40234/);
+  });
+
+  it("recovers a source on the second attempt after a transient failure", async () => {
+    vi.useFakeTimers();
+    const eventAttempts = { n: 0 };
+    mockedFetch.mockImplementation(async (path: string) => {
+      const url = String(path);
+      if (url.includes("/explore/events")) {
+        eventAttempts.n += 1;
+        if (eventAttempts.n === 1) throw new Error("timeout");
+        return { city: "Chicago", events: [{ id: "ev1", name: "Show", date: "2026-10-09", source: "ticketmaster", category: "Music", venue: "Hall", city: "Chicago" }] };
+      }
+      return { places: [], source_status: "empty" as const };
+    });
+
+    const pending = fetchExploreHub({ city: "Chicago" });
+    await vi.runAllTimersAsync();
+    const payload = await pending;
+    vi.useRealTimers();
+
+    expect(payload.hubLoadState).not.toBe("failed");
+    expect(payload.sourceStatus.events).toBe("ready");
+    expect(eventAttempts.n).toBe(2);
   });
 
   it("starts all three source requests before any resolve", async () => {

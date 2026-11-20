@@ -5,14 +5,19 @@ import { useState } from "react";
 import {
   cancelPublishedRide,
   decideBooking,
+  editPublishedRide,
   type SeatsMe,
 } from "./seats-api";
+import { buildShareTripText, rideDetailChips } from "./seats-ride-details";
 import { isSeatsAuthError } from "./seats-api-errors";
 import { formatTimeIst } from "./seats-money";
 import styles from "./seats.module.css";
 
 type Props = {
   data: SeatsMe | null;
+  loading?: boolean;
+  authRequired?: boolean;
+  loadError?: string | null;
   onRefresh: () => void;
   onAuthRequired?: () => void;
 };
@@ -35,8 +40,158 @@ function personInitials(name: string): string {
     .toUpperCase();
 }
 
-export function SeatsYourRidesTab({ data, onRefresh, onAuthRequired }: Props) {
+type DrivingRide = SeatsMe["driving"][number];
+
+function DrivingRideTools({
+  ride,
+  onSaved,
+  onAuthRequired,
+}: {
+  ride: DrivingRide;
+  onSaved: () => void;
+  onAuthRequired?: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [note, setNote] = useState(ride.note ?? "");
+  const [msg, setMsg] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const locked = ride.status !== "open" && ride.status !== "full";
+  const stops = ride.stops ?? [];
+  const chips = rideDetailChips(ride.preferences);
+
+  async function save() {
+    setSaving(true);
+    setMsg(null);
+    try {
+      await editPublishedRide(ride.ride_id, { note: note.trim() });
+      setEditing(false);
+      onSaved();
+    } catch (e: unknown) {
+      if (isSeatsAuthError(e)) {
+        onAuthRequired?.();
+        setMsg("Log in to edit this ride.");
+      } else {
+        setMsg("Could not save. A ride that has left or been cancelled cannot be edited.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function share() {
+    const first = stops[0]?.label ?? "my start";
+    const last = stops[stops.length - 1]?.label ?? "my destination";
+    const car = ride.preferences
+      ? [ride.preferences.vehicle_color, ride.preferences.vehicle_make, ride.preferences.vehicle_model]
+          .filter(Boolean)
+          .join(" ")
+      : "";
+    const text = buildShareTripText({
+      from: first,
+      to: last,
+      departLabel: new Date(ride.depart_at).toLocaleString(),
+      car: car || null,
+      note: ride.note ?? null,
+    });
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        await navigator.share({ text });
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      setMsg("Trip details copied. Paste them to someone you trust.");
+    } catch {
+      setMsg("Could not share from this browser.");
+    }
+  }
+
+  return (
+    <>
+      {chips.length > 0 ? <p className={styles.rideLineMuted}>{chips.join(" · ")}</p> : null}
+      {ride.note && !editing ? (
+        <p className={styles.driverNote}>
+          <span className={styles.pickupLabel}>Pickup:</span> {ride.note}
+        </p>
+      ) : null}
+      {editing ? (
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>Pickup note for riders</span>
+          <textarea value={note} rows={3} maxLength={500} onChange={(e) => setNote(e.target.value)} />
+        </label>
+      ) : null}
+      <div className={styles.cardActionRow}>
+        {editing ? (
+          <>
+            <button type="button" className={styles.ctaAsk} onClick={() => setEditing(false)}>
+              Discard
+            </button>
+            <button type="button" className={styles.ctaBook} disabled={saving} onClick={() => void save()}>
+              {saving ? "Saving…" : "Save note"}
+            </button>
+          </>
+        ) : (
+          <>
+            {!locked ? (
+              <button type="button" className={styles.ctaAsk} onClick={() => setEditing(true)}>
+                Edit note
+              </button>
+            ) : null}
+            <button type="button" className={styles.ctaAsk} onClick={() => void share()}>
+              Share trip
+            </button>
+          </>
+        )}
+      </div>
+      {!locked ? (
+        <p className={styles.hint}>
+          Price, seats, route and time are locked once published; cancel and republish to change them.
+        </p>
+      ) : null}
+      {msg ? (
+        <p className={styles.hint} role="status">
+          {msg}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+export function SeatsYourRidesTab({
+  data,
+  loading = false,
+  authRequired = false,
+  loadError = null,
+  onRefresh,
+  onAuthRequired,
+}: Props) {
   const [actionError, setActionError] = useState<string | null>(null);
+
+  if (loading && !data) {
+    return <p className={styles.hint}>Loading your rides…</p>;
+  }
+
+  if (authRequired) {
+    return (
+      <div className={styles.yoursEmpty}>
+        <p className={`${styles.mono} ${styles.findEmptyEyebrow}`}>SIGN IN</p>
+        <p className={styles.lede}>Log in to see rides you&apos;re driving, riding, or waiting on.</p>
+        <button type="button" className={styles.alertBtn} onClick={() => onAuthRequired?.()}>
+          Log in
+        </button>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className={styles.yoursEmpty} role="alert">
+        <p className={styles.lede}>{loadError}</p>
+        <button type="button" className={styles.alertBtn} onClick={() => void onRefresh()}>
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   if (!data) {
     return <p className={styles.hint}>Loading your rides…</p>;
@@ -158,6 +313,7 @@ export function SeatsYourRidesTab({ data, onRefresh, onAuthRequired }: Props) {
               {d.pending_count > 0 ? ` · ${d.pending_count} pending` : ""}
             </p>
             <p className={styles.rideLineMuted}>{statusLabel(d.status)}</p>
+            <DrivingRideTools ride={d} onSaved={onRefresh} onAuthRequired={onAuthRequired} />
             <div className={styles.cardActionRow}>
               <button
                 type="button"
@@ -199,13 +355,13 @@ export function SeatsYourRidesTab({ data, onRefresh, onAuthRequired }: Props) {
                 directly.
               </span>
               <div className={styles.requestActions}>
-                {r.status === "held" || r.status === "requested" ? (
+                {r.status === "held" || r.status === "requested" || r.status === "confirmed" ? (
                   <button
                     type="button"
                     className={styles.ctaAsk}
                     onClick={() => void handle(r.booking_id, "withdraw")}
                   >
-                    Cancel request
+                    {r.status === "confirmed" ? "Cancel seat" : "Cancel request"}
                   </button>
                 ) : null}
                 <Link href="/lounge" className={styles.ctaAsk}>

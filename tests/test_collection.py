@@ -110,11 +110,88 @@ def test_extract_link_validation_error(auth_user):
 
 
 def test_extract_link_success(auth_user):
-    res = client.post(
-        "/api/v1/collection/extract-link",
-        json={"url": "https://www.instagram.com/reel/example"},
-    )
+    # Mocked: this unit test must not touch a real database.
+    with patch(
+        "app.routes.collection.CollectionService.saved_from_keys", return_value=set()
+    ):
+        res = client.post(
+            "/api/v1/collection/extract-link",
+            json={"url": "https://www.instagram.com/reel/example"},
+        )
     assert res.status_code == 200
     body = res.json()
     assert body["source_label"] == "Instagram"
     assert isinstance(body["candidates"], list)
+
+
+def _item(user_id, **over):
+    now = datetime.now(timezone.utc)
+    data = dict(
+        id=uuid4(), user_id=user_id, collection_id=None, name="Place", latitude=None,
+        longitude=None, city="Chicago", country="USA", category="Food", subcategory=None,
+        source="Search", saved_from=None, note=None, stars=0, match_status="sure",
+        is_unsorted=False, created_at=now, updated_at=now,
+    )
+    data.update(over)
+    return CollectionItem(**data)
+
+
+def test_patch_item_requires_auth():
+    app.dependency_overrides.clear()
+    res = client.patch(f"/api/v1/collection/items/{uuid4()}", json={"stars": 3})
+    assert res.status_code == 401
+
+
+def test_patch_item_validation_error(auth_user):
+    res = client.patch(f"/api/v1/collection/items/{uuid4()}", json={"stars": 9})
+    assert res.status_code == 422
+    res = client.patch(f"/api/v1/collection/items/{uuid4()}", json={"name": ""})
+    assert res.status_code == 422
+
+
+def test_patch_item_success_passes_only_sent_fields(auth_user):
+    row = _item(auth_user.id, note="Try the pie", stars=4)
+    with patch("app.routes.collection.CollectionService.update_item", return_value=row) as upd:
+        res = client.patch(
+            f"/api/v1/collection/items/{row.id}",
+            json={"note": "Try the pie", "stars": 4},
+        )
+    assert res.status_code == 200
+    assert res.json()["stars"] == 4
+    assert upd.call_args.args[3] == {"note": "Try the pie", "stars": 4}
+
+
+def test_patch_other_users_item_is_forbidden(auth_user):
+    other = _item(uuid4())
+    db = MagicMock()
+    db.execute.return_value.scalar_one_or_none.return_value = other
+    from app.services.collection_service import CollectionService
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException) as exc:
+        CollectionService.update_item(db, other.id, auth_user.id, {"stars": 5})
+    assert exc.value.status_code == 403
+
+
+def test_delete_other_users_item_is_forbidden(auth_user):
+    other = _item(uuid4())
+    db = MagicMock()
+    db.execute.return_value.scalar_one_or_none.return_value = other
+    from app.services.collection_service import CollectionService
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException) as exc:
+        CollectionService.delete_item(db, other.id, auth_user.id)
+    assert exc.value.status_code == 403
+    db.delete.assert_not_called()
+
+
+def test_list_named_collections(auth_user):
+    from app.models.user_collection import UserCollection
+
+    now = datetime.now(timezone.utc)
+    rows = [UserCollection(id=uuid4(), user_id=auth_user.id, name="Lisbon 2027", group_id=None, created_at=now)]
+    with patch("app.routes.collection.CollectionService.list_collections", return_value=rows):
+        res = client.get("/api/v1/collection/collections")
+    assert res.status_code == 200
+    assert res.json()[0]["name"] == "Lisbon 2027"

@@ -50,6 +50,11 @@ class CollectionItem(Base):
         default="sure",
     )
     is_unsorted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    shared_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -63,8 +68,18 @@ class CollectionItem(Base):
     )
 
     user: Mapped["User"] = relationship("User", foreign_keys=[user_id])
+    tag_rows: Mapped[list["CollectionItemTag"]] = relationship(
+        "CollectionItemTag",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="CollectionItemTag.created_at",
+    )
     collection: Mapped["UserCollection | None"] = relationship(
         "UserCollection",
         back_populates="items",
         foreign_keys=[collection_id],
     )
+
+    @property
+    def tags(self) -> list[str]:
+        return [t.tag for t in self.tag_rows]

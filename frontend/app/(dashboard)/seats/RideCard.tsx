@@ -5,6 +5,7 @@ import type { SeatRideCard } from "./seats-api";
 import { bookSeat } from "./seats-api";
 import { isSeatsAuthError } from "./seats-api-errors";
 import { formatTimeIst } from "./seats-money";
+import { rideDetailChips } from "./seats-ride-details";
 import { vehicleDisplayLabel } from "./seats-vehicle";
 import styles from "./seats.module.css";
 
@@ -162,6 +163,15 @@ export function RideCard({
         <div className={`${styles.seatFreeNote} ${styles.mono}`}>
           {ride.seats_free} seat{ride.seats_free === 1 ? "" : "s"} left · {ride.seats_offered} total
         </div>
+        {rideDetailChips(ride.preferences).length > 0 ? (
+          <div className={styles.chipRow}>
+            {rideDetailChips(ride.preferences).map((c) => (
+              <span key={c} className={`${styles.chip} ${styles.mono}`}>
+                {c}
+              </span>
+            ))}
+          </div>
+        ) : null}
         {ride.note ? (
           <p className={styles.driverNote}>
             <span className={styles.pickupLabel}>Pickup:</span> {ride.note}

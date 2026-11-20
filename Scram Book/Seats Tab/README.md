@@ -1,5 +1,169 @@
 # Seats Tab — activity log
 
+## Artifacts
+
+| File | Description |
+|------|-------------|
+| [Rovvy_Seats_Scrum_Book.xlsx](./Rovvy_Seats_Scrum_Book.xlsx) | 263-item SeatShare feature, UI and graphics inventory (incl. missing capabilities) in the Live/Explorer tracker format. **Seats Tasks** column **L** = Cursor development plan per row; worksheet **Cursor Context Log** = full raw log (263 rows). The `Review` tab holds Critical findings, sprint plan S1–S5, per-change test plan and workbook rules. |
+
+---
+
+## 2026-11-13 — First-time demo for Find a seat
+
+**Context:** Owner asked for the same demo on Find a seat.
+
+**Goals addressed:** new workbook row S277 (Complete in code).
+
+**Result:** `SeatsOfferTour` is now generic (`steps`, `label`, `finishLabel`, `useId` for the title id) and is reused. New `seats-find-tour.ts` holds a 6-step script: welcome, search (From/To/time/seats), compare rides, Book it vs Ask to join (max 5 pending), Watch this route, Your rides after booking. It opens once per browser on the first visit to `/seats`, has its own seen flag (`rovvy.seatshare.find-tour.v1`, separate from the Offer demo) and a "Watch the demo" link under the Find hero. Copy shows no prices and no ratings (the rating value is still a placeholder, so the demo does not promise it; the "Best rated" sort is not mentioned).
+
+**Verification:** `vitest run` → 151 files, 692 passed (8 new); `tsc --noEmit` has no seats errors. Browser at 375 px: opens on first visit, all 6 titles reached, finishing sets only its own flag, replay link present. (One new test failed on first run because the copy said "Best rated"; the copy was fixed, not the test.)
+
+**Risks:** Seen flag is per browser. A first-time visitor who lands on `/seats` sees the Find demo first and the Offer demo later when they open that tab.
+
+**Next action:** Owner reviews the wording; decide on a per-account seen flag and a demo for Your rides.
+
+---
+
+## 2026-11-13 — First-time demo for Offer a ride
+
+**Context:** Owner asked for a step-by-step demo that a first-time user sees in the Offer a ride section.
+
+**Goals addressed:** new workbook row S276 (Complete in code).
+
+**Result:** `SeatsOfferTour.tsx` + `seats-offer-tour.ts`: a 6-step dialog (welcome, route, when and booking, price and details, review and publish, after publishing in Your rides). Opens once on the first visit to the Offer tab, skippable (Skip, X, Escape), arrow keys and Back/Next work; a "Watch the demo" link in the wizard header replays it. Text is static: no sample prices or invented rides, and it states the 200-mile limit and that Rovvy moves no money. Rendered through a portal into `<body>` because the dashboard page transition's CSS transform otherwise traps fixed overlays off-screen.
+
+**Verification:** `vitest run` → 148 files, 673 passed (7 new); `tsc --noEmit` has no seats errors (5 existing Explore type errors are not mine). Browser at 375 px: opens on first visit, all 6 titles reached, finishing sets the seen flag, no reopen after reload, replay link present.
+
+**Risks:** The seen flag lives in the browser (localStorage), so a new device or cleared storage shows the demo again; a per-account flag would need a backend field. The demo only covers Offer a ride, not Find a seat. The Explore stylesheet had a syntax error from another session during testing (`explore.module.css`), unrelated to this change.
+
+**Next action:** Owner reviews the wording; decide whether to add the same demo to Find a seat and whether to store the seen flag per account.
+
+---
+
+## 2026-11-13 — Offer wizard batch 3 (card details, edit and cancel rules, share trip)
+
+**Context:** Third batch of the owner-requested upgrades. Two items were reviewed and deliberately deferred (see Risks).
+
+**Goals addressed:** new workbook rows S270–S275 (four Partial, two Pending).
+
+**Result:**
+- Ride cards show the driver's stated details (flexible window, luggage, pets/smoking/quiet chips) and the described car instead of a generic body type; search cards and Your rides carry `preferences`.
+- `PATCH /seats/rides/{id}` now edits the note and ride details until departure (`SeatsService.edit_ride`): price, seats, route and time stay locked; riders with a booking get an in-app `seats_ride_updated` notice only when something really changed.
+- Cancel rules: cannot cancel after departure; riders are told when the cancel is under 24 hours before departure.
+- Your rides: driver can edit the pickup note and "Share trip" (share sheet or copy: route, time, car, note; no plate, no tracking).
+
+**Verification:** `pytest tests/test_seats_edit_cancel_rules.py` plus the seats suites → all pass (11 new incl. 401 and 422 on PATCH); frontend `vitest run` → 146 files, 656 passed (4 new); `tsc --noEmit` clean. Browser: `/seats` Your rides tab renders with no console errors. Edit, cancel, chips and share not driven end to end (needs a logged-in driver with a published ride).
+
+**Risks:** Migration 022 must be applied first. Deferred and recorded as Pending: **extra stops with per-stop pricing** (needs a stop-picker UI, segment pricing in `create_booking` where the booked price is still the full ride price, and a per-segment cap rule) and **automatic emergency-contact alerts** (needs an SMS/email channel and owner approval; Share trip covers it by hand). Late cancels are only worded, not penalised.
+
+**Next action:** apply 022, browser-drive the whole offer flow with a test driver, then decide whether to build segment pricing.
+
+---
+
+## 2026-11-13 — Offer wizard batch 2 (return trip, recurring, preferences, vehicle)
+
+**Context:** Second batch of the owner-requested offer-a-ride upgrades; needs one additive migration.
+
+**Goals addressed:** new workbook rows S264–S269 (all Partial).
+
+**Result:**
+- `migrations/022_seats_ride_preferences.sql` (written, **not applied**): `rides.preferences` JSONB (departure window, luggage, rules, car make/model/colour) and `rides.series_id` UUID.
+- Backend: `RidePreferencesIn` (extra fields rejected; window 0–60, luggage none/small/large), `RidePublishIn.preferences` and `series_id`, saved by `SeatsService.publish_ride`, returned by ride detail.
+- Wizard: ±15/±30 min window, weekly repeat (chosen weekdays, 1–8 weeks, max 24 rides), return trip (reverse stops and road geometry; must leave after arrival), luggage, pets/smoking/quiet (only ticked rules are stored), car make/model/colour (no plate). Rides publish one by one; a failure keeps finished rides and a retry skips them. Review step lists the new details.
+
+**Verification:** `pytest tests/test_seats_ride_preferences.py tests/test_seats_publish_schema.py tests/test_seats_booking.py tests/test_seats_s1.py tests/test_seats_integration.py` → 17 passed, 8 skipped (Postgres); frontend `vitest run` → 145 files, 652 passed (8 new series/payload tests); `tsc --noEmit` clean. Not browser-driven.
+
+**Risks:** The Ride model now maps the two new columns, so **apply migration 022 before deploying** or publishing fails. Riders do not see the new details yet (ride cards/detail UI not updated). No whole-series edit or cancel. Drafts do not save the new fields. US price cap still blocked by region `IN-MH`.
+
+**Next action:** You apply 022 (I will not touch production without your OK); browser-drive steps 2–4; batch 3 (extra stops, emergency-contact sharing, edit/cancel rules, show details on ride cards).
+
+---
+
+## 2026-11-13 — Offer wizard batch 1 (timezone, price units, cost step, review, draft)
+
+**Context:** Owner asked for the offer-a-ride flow to be fixed and extended in batches; batch 1 is front end only.
+
+**Goals addressed:** S132, S138, S140, S142, S143, S151 (all recorded as Partial, see below).
+
+**Result:**
+- Departure is built from the pickup's time zone (`seats-time.ts`: India = Asia/Kolkata, elsewhere the device zone) instead of a fixed +05:30; date input has `min` = today there; departures under 15 minutes away are blocked.
+- Price input takes normal units (12.50) with a "Use the max" button (`seats-price-input.ts`); no default price; it fills from the server cap.
+- Cost step: Tolls row shows real tolls or "Not included" with a separate total row; a failed preview shows an error with Try again, and the price field and Publish stay blocked until the cap loads.
+- New step 4 "Review your ride" before publishing (progress bar is now 4 segments).
+- Unfinished ride is saved in this browser (`seats-offer-draft.ts`, localStorage, try/catch) and restored with a Start over link; a successful publish clears everything (vehicle, time, seats, approval, price too).
+
+**Verification:** `npx vitest run "app/(dashboard)/seats"` → 10 files, 39 passed (11 new); `npx tsc --noEmit` clean. Browser: `/seats` Offer tab shows "step 1 of 4", no console errors. Steps 2-4 were not driven in the browser (needs live route and cost APIs).
+
+**Risks:** Rows stay Partial until steps 2-4 are checked in a browser. Region is still `IN-MH` and the cap data exists for Maharashtra only, so US trips (like Chicago) still cannot get a real cap; that is batch 2 backend work. Currency is still a relabel of INR (S145). Nothing pushed; production database untouched.
+
+**Next action:** Browser-drive steps 2-4, then batch 2 (return trip, recurring rides, luggage and rider rules, vehicle details; needs a migration and your approval).
+
+---
+
+## 2026-10-18 — Sprint S1 critical fixes (crash, cancel, guest states, demo fallback)
+
+**Context:** Owner decision (same day) scoped Sprint S1: five critical findings from 2026-09-27 without payments, currency/timezone, trust signals, or companion feature.
+
+**Goals addressed:** Tab-switch map crash; driver cancel booking status + rider notifications; truthful guest 401 on search and `/seats/me`; remove demo fixture on API errors; rider cancel confirmed seat; block driver self-book.
+
+**Result:**
+- Frontend: `removeSeatShareRouteLayers` + cleanup before `map.remove()` (`seats-route-map-sync.ts`, `SeatsRoutePanel.tsx`); search/me load resolution (`seats-load-state.ts`, `SeatsPageClient.tsx`); auth/error empty states (`SeatsFindEmptyState.tsx`, `SeatsYourRidesTab.tsx`); confirmed **Cancel seat** in Your rides.
+- Backend: `cancel_ride` → `cancelled_driver` + in-app `seats_cancelled`; `create_booking` self-book guard; `withdraw_booking` allows `confirmed`.
+
+**Verification:**
+- `pytest tests/test_seats_booking.py tests/test_seats_integration.py tests/test_seats_publish_schema.py tests/test_seats_s1.py -q` → **9 passed**, 8 skipped (Postgres integration).
+- `cd frontend; npx vitest run app/(dashboard)/seats` → **9 files, 28 passed**.
+- `cd frontend; npx tsc --noEmit` → **0 errors**.
+
+**Risks:** Authenticated two-party cancel/notify flows not exercised in browser this session; notification delivery still depends on existing notification pipeline.
+
+**Next action:** Product decision India-only vs multi-market, then Sprint S2 (currency/timezone).
+
+---
+
+## 2026-10-18 — Owner decision: Seats only for first launch (no companions feature yet)
+
+**Context:** Owner discussed a "travel companion" community feature (find new people to go with, not dating) alongside seat sharing, then clarified the seat-share app is the existing Seats tab.
+
+**Decision:** First launch keeps **Seats as built** (cost-capped, no in-app payments, friend/friend-of-friend visibility) and fixes the seven Critical findings of 2026-09-27 (Sprint S1 first). The companion feature is **deferred until after launch**; when built it should attach to an Explore event/place, reuse Seats' trust rules and Lounge chat, and stay destination-based (not dating).
+
+**Verification:** none (decision record only; no code changed).
+
+**Risks:** companion safety/ID verification and any charging beyond cost-sharing need legal review in the launch country before they are built.
+
+**Next action:** Cursor works Sprint S1 (tab-switch crash, cancel-listing status + rider notification, guest 401 states, remove demo fallback, regression tests), then the India-only vs multi-market decision before S2.
+
+---
+
+## 2026-09-27 — Seats feature inventory, criticality review and sprint plan
+
+**Context:** User asked for the same Excel inventory and analysis used for the Live tab, applied to the Seats (SeatShare) tab, plus a plan for how the work will be run.
+
+**Goals addressed:** Catalogue every separately assessable Seats control, display, action and backend behavior. Separate status from importance and difficulty. Record evidence and acceptance checks. List missing capabilities. Define the sprint order and the test plan.
+
+**Result:** Created `Rovvy_Seats_Scrum_Book.xlsx` with **263 items** (S001–S263) in `Seats Tasks` and a `Review` tab. Importance: **83 Critical, 134 Important, 46 Later**. Status: **133 Complete in code, 86 Partial, 44 Pending**. The workbook has 19 workstreams, from Page shell through Testing & QA. Format matches Live: table, frozen header, status/importance/difficulty dropdowns, same color rules.
+
+**Critical findings (not fixed in this review):**
+1. **Crash:** after a route loads on Find, switching to Your rides throws `Cannot read properties of undefined (reading 'getLayer')`. The route map layer cleanup runs after `map.remove()` (`SeatsRoutePanel.tsx` / `seats-route-map-sync.ts`). Reproduced in the browser.
+2. **Cancel listing fails when riders exist:** `cancel_ride` writes booking status `cancelled`, which is not in the `ride_bookings` CHECK list (`cancelled_driver` expected). Riders are also never notified.
+3. **Guest states are untruthful:** a 401 on search shows "No matches", and a 401 on `/seats/me` shows empty rides. Any search error falls back to demo fixture rides.
+4. **Currency and timezone:** the UI relabels INR paise as another currency. The server formats everything as ₹. Fuel data exists for IN-MH only. Search, publish and display times are hard-coded to IST.
+5. **Placeholder trust signals:** the rating is a formula, "Verified" only means a phone number is on file, ride count is always 0, and "Best rated" actually sorts by time.
+6. **Pricing step:** the Tolls row shows the total cost. The price input takes raw paise. The preview uses straight-line distance while publish uses road distance. A failed preview stays on "Loading…" and keeps the ₹470 default price.
+7. **Lifecycle gaps:** requests made within 2 h of departure expire immediately. Withdrawn and expired bookings disappear from history. A rider can't cancel a confirmed seat. A driver can book their own ride. "Open in Splits" has no reader for `split_entries`.
+
+**Verification:**
+- Browser, `localhost:3000/seats`, logged out: Mumbai→Pune autocomplete took >3 s; 3 route options; route map painted after about 15 s; `/seats/rides` 401 showed "No matches"; the tab-switch crash was reproduced; Offer step 1 and Your rides were viewed; at 375 px there was no horizontal overflow. Nothing was submitted: no sign-in, publish, booking or watch.
+- `npx vitest run app/(dashboard)/seats/__tests__`: **6 files, 17 passed**.
+- `pytest test_ride_cost test_seats_booking test_seats_publish_schema test_seats_integration`: **17 passed**, including 8 integration tests on local Postgres.
+- The workbook reopened with 263 unique, fully populated IDs, table `A6:K269`, and dropdowns and COUNTIFs to row 269. Formulas recalculate on open, since LibreOffice isn't installed here to cache values. The workbook was not rendered visually.
+
+**Unresolved risks:** Rows marked Code only need runtime checks. Authenticated and two-party flows, notification delivery, real GPS and non-India markets were not exercised. Priorities for missing capabilities need product-owner confirmation. The `graphify` CLI is not installed in this shell. No application code was changed.
+
+**Next action:** Sprint S1: fix the tab-switch crash, the cancel-listing status and rider notifications, and the guest 401 states; remove the demo fallback; add regression tests. Then decide on India-only vs multi-market before Sprint S2 (currency and timezone).
+
+---
+
 ## 2026-09-17 — v1 backend + frontend scaffold
 
 **Context:** Cursor prompt for intercity seat sharing (India-first, graph-gated, no payments).

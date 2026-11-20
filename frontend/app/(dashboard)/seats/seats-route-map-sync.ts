@@ -4,6 +4,20 @@ import type { RouteOption } from "./seats-route";
 const SOURCE_ID = "seats-routes";
 const LAYER_PREFIX = "seats-route-line-";
 
+/** Safe when the map is mid-teardown (MapLibre throws after map.remove()). */
+export function removeSeatShareRouteLayers(map: maplibregl.Map | null | undefined): void {
+  if (!map) return;
+  try {
+    for (let i = 0; i < 3; i += 1) {
+      const layerId = `${LAYER_PREFIX}${i}`;
+      if (map.getLayer(layerId)) map.removeLayer(layerId);
+    }
+    if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+  } catch {
+    /* map already destroyed */
+  }
+}
+
 export function syncSeatShareRouteLayers(
   map: maplibregl.Map,
   options: RouteOption[],
@@ -12,11 +26,7 @@ export function syncSeatShareRouteLayers(
 ): () => void {
   const handlers: { layerId: string; fn: (e: maplibregl.MapLayerMouseEvent) => void }[] = [];
 
-  for (let i = 0; i < 3; i++) {
-    const layerId = `${LAYER_PREFIX}${i}`;
-    if (map.getLayer(layerId)) map.removeLayer(layerId);
-  }
-  if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+  removeSeatShareRouteLayers(map);
 
   if (options.length === 0) {
     return () => undefined;
@@ -67,10 +77,13 @@ export function syncSeatShareRouteLayers(
 
   return () => {
     for (const { layerId, fn } of handlers) {
-      map.off("click", layerId, fn);
-      if (map.getLayer(layerId)) map.removeLayer(layerId);
+      try {
+        map.off("click", layerId, fn);
+      } catch {
+        /* map already destroyed */
+      }
     }
-    if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+    removeSeatShareRouteLayers(map);
   };
 }
 

@@ -5,6 +5,7 @@ markers = [
     "geocoding_live: live Nominatim geocoding battery (slow; opt-in)",
     "seats_postgres: Seats integration tests requiring PostgreSQL + PostGIS",
     "scaper_postgres: Scaper ingest tests; opt-in via SCAPER_PG_TEST_URL (rolled back)",
+    "collection_postgres: Collection route tests; opt-in via COLLECTION_PG_TEST_URL (rolled back)",
 ]
 
 [tool.pyright]

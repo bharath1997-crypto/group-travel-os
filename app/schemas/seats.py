@@ -41,6 +41,24 @@ VehicleBodyType = Literal["sedan", "suv", "compact_hatchback", "minivan"]
 RideVisibility = Literal["groups", "fof", "public"]
 
 
+LuggageSize = Literal["none", "small", "large"]
+
+
+class RidePreferencesIn(BaseModel):
+    """Driver-stated ride details. Nothing here is inferred; unset stays unset."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    depart_window_minutes: int = Field(default=0, ge=0, le=60)
+    luggage: LuggageSize | None = None
+    smoking_allowed: bool | None = None
+    pets_allowed: bool | None = None
+    quiet_ride: bool | None = None
+    vehicle_make: str | None = Field(default=None, max_length=40)
+    vehicle_model: str | None = Field(default=None, max_length=40)
+    vehicle_color: str | None = Field(default=None, max_length=30)
+
+
 class RidePublishIn(BaseModel):
     stops: list[StopIn] = Field(min_length=2)
     depart_at: datetime
@@ -60,6 +78,8 @@ class RidePublishIn(BaseModel):
     vehicle_body_type: VehicleBodyType | None = None
     route_option_id: str | None = Field(default=None, max_length=64)
     route_label: str | None = Field(default=None, max_length=120)
+    preferences: RidePreferencesIn | None = None
+    series_id: uuid.UUID | None = None
 
 
 class BookingCreateIn(BaseModel):
@@ -106,3 +126,4 @@ class WatchOut(BaseModel):
 class RidePatchIn(BaseModel):
     status: Literal["cancelled"] | None = None
     note: str | None = Field(default=None, max_length=500)
+    preferences: RidePreferencesIn | None = None

@@ -7,6 +7,9 @@ type Props = {
   watchDisabledTitle?: string;
   watching: boolean;
   watchError: string | null;
+  variant?: "empty" | "auth" | "error";
+  errorMessage?: string | null;
+  onSignIn?: () => void;
 };
 
 export function SeatsFindEmptyState({
@@ -16,7 +19,47 @@ export function SeatsFindEmptyState({
   watchDisabledTitle,
   watching,
   watchError,
+  variant = "empty",
+  errorMessage,
+  onSignIn,
 }: Props) {
+  if (variant === "auth") {
+    return (
+      <div className={styles.findEmpty} role="status">
+        <p className={`${styles.findEmptyEyebrow} ${styles.mono}`}>SIGN IN</p>
+        <h2 className={`${styles.findEmptyTitle} ${styles.serif}`}>Log in to search seats</h2>
+        <p className={styles.findEmptyBody}>
+          Seat listings are visible only to signed-in members. Log in to see real trips on this
+          corridor.
+        </p>
+        <button type="button" className={styles.alertBtn} onClick={onSignIn}>
+          Log in
+        </button>
+      </div>
+    );
+  }
+
+  if (variant === "error") {
+    return (
+      <div className={styles.findEmpty} role="alert">
+        <p className={`${styles.findEmptyEyebrow} ${styles.mono}`}>LISTINGS UNAVAILABLE</p>
+        <h2 className={`${styles.findEmptyTitle} ${styles.serif}`}>Could not load seats</h2>
+        <p className={styles.findEmptyBody}>
+          {errorMessage ?? "Something went wrong loading listings for this route. Try again in a moment."}
+        </p>
+        <button
+          type="button"
+          className={styles.alertBtn}
+          onClick={onWatch}
+          disabled={watchDisabled}
+          title={watchDisabledTitle}
+        >
+          Retry search
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.findEmpty} role="status">
       <p className={`${styles.findEmptyEyebrow} ${styles.mono}`}>NO MATCHES</p>

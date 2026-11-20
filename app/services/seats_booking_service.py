@@ -57,6 +57,9 @@ def create_booking(
     if ride is None or ride.status not in ("open", "full"):
         AppException.not_found("Ride not found")
 
+    if rider_id == ride.driver_id:
+        AppException.bad_request("You cannot book your own ride")
+
     if is_blocked(db, rider_id, ride.driver_id):
         AppException.not_found("Ride not found")
 
@@ -183,7 +186,7 @@ def withdraw_booking(db: Session, *, booking_id: uuid.UUID, rider_id: uuid.UUID)
     if booking is None or booking.rider_id != rider_id:
         AppException.not_found("Booking not found")
 
-    if booking.status not in ("held", "requested"):
+    if booking.status not in ("held", "requested", "confirmed"):
         AppException.conflict("Cannot withdraw this booking")
 
     booking.status = "cancelled_rider"
